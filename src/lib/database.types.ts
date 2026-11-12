@@ -37,6 +37,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_path: string | null
+          is_visible: boolean
           name: string
           slug: string
           sort_order: number
@@ -46,6 +48,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_path?: string | null
+          is_visible?: boolean
           name: string
           slug: string
           sort_order?: number
@@ -55,6 +59,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_path?: string | null
+          is_visible?: boolean
           name?: string
           slug?: string
           sort_order?: number
@@ -479,6 +485,7 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }
     }
     Enums: {
       discount_type: "percent" | "fixed"

@@ -42,7 +42,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full bg-brand"
+                    className="absolute top-1.5 bottom-1.5 left-0 w-0.75 rounded-full bg-brand"
                   />
                 )}
                 <Icon

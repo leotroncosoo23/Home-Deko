@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Tipografías temporales (ver CLAUDE.md):
@@ -32,7 +33,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es-AR"
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* Avisos (toast): toast.success("…") desde cualquier componente */}
+        <Toaster position="bottom-right" richColors closeButton />
+      </body>
     </html>
   );
 }
