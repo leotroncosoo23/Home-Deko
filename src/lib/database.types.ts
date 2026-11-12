@@ -486,6 +486,7 @@ export type Database = {
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }
+      save_product: { Args: { p: Json }; Returns: Json }
     }
     Enums: {
       discount_type: "percent" | "fixed"

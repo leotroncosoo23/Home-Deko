@@ -1,0 +1,89 @@
+"use client";
+
+import { Barcode, Info } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import type { FormCardProps, FormVariant } from "../types";
+import { Field, fieldProps } from "./field";
+import { QuantityInput } from "./number-inputs";
+
+/**
+ * Inventario de un producto SIN variantes: su única variante.
+ * (Con variantes, esto lo maneja la tabla de combinaciones, parte 5B.)
+ */
+export function InventoryCard({ values, update, errors, disabled }: FormCardProps) {
+  const variant = values.variants[0];
+  const isExisting = variant.id !== null;
+  const err = (field: keyof FormVariant) => errors[`variants.0.${field}`];
+
+  function change(patch: Partial<FormVariant>) {
+    update({ variants: [{ ...variant, ...patch }] });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Inventario</CardTitle>
+        <CardDescription className="flex items-center gap-1.5">
+          <Barcode className="size-4" aria-hidden />
+          El código de barras se genera solo al guardar.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-5 sm:grid-cols-3">
+        {isExisting ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Stock actual</span>
+            <span className="flex h-8 items-center text-lg font-semibold tabular-nums">{variant.stock ?? 0}</span>
+            <p className="flex gap-1 text-xs text-muted-foreground">
+              <Info className="mt-px size-3 shrink-0" aria-hidden />
+              Se cambia con «Ajustar stock» (próximamente).
+            </p>
+          </div>
+        ) : (
+          <Field
+            id="variant-initial-stock"
+            label="Stock inicial"
+            error={err("initialStock")}
+            help="Cuántas unidades tenés hoy."
+          >
+            <QuantityInput
+              {...fieldProps("variant-initial-stock", err("initialStock"), true)}
+              value={variant.initialStock}
+              onValueChange={(initialStock) => change({ initialStock })}
+              placeholder="0"
+              disabled={disabled}
+            />
+          </Field>
+        )}
+
+        <Field
+          id="variant-min-stock"
+          label="Stock mínimo"
+          error={err("minStock")}
+          help="Avisamos cuando quede esto o menos."
+        >
+          <QuantityInput
+            {...fieldProps("variant-min-stock", err("minStock"), true)}
+            value={variant.minStock}
+            onValueChange={(minStock) => change({ minStock })}
+            placeholder="0"
+            disabled={disabled}
+          />
+        </Field>
+
+        <Field id="variant-sku" label="SKU" optional error={err("sku")} help="Código interno, si usan uno.">
+          <Input
+            {...fieldProps("variant-sku", err("sku"), true)}
+            value={variant.sku}
+            onChange={(e) => change({ sku: e.target.value.toUpperCase() })}
+            maxLength={60}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono uppercase"
+            disabled={disabled}
+          />
+        </Field>
+      </CardContent>
+    </Card>
+  );
+}
