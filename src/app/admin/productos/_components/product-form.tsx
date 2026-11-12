@@ -14,6 +14,7 @@ import { GeneralCard } from "./general-card";
 import { InventoryCard } from "./inventory-card";
 import { OrganizationCard } from "./organization-card";
 import { PricingCard } from "./pricing-card";
+import { VariantsCard } from "./variants-card";
 
 type SaveMode = "save" | "save-and-new";
 
@@ -154,6 +155,8 @@ export function ProductForm({
         <div className="flex min-w-0 flex-col gap-6">
           <GeneralCard {...cardProps} />
           <PricingCard {...cardProps} />
+          <VariantsCard {...cardProps} />
+          {/* Sin variantes: un solo stock y stock mínimo */}
           {!values.hasVariants && <InventoryCard {...cardProps} />}
         </div>
 

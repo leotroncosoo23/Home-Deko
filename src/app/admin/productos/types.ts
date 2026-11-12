@@ -48,6 +48,8 @@ export type FormVariant = {
   /** Datos de solo lectura de una variante ya guardada. */
   stock: number | null;
   barcode: string | null;
+  /** Nombre con el que estaba guardada ("Rojo / 300 ml"), para los avisos. */
+  savedLabel?: string;
 };
 
 /** Una imagen del producto (parte 5C). */
@@ -86,6 +88,15 @@ export type ProductFormValues = {
   variants: FormVariant[];
   images: FormImage[];
   discount: FormDiscount | null;
+
+  // --- Solo del formulario (no viajan al servidor) ---
+  /** Combinaciones que quitaste a mano ("no existe Rojo / 500 ml"). */
+  excludedKeys: string[];
+  /** Variantes tal como estaban guardadas (para avisar si se quita una con stock). */
+  savedVariants: FormVariant[];
+  /** Lo que había antes de prender/apagar "tiene variantes" (para no perderlo). */
+  stashedSimple: FormVariant | null;
+  stashedVariants: { options: FormOption[]; variants: FormVariant[]; excludedKeys: string[] } | null;
 };
 
 /** Una categoría para el selector. */

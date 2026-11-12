@@ -201,6 +201,10 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
         colorValueKey: img.option_value_id,
         altText: img.alt_text ?? "",
       })),
+    excludedKeys: [],
+    savedVariants: formVariants.map((v, i) => ({ ...v, savedLabel: codes[i]?.label })),
+    stashedSimple: null,
+    stashedVariants: null,
     discount:
       p.discount_type && p.discount_value !== null
         ? {
