@@ -6,7 +6,8 @@ import { IMAGES_BUCKET, publicImageUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/database.types";
 import { issuesToErrors, productInputSchema, type ProductInput } from "./schema";
-import type { SaveProductResult, UploadImageResult } from "./types";
+import type { ListActionResult, SaveProductResult, UploadImageResult } from "./types";
+
 /**
  * Server Actions de Productos.
  * Todas: requireAdmin() → validar con zod → base (RLS) → refresh().
@@ -178,3 +179,140 @@ function translateError(error: { code: string; message: string }): SaveProductRe
       return { ok: false, error: GENERIC_ERROR };
   }
 }
+
+// =====================================================================
+// Listado (paso 6): acciones de a uno o en masa
+// =====================================================================
+
+const MAX_BULK = 200;
+
+/** Valida una lista de ids que viene del navegador. */
+function validIds(ids: unknown): string[] | null {
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > MAX_BULK) return null;
+  if (!ids.every((id) => typeof id === "string" && UUID_PATTERN.test(id))) return null;
+  return [...new Set(ids as string[])];
+}
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
+
+/**
+ * Cambia el estado de uno o varios productos:
+ *   "active"   → Publicar (los que no tienen precio se saltean y se avisa)
+ *   "draft"    → Pasar a borrador / Desarchivar (vuelve como Borrador)
+ *   "archived" → Archivar
+ */
+export async function setProductsStatus(
+  rawIds: string[],
+  status: "active" | "draft" | "archived",
+): Promise<ListActionResult> {
+  await requireAdmin();
+  const ids = validIds(rawIds);
+  if (!ids || !["active", "draft", "archived"].includes(status)) {
+    return { ok: false, error: "Selección inválida. Recargá la página." };
+  }
+  const supabase = await createClient();
+
+  // Para publicar, todo lo que se vende tiene que tener precio (igual que
+  // en el formulario). min_price = el precio más bajo de sus variantes.
+  let toUpdate = ids;
+  let skipped: string[] = [];
+  if (status === "active") {
+    const { data, error } = await supabase.from("admin_products").select("id, name, min_price").in("id", ids);
+    if (error) return { ok: false, error: GENERIC_LIST_ERROR };
+    toUpdate = data.filter((p) => (p.min_price ?? 0) > 0).map((p) => p.id ?? "");
+    skipped = data.filter((p) => (p.min_price ?? 0) <= 0).map((p) => p.name ?? "");
+  }
+
+  let updated = 0;
+  if (toUpdate.length > 0) {
+    const { data, error } = await supabase.from("products").update({ status }).in("id", toUpdate).select("id");
+    if (error) return { ok: false, error: GENERIC_LIST_ERROR };
+    updated = data.length;
+  }
+
+  refresh();
+  const done = { active: "publicado", draft: "pasado a borrador", archived: "archivado" }[status];
+  const donePlural = { active: "publicados", draft: "pasados a borrador", archived: "archivados" }[status];
+  let message = updated > 0 ? `${plural(updated, `producto ${done}`, `productos ${donePlural}`)}.` : "";
+  if (skipped.length > 0) {
+    message += ` ${skipped.length === 1 ? `«${skipped[0]}» no se publicó` : `${skipped.length} no se publicaron`} porque no tiene${skipped.length === 1 ? "" : "n"} precio.`;
+  }
+  if (updated === 0 && skipped.length > 0) return { ok: false, error: message.trim() };
+  return { ok: true, message: message.trim() || "Listo." };
+}
+
+/** Cambia la categoría de uno o varios productos (null = sin categoría). */
+export async function setProductsCategory(rawIds: string[], categoryId: string | null): Promise<ListActionResult> {
+  await requireAdmin();
+  const ids = validIds(rawIds);
+  if (!ids || (categoryId !== null && !UUID_PATTERN.test(categoryId))) {
+    return { ok: false, error: "Selección inválida. Recargá la página." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .update({ category_id: categoryId })
+    .in("id", ids)
+    .select("id");
+  if (error) {
+    return {
+      ok: false,
+      error: error.code === "23503" ? "Esa categoría ya no existe. Recargá la página." : GENERIC_LIST_ERROR,
+    };
+  }
+  refresh();
+  return { ok: true, message: `Categoría cambiada en ${plural(data.length, "producto", "productos")}.` };
+}
+
+/**
+ * Elimina definitivamente un producto (solo si nunca tuvo movimientos de
+ * stock además del "inicial"; lo controla la base) y borra TODA su carpeta
+ * de fotos en Storage (también fotos sueltas que hubieran quedado).
+ */
+export async function deleteProduct(id: string): Promise<ListActionResult> {
+  await requireAdmin();
+  if (typeof id !== "string" || !UUID_PATTERN.test(id)) return { ok: false, error: "Producto inválido." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_product", { p_id: id });
+  if (error) {
+    if (error.code === "HD422") return { ok: false, error: error.message, canArchive: true };
+    if (error.code === "HD404") return { ok: false, error: error.message };
+    return { ok: false, error: "No se pudo eliminar. Intentá de nuevo en unos segundos." };
+  }
+
+  // Fotos: las que tenía guardadas + cualquier archivo que quede en su carpeta
+  const saved = ((data as { image_paths?: string[] }).image_paths ?? []).filter((p) => p.startsWith(`${id}/`));
+  const { data: listed } = await supabase.storage.from(IMAGES_BUCKET).list(id, { limit: 1000 });
+  const all = [...new Set([...saved, ...(listed ?? []).map((f) => `${id}/${f.name}`)])];
+  if (all.length > 0) await supabase.storage.from(IMAGES_BUCKET).remove(all);
+
+  refresh();
+  return { ok: true, message: "Producto eliminado." };
+}
+
+/**
+ * Busca un producto por código de barras o SKU EXACTO (lo que escribe el
+ * lector USB al escanear, y en el paso 8 la cámara).
+ * Devuelve el id si hay exactamente un producto con ese código.
+ */
+export async function findProductByCode(code: string): Promise<{ productId: string } | null> {
+  await requireAdmin();
+  const clean = typeof code === "string" ? code.trim() : "";
+  // Solo caracteres de un código o SKU (además evita romper el filtro)
+  if (clean.length < 3 || clean.length > 60 || !/^[A-Za-z0-9._-]+$/.test(clean)) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select("product_id")
+    // Los SKU se guardan en mayúsculas (el formulario los convierte)
+    .or(`barcode.eq.${clean},sku.eq.${clean.toUpperCase()}`)
+    .limit(5);
+  if (error || !data) return null;
+
+  const products = [...new Set(data.map((v) => v.product_id))];
+  return products.length === 1 ? { productId: products[0] } : null;
+}
+
+const GENERIC_LIST_ERROR = "No se pudo completar la acción. Intentá de nuevo en unos segundos.";

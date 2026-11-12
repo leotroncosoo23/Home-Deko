@@ -4,7 +4,8 @@ import { Copy } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { getCategoryChoices, getProductCopy } from "../data";
 import { emptyValues } from "../form-state";
-import { BackToProducts, ProductFormSkeleton } from "../_components/form-skeleton";
+import { BackToProducts } from "../_components/back-to-products";
+import { ProductFormSkeleton } from "../_components/form-skeleton";
 import { ProductForm } from "../_components/product-form";
 
 export const metadata: Metadata = { title: "Nuevo producto" };

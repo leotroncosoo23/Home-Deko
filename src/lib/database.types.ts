@@ -92,6 +92,13 @@ export type Database = {
             foreignKeyName: "product_costs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -137,6 +144,13 @@ export type Database = {
             columns: ["option_value_id"]
             isOneToOne: false
             referencedRelation: "product_option_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
             referencedColumns: ["id"]
           },
           {
@@ -216,6 +230,13 @@ export type Database = {
             foreignKeyName: "product_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -265,6 +286,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]
@@ -465,7 +493,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_products: {
+        Row: {
+          base_price: number | null
+          category_id: string | null
+          category_name: string | null
+          created_at: string | null
+          discount_active: boolean | null
+          discount_ends_at: string | null
+          discount_starts_at: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"] | null
+          discount_value: number | null
+          final_max_price: number | null
+          final_min_price: number | null
+          has_history: boolean | null
+          has_variants: boolean | null
+          id: string | null
+          is_featured: boolean | null
+          max_price: number | null
+          min_price: number | null
+          name: string | null
+          primary_image_path: string | null
+          search_text: string | null
+          slug: string | null
+          status: Database["public"]["Enums"]["product_status"] | null
+          stock_status: string | null
+          total_stock: number | null
+          updated_at: string | null
+          variant_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       adjust_stock: {
@@ -483,6 +549,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      delete_product: { Args: { p_id: string }; Returns: Json }
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }

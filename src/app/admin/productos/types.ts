@@ -113,21 +113,43 @@ export type ProductFormValues = {
 export type CategoryChoice = { id: string; name: string; isVisible: boolean };
 
 /** Fila de la lista mínima de productos. */
+export type StockStatus = "ok" | "low" | "out";
+
 export type ProductListItem = {
   id: string;
   name: string;
   status: ProductStatus;
   categoryName: string | null;
   imageUrl: string | null;
-  basePrice: number;
-  /** Precio mínimo y máximo entre las variantes activas. */
+  /** Precio mínimo y máximo entre las variantes activas (sin descuento). */
   minPrice: number;
   maxPrice: number;
+  /** Con el descuento, si hoy está vigente (si no, igual a min/max). */
+  finalMinPrice: number;
+  finalMaxPrice: number;
+  discountActive: boolean;
   variantCount: number;
   hasVariants: boolean;
   totalStock: number;
-  lowStock: boolean;
+  stockStatus: StockStatus;
+  /** Tuvo movimientos de stock además del "inicial" → no se puede eliminar. */
+  hasHistory: boolean;
 };
+
+/** Una página del listado. */
+export type ProductListPage = {
+  items: ProductListItem[];
+  /** Total de productos con los filtros (todas las páginas). */
+  total: number;
+  /** Página que se está mostrando (puede corregirse si pedían una que no existe). */
+  page: number;
+  pageCount: number;
+};
+
+/** Resultado de las acciones del listado. */
+export type ListActionResult =
+  | { ok: true; message: string }
+  | { ok: false; error: string; canArchive?: boolean };
 
 /** Código de una variante, para la tarjeta "Códigos" al editar. */
 export type VariantCode = {

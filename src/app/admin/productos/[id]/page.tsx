@@ -8,7 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryChoices, getProductForEdit } from "../data";
 import { CodesCard } from "../_components/codes-card";
-import { BackToProducts, ProductFormSkeleton } from "../_components/form-skeleton";
+import { BackToProducts } from "../_components/back-to-products";
+import { ProductFormSkeleton } from "../_components/form-skeleton";
 import { ProductForm } from "../_components/product-form";
 import { StatusBadge } from "../_components/status-badge";
 
