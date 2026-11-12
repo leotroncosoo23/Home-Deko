@@ -24,31 +24,43 @@ y que funcione bien tanto en PC como en celular.
 - La tienda y el panel leen y escriben **las mismas tablas**. No hay "conexión posterior" entre sistemas.
 
 ## Diseño e identidad visual
-Marca: logo "Home Deko" en tipografía script negra con un corazón rojo, sobre fondo blanco.
-Identidad: rojo profundo, negro y blanco. (El rosa que aparece en sus redes son solo emojis: no es color de marca.)
+Marca (nueva identidad, propuesta de logo de noviembre 2026): "Home Deko — Artículos del hogar".
+Logo en serif display de alto contraste, con un corazón rojo ("decorar con amor").
+Concepto: "Tu casa, tu refugio, con diseño y calidez". Elegante pero accesible.
+Versiones del logo: horizontal (una línea), apilada (dos líneas), negra sobre blanco y blanca sobre rojo.
+Los archivos van en `public/brand/`.
 
-Paleta (configurar como variables CSS del tema de shadcn en `globals.css`):
-- **Rojo Home Deko**: `#9C1706` → color de marca / acento
-- **Rojo hover**: `#7F1205`
-- **Rojo suave** (fondos de badges y avisos de marca): `#FBEAE7`
-- **Casi negro**: `#1C1917` → texto principal y botones primarios del panel
-- **Gris cálido** para bordes y textos secundarios (escala `stone` de Tailwind)
-- **Fondo**: blanco `#FFFFFF` y gris muy claro `#FAFAF9` para el fondo general del panel
+Paleta oficial (configurar como variables CSS del tema de shadcn en `globals.css`):
+- **Rojo Home Deko**: `#C92728` → color de marca / acento
+- **Rojo hover**: `#A81F20`
+- **Rojo suave** (fondos de badges y avisos de marca): `#FCEAEA`
+- **Negro de marca**: `#2B2B2B` → texto principal y botones primarios del panel
+- **Blanco**: `#FFFFFF`
+- **Gris** para bordes y textos secundarios (escala `neutral` o `stone` de Tailwind)
+- **Fondo del panel**: `#FAFAFA`
+- (El rosa claro de la presentación de marca es solo el fondo del documento: no usarlo en la interfaz.)
+
+Tipografías de marca:
+- **Frunchy Sage** (display serif): solo títulos de la tienda y elementos de marca. Nunca en tablas ni formularios.
+- **Gabriel Sans** (sans serif): textos.
+- Cargarlas con `next/font/local` desde `public/fonts/` cuando estén los archivos (y la licencia de uso web).
+  Mientras tanto, usar como alternativa **Playfair Display** (display) e **Inter** (textos) con `next/font/google`.
 
 ### Panel de administración (lo usa principalmente uno de los dueños: sobrio y profesional)
 - Base **neutra**: fondo claro, tarjetas blancas, bordes finos y mucho espacio. Nada de rosa.
-- **Botones primarios en casi negro** (`#1C1917`), no en rojo, para no confundirlos con acciones de peligro.
+- **Botones primarios en negro de marca** (`#2B2B2B`), no en rojo, para no confundirlos con acciones de peligro.
 - El **rojo de marca solo como acento**: logo, ítem activo de la barra lateral, indicadores, gráficos y foco.
 - Acciones destructivas (archivar o eliminar): botón con borde, más diálogo de confirmación.
 - Colores de estado: verde para "Publicado" o stock OK, ámbar para "Stock bajo", gris para
   "Borrador" o "Archivado", y rojo de marca para "Sin stock".
-- Tipografía: **Geist** o **Inter** (sans serif, legible). Números tabulares en tablas, precios y stock.
-- Barra lateral con el logo de Home Deko arriba.
+- Tipografía del panel: **Gabriel Sans** (o Inter como alternativa). Números tabulares en tablas, precios y stock.
+- Barra lateral con el **logo horizontal** arriba. En la pantalla de login, el **logo apilado**.
+  Favicon: el corazón rojo.
 
 ### Tienda (más adelante)
 - Más presencia del rojo: botones "Agregar al carrito" y "Comprar" en rojo de marca.
-- Títulos con una serif elegante que acompañe el logo (por ejemplo, Playfair Display o DM Serif Display)
-  y el cuerpo en sans serif.
+- Títulos en **Frunchy Sage** y cuerpo en **Gabriel Sans**.
+- Bloques o banners en rojo con el logo en blanco, como en la propuesta de marca.
 - Mucho blanco y fotos grandes: el producto es el protagonista.
 
 ## Variables de entorno
