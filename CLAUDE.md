@@ -181,3 +181,22 @@ Tipografías de marca:
 7. Ajuste de stock e historial
 8. Escáner con cámara
 9. Cola de etiquetas y PDF A4
+
+## Arquitectura del panel (visión final)
+Menú agrupado por tarea. Cada sección se agrega al menú recién cuando está implementada.
+- Inicio (resumen)
+- VENTAS: Pedidos (contador de pendientes), Venta en local
+- CATÁLOGO: Productos, Categorías
+- INVENTARIO: Stock (contador de stock bajo), Etiquetas
+- ANÁLISIS: Estadísticas (más vendidos, más vistos, ingresos)
+- Abajo: Configuración y "Ver tienda"
+
+Inicio = "qué tengo que hacer hoy":
+1. Selector de período (Hoy / 7 días / 30 días)
+2. Tarjetas: ventas, pedidos, ticket promedio, visitas (con variación vs. período anterior)
+3. Caja "Requiere atención": pedidos sin preparar, sin stock, stock bajo (con botones de acción)
+4. Gráfico de ventas por día
+5. Más vendidos y más vistos
+6. Últimos pedidos
+
+Visitas por producto: tabla de vistas registrada desde la página del producto en la tienda.
