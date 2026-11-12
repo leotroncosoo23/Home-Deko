@@ -28,11 +28,11 @@ export function UserMenuDropdown({ name, email }: { name: string | null; email: 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 data-popup-open:bg-muted"
+        className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-muted"
         aria-label="Menú de la cuenta"
       >
         <Avatar className="size-8">
-          <AvatarFallback className="bg-neutral-900 text-xs font-medium text-white">
+          <AvatarFallback className="bg-foreground text-xs font-medium text-background">
             {initials(name, email)}
           </AvatarFallback>
         </Avatar>

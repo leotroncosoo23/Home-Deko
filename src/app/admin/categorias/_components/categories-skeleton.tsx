@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Lo que se ve mientras cargan las categorías (filas grises). */
 export function CategoriesSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border bg-background" aria-busy aria-label="Cargando categorías">
+    <div className="overflow-hidden surface-card" aria-busy aria-label="Cargando categorías">
       <div className="hidden h-8 border-b bg-muted/40 sm:block" />
       <ul className="divide-y">
         {Array.from({ length: 4 }, (_, i) => (

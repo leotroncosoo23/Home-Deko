@@ -51,10 +51,10 @@ function NavLinks({ pathname, onNavigate }: NavProps & { pathname: string | null
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "group relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
-                  "outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                   active
-                    ? "bg-neutral-100 font-semibold text-foreground"
-                    : "font-medium text-muted-foreground hover:bg-neutral-50 hover:text-foreground",
+                    ? "bg-muted font-semibold text-foreground"
+                    : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
                 {/* Barrita roja de la sección activa */}
@@ -68,7 +68,7 @@ function NavLinks({ pathname, onNavigate }: NavProps & { pathname: string | null
                   aria-hidden
                   className={cn(
                     "size-4 shrink-0",
-                    active ? "text-brand" : "text-neutral-400 group-hover:text-neutral-600",
+                    active ? "text-brand" : "text-muted-foreground/70 group-hover:text-foreground",
                   )}
                 />
                 {item.title}

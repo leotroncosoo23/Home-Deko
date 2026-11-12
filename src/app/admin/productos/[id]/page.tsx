@@ -45,6 +45,7 @@ async function EditProduct({ id }: { id: string }) {
   return (
     <>
       <PageHeader
+        eyebrow="Catálogo"
         title={product.name}
         actions={
           <>

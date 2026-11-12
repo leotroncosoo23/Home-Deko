@@ -23,7 +23,7 @@ export default function NewProductPage({ searchParams }: PageProps<"/admin/produ
     <>
       <div className="flex flex-col gap-2">
         <BackToProducts />
-        <PageHeader title="Nuevo producto" />
+        <PageHeader eyebrow="Catálogo" title="Nuevo producto" />
       </div>
       <Suspense fallback={<ProductFormSkeleton />}>
         {searchParams.then(({ duplicar }) => (

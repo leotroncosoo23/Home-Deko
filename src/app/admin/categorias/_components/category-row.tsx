@@ -62,7 +62,7 @@ export function CategoryRow({
         {...listeners}
         aria-label={`Mover «${category.name}». Arrastrá, o usá espacio y las flechas.`}
         className={cn(
-          "flex h-9 w-7 touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+          "flex h-9 w-7 touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40",
           isDragging ? "cursor-grabbing" : "cursor-grab",
         )}
       >

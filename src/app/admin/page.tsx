@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Inicio" };
 export default function AdminHomePage() {
   return (
     <>
-      <PageHeader title={section.title} description={section.description} />
+      <PageHeader eyebrow={section.group} title={section.title} description={section.description} />
       <ComingSoon
         icon={section.icon}
         text="Acá vas a ver las últimas ventas, los productos con poco stock y las métricas del negocio."

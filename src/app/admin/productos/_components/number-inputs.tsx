@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { formatMoneyInput, parseMoney } from "@/lib/format";
 
 const inputBase =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent text-sm tabular-nums outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20";
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent text-sm tabular-nums outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20";
 
 type BaseProps = Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> & {
   value: string;

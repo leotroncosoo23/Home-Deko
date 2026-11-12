@@ -206,7 +206,7 @@ export function ProductForm({
       </div>
 
       {/* Barra de botones: queda pegada abajo mientras se baja por el formulario */}
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-2 border-t bg-background/95 shadow-[0_-6px_16px_-10px_rgb(43_43_43/0.18)] px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6 lg:-mx-8 lg:px-8">
         <Link href="/admin/productos" className={buttonVariants({ variant: "ghost", className: "sm:mr-auto" })}>
           Cancelar
         </Link>

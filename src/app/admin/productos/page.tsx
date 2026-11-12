@@ -21,6 +21,7 @@ export default function ProductsPage() {
   return (
     <>
       <PageHeader
+        eyebrow={section.group}
         title={section.title}
         description={section.description}
         actions={
@@ -45,7 +46,7 @@ async function ProductsList() {
 
 function ProductsSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border bg-background" aria-busy aria-label="Cargando productos">
+    <div className="overflow-hidden surface-card" aria-busy aria-label="Cargando productos">
       <ul className="divide-y">
         {Array.from({ length: 5 }, (_, i) => (
           <li key={i} className="flex items-center gap-3 px-4 py-3">

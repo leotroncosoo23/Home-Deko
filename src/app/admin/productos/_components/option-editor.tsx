@@ -197,7 +197,7 @@ export function OptionEditor({
             maxLength={60}
             disabled={disabled}
             aria-label={`Agregar un valor a ${option.name || "la opción"}`}
-            className="h-8 min-w-36 flex-1 rounded-full border border-dashed bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 min-w-36 flex-1 rounded-full border border-dashed bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
           />
         </div>
         {addError || valuesError ? (

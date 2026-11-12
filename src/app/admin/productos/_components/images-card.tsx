@@ -12,10 +12,10 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Images } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/admin/section-card";
 import { isColorOption } from "@/lib/colors";
 import { compressImage } from "@/lib/images/compress";
 import { discardProductImages, uploadProductImage } from "../actions";
@@ -184,23 +184,25 @@ export function ImagesCard({ values, update, disabled }: FormCardProps) {
   const uploadingCount = images.filter((img) => img.uploading).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          Fotos{" "}
-          {images.length > 0 && (
-            <span className="font-normal text-muted-foreground tabular-nums">
-              ({images.length}/{MAX_IMAGES})
-            </span>
-          )}
-        </CardTitle>
-        <CardDescription>
-          {uploadingCount > 0
+    // Toda la tarjeta recibe las fotos que se sueltan encima
+    <div {...dropHandlers}>
+      <SectionCard
+        icon={Images}
+        title="Fotos"
+        description={
+          uploadingCount > 0
             ? `Subiendo ${uploadingCount === 1 ? "1 foto" : `${uploadingCount} fotos`}…`
-            : "La primera es la principal. Arrastrá para cambiar el orden."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent {...dropHandlers} className={cn("rounded-lg transition-colors", dragOver && "bg-muted/60")}>
+            : "La primera es la principal. Arrastrá para cambiar el orden."
+        }
+        action={
+          images.length > 0 && (
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {images.length}/{MAX_IMAGES}
+            </span>
+          )
+        }
+        className={cn("transition-shadow", dragOver && "border-brand/40 ring-3 ring-brand/15")}
+      >
         <input
           ref={inputRef}
           type="file"
@@ -221,7 +223,7 @@ export function ImagesCard({ values, update, disabled }: FormCardProps) {
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
             className={cn(
-              "flex w-full flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50",
+              "flex w-full flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/40",
               dragOver && "border-foreground/40",
             )}
           >
@@ -262,7 +264,7 @@ export function ImagesCard({ values, update, disabled }: FormCardProps) {
                       type="button"
                       onClick={() => inputRef.current?.click()}
                       disabled={disabled}
-                      className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+                      className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
                     >
                       <ImagePlus className="size-5" aria-hidden />
                       Agregar
@@ -279,7 +281,7 @@ export function ImagesCard({ values, update, disabled }: FormCardProps) {
             Si una foto es de un color, elegilo abajo de la foto: en la tienda se va a mostrar al elegir ese color.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </SectionCard>
+    </div>
   );
 }

@@ -6,6 +6,11 @@ export type NavItem = {
   icon: LucideIcon;
   /** Frase corta que se muestra debajo del título de cada página. */
   description: string;
+  /**
+   * Grupo del menú (arquitectura del CLAUDE.md: Ventas, Catálogo, Inventario,
+   * Análisis). Se muestra en rojo de marca arriba del título de la página.
+   */
+  group?: string;
 };
 
 /**
@@ -24,24 +29,28 @@ export const NAV_ITEMS: NavItem[] = [
     title: "Productos",
     href: "/admin/productos",
     icon: Package,
+    group: "Catálogo",
     description: "Cargá, editá y publicá los productos de la tienda.",
   },
   {
     title: "Categorías",
     href: "/admin/categorias",
     icon: LayoutGrid,
+    group: "Catálogo",
     description: "Organizá los productos en categorías y definí su orden.",
   },
   {
     title: "Etiquetas",
     href: "/admin/etiquetas",
     icon: Tag,
+    group: "Inventario",
     description: "Prepará e imprimí etiquetas con código de barras en hojas A4.",
   },
   {
     title: "Stock",
     href: "/admin/stock",
     icon: Boxes,
+    group: "Inventario",
     description: "Ajustá el stock y revisá el historial de movimientos.",
   },
 ];

@@ -69,7 +69,7 @@ export function ValueChip({
         <label
           className={cn(
             "relative size-4 shrink-0 cursor-pointer rounded-full border border-black/15",
-            !value.colorHex && "border-dashed border-neutral-400",
+            !value.colorHex && "border-dashed border-muted-foreground/50",
           )}
           style={value.colorHex ? { backgroundColor: value.colorHex } : undefined}
           title="Elegir el color de la muestra"
@@ -116,7 +116,7 @@ export function ValueChip({
           {...listeners}
           onClick={() => !disabled && setEditing(true)}
           disabled={disabled}
-          className="cursor-grab touch-none truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:cursor-grabbing"
+          className="cursor-grab touch-none truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40 active:cursor-grabbing"
           aria-label={`${value.value}. Clic para renombrar; arrastrá para mover.`}
         >
           {value.value}
@@ -127,7 +127,7 @@ export function ValueChip({
         type="button"
         onClick={onRemove}
         disabled={disabled}
-        className="flex size-6 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="flex size-6 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
         aria-label={`Quitar «${value.value}»`}
       >
         <X className="size-3.5" aria-hidden />

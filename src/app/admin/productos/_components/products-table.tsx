@@ -15,7 +15,7 @@ export function ProductsTable({ products }: { products: ProductListItem[] }) {
   if (products.length === 0) return <EmptyProducts />;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-background">
+    <div className="overflow-hidden surface-card">
       <div className="hidden grid-cols-[2.5rem_minmax(0,1fr)_6.5rem_6rem_5rem_8rem] items-center gap-4 border-b bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground md:grid">
         <span />
         <span>Producto</span>

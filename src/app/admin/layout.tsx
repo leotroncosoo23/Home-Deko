@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
       {/* ---------- Barra lateral (solo PC, desde 1024 px) ---------- */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-background lg:flex">
         <div className="flex h-14 shrink-0 items-center border-b px-5">
-          <Link href="/admin" aria-label="Home Deko — Inicio del panel" className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+          <Link href="/admin" aria-label="Home Deko — Inicio del panel" className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
             <Logo variant="horizontal" />
           </Link>
         </div>

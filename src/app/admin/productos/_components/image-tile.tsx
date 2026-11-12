@@ -55,7 +55,7 @@ export function ImageTile({
         {...listeners}
         aria-label={`Foto ${index + 1}${isPrimary ? " (principal)" : ""}. Arrastrá para cambiar el orden.`}
         className={cn(
-          "relative aspect-square cursor-grab overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing",
+          "relative aspect-square cursor-grab overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/40 active:cursor-grabbing",
           isDragging && "shadow-lg ring-2 ring-foreground/10",
           image.error && "border-destructive/50",
         )}
@@ -129,7 +129,7 @@ export function ImageTile({
           onChange={(e) => onColorChange(e.target.value || null)}
           disabled={disabled}
           aria-label={`Color de la foto ${index + 1}`}
-          className="h-7 w-full min-w-0 rounded-md border border-input bg-background px-1.5 text-xs text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-7 w-full min-w-0 rounded-md border border-input bg-background px-1.5 text-xs text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <option value="">Todos los colores</option>
           {colorValues.map((v) => (
@@ -161,7 +161,7 @@ function TileButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="flex size-7 items-center justify-center rounded-md bg-background/90 text-muted-foreground shadow-sm outline-none hover:bg-background hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 [&_svg]:size-3.5"
+      className="flex size-7 items-center justify-center rounded-md bg-background/90 text-muted-foreground shadow-sm outline-none hover:bg-background hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50 [&_svg]:size-3.5"
     >
       {children}
     </button>

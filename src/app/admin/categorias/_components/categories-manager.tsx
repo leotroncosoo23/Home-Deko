@@ -95,7 +95,7 @@ export function CategoriesManager({ categories }: { categories: Category[] }) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border bg-background">
+      <div className="overflow-hidden surface-card">
         {/* Encabezado de columnas (desde tablet) */}
         <div className="hidden grid-cols-[auto_auto_1fr_7rem_6rem_auto] items-center gap-3 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground sm:grid">
           <span className="w-7" />
