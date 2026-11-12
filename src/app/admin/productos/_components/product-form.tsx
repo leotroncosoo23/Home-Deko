@@ -13,6 +13,7 @@ import type { CategoryChoice, FormErrors, FormUpdate, ProductFormValues } from "
 import { DiscountCard } from "./discount-card";
 import { ImagesCard } from "./images-card";
 import { GeneralCard } from "./general-card";
+import { useProductsListUrl } from "./list-url";
 import { useUnsavedWarning } from "./use-unsaved-warning";
 import { InventoryCard } from "./inventory-card";
 import { OrganizationCard } from "./organization-card";
@@ -62,6 +63,8 @@ export function ProductForm({
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot(initialValues));
   const dirty = snapshot(values) !== savedSnapshot;
   const { allowLeave } = useUnsavedWarning(dirty);
+  // "Cancelar" vuelve al listado con los filtros que tenía
+  const listUrl = useProductsListUrl();
 
   const update: FormUpdate = (patchOrFn) => {
     if (typeof patchOrFn === "function") {
@@ -207,7 +210,7 @@ export function ProductForm({
 
       {/* Barra de botones: queda pegada abajo mientras se baja por el formulario */}
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-2 border-t bg-background/95 shadow-[0_-6px_16px_-10px_rgb(43_43_43/0.18)] px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:flex-row sm:items-center sm:justify-end sm:px-6 lg:-mx-8 lg:px-8">
-        <Link href="/admin/productos" className={buttonVariants({ variant: "ghost", className: "sm:mr-auto" })}>
+        <Link href={listUrl} className={buttonVariants({ variant: "ghost", className: "sm:mr-auto" })}>
           Cancelar
         </Link>
         <Button type="button" variant="outline" disabled={pending} onClick={() => save("save-and-new")}>

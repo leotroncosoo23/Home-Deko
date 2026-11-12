@@ -5,13 +5,15 @@ import { publicImageUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slug";
 import { allCombinations, combinationKey, defaultVariant, isoToArgentinaDay } from "./form-state";
+import { NO_CATEGORY, PAGE_SIZE, normalizeSearch, type ListParams, type SortKey } from "./list-params";
 import type {
   CategoryChoice,
   FormOption,
   FormVariant,
   ProductFormValues,
-  ProductListItem,
+  ProductListPage,
   ProductStatus,
+  StockStatus,
   VariantCode,
 } from "./types";
 
@@ -42,42 +44,98 @@ export async function getCategoryChoices(): Promise<CategoryChoice[]> {
 }
 
 // ---------------------------------------------------------------------
-// Lista mínima (el listado completo con filtros es el paso 6)
+// Listado (paso 6): filtros, orden y paginación sobre la vista
+// admin_products (que ya trae el stock, los precios y la búsqueda
+// calculados en la base).
 // ---------------------------------------------------------------------
-export async function getProducts(): Promise<ProductListItem[]> {
+const LIST_COLUMNS =
+  "id, name, status, category_name, primary_image_path, min_price, max_price, final_min_price, final_max_price, discount_active, variant_count, has_variants, total_stock, stock_status, has_history";
+
+/** Qué columna y dirección usa cada orden. Al final, por id: orden estable entre páginas. */
+const SORT_COLUMNS: Record<SortKey, { column: string; ascending: boolean }> = {
+  recientes: { column: "updated_at", ascending: false },
+  "nombre-asc": { column: "name", ascending: true },
+  "nombre-desc": { column: "name", ascending: false },
+  "precio-asc": { column: "final_min_price", ascending: true },
+  "precio-desc": { column: "final_min_price", ascending: false },
+  "stock-asc": { column: "total_stock", ascending: true },
+  "stock-desc": { column: "total_stock", ascending: false },
+};
+
+export async function getProductList(params: ListParams): Promise<ProductListPage> {
   await requireAdmin();
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      `id, name, status, base_price, updated_at,
-       categories ( name ),
-       product_variants ( stock, min_stock, price, is_active, is_default ),
-       product_images ( storage_path, is_primary )`,
-    )
-    .order("updated_at", { ascending: false })
-    .limit(200);
-  if (error) throw new Error("No se pudieron cargar los productos.");
 
-  return data.map((p) => {
-    const variants = p.product_variants.filter((v) => v.is_active);
-    const prices = variants.map((v) => v.price ?? p.base_price);
-    const primary = p.product_images.find((i) => i.is_primary) ?? p.product_images[0];
-    return {
-      id: p.id,
-      name: p.name,
-      status: p.status as ProductStatus,
-      categoryName: one(p.categories)?.name ?? null,
-      imageUrl: primary ? publicImageUrl(primary.storage_path) : null,
-      basePrice: p.base_price,
-      minPrice: prices.length ? Math.min(...prices) : p.base_price,
-      maxPrice: prices.length ? Math.max(...prices) : p.base_price,
-      variantCount: variants.length,
-      hasVariants: !(variants.length === 1 && variants[0].is_default),
-      totalStock: variants.reduce((sum, v) => sum + v.stock, 0),
-      lowStock: variants.some((v) => v.stock <= v.min_stock),
-    };
-  });
+  // Arma la consulta con los filtros. "countOnly": solo contar (sin traer filas).
+  const filtered = (countOnly: boolean) => {
+    // head: true = solo contar, sin traer las filas
+    let query = supabase.from("admin_products").select(LIST_COLUMNS, { count: "exact", head: countOnly });
+
+    // Estado
+    if (params.estado === "activos") query = query.in("status", ["draft", "active"]);
+    else if (params.estado === "publicados") query = query.eq("status", "active");
+    else if (params.estado === "borradores") query = query.eq("status", "draft");
+    else if (params.estado === "archivados") query = query.eq("status", "archived");
+
+    // Categoría ("sin" = sin categoría)
+    if (params.cat === NO_CATEGORY) query = query.is("category_id", null);
+    else if (params.cat) query = query.eq("category_id", params.cat);
+
+    // Stock
+    if (params.stock === "bajo") query = query.eq("stock_status", "low");
+    else if (params.stock === "sin") query = query.eq("stock_status", "out");
+
+    // Búsqueda: cada palabra tiene que aparecer (en el nombre, un SKU o un
+    // código de barras), en cualquier orden. "taza roja" = taza Y roja.
+    const words = normalizeSearch(params.q).split(" ").filter(Boolean).slice(0, 6);
+    for (const word of words) query = query.ilike("search_text", `%${word}%`);
+    return query;
+  };
+
+  const run = (page: number) => {
+    const sort = SORT_COLUMNS[params.orden];
+    return filtered(false)
+      .order(sort.column, { ascending: sort.ascending })
+      .order("id")
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  };
+
+  let page = params.pagina;
+  let { data, count, error } = await run(page);
+  // Si pidieron una página que no existe (ej.: archivaron los de la última,
+  // o la URL es vieja), Supabase responde "rango no válido" (PGRST103):
+  // se cuenta cuántos hay y se muestra la última página que sí existe.
+  if (error?.code === "PGRST103" && page > 1) {
+    const { count: total } = await filtered(true);
+    page = Math.max(1, Math.ceil((total ?? 0) / PAGE_SIZE));
+    ({ data, count, error } = await run(page));
+  }
+  if (error || !data) throw new Error("No se pudieron cargar los productos.");
+
+  const total = count ?? 0;
+  return {
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    // Las columnas de una vista llegan como "puede ser null": se completan.
+    items: data.map((p) => ({
+      id: p.id ?? "",
+      name: p.name ?? "",
+      status: (p.status ?? "draft") as ProductStatus,
+      categoryName: p.category_name,
+      imageUrl: p.primary_image_path ? publicImageUrl(p.primary_image_path) : null,
+      minPrice: p.min_price ?? 0,
+      maxPrice: p.max_price ?? 0,
+      finalMinPrice: p.final_min_price ?? p.min_price ?? 0,
+      finalMaxPrice: p.final_max_price ?? p.max_price ?? 0,
+      discountActive: Boolean(p.discount_active),
+      variantCount: p.variant_count ?? 0,
+      hasVariants: Boolean(p.has_variants),
+      totalStock: p.total_stock ?? 0,
+      stockStatus: (p.stock_status ?? "ok") as StockStatus,
+      hasHistory: Boolean(p.has_history),
+    })),
+  };
 }
 
 // ---------------------------------------------------------------------

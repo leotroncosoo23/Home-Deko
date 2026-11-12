@@ -1,18 +1,4 @@
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-/** "← Productos", arriba de crear y editar. */
-export function BackToProducts() {
-  return (
-    <Link
-      href="/admin/productos"
-      className="-ml-1 flex w-fit items-center gap-0.5 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground"
-    >
-      <ChevronLeft className="size-4" aria-hidden /> Productos
-    </Link>
-  );
-}
 
 /** Lo que se ve mientras carga el formulario. */
 export function ProductFormSkeleton() {
