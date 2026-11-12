@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Etiquetas" };
 export default function LabelsPage() {
   return (
     <>
-      <PageHeader title={section.title} description={section.description} />
+      <PageHeader eyebrow={section.group} title={section.title} description={section.description} />
       <ComingSoon
         icon={section.icon}
         text="La cola de impresión y la vista previa del PDF A4 con los códigos de barras."

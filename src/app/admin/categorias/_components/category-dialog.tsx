@@ -144,7 +144,7 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         <Label htmlFor={`${ids}-slug`}>Slug (dirección en la tienda)</Label>
         <div
           className={cn(
-            "flex h-8 items-center overflow-hidden rounded-lg border border-input text-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
+            "flex h-8 items-center overflow-hidden rounded-lg border border-input text-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20",
             errors.slug && "border-destructive ring-3 ring-destructive/20",
           )}
         >

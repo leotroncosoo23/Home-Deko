@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Stock" };
 export default function StockPage() {
   return (
     <>
-      <PageHeader title={section.title} description={section.description} />
+      <PageHeader eyebrow={section.group} title={section.title} description={section.description} />
       <ComingSoon
         icon={section.icon}
         text="Ajustes de stock con motivo y el historial de movimientos de cada variante."

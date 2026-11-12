@@ -68,7 +68,15 @@
   --brand: #c92728;       /* Rojo Home Deko */
   --brand-hover: #a81f20; /* Rojo hover */
   --brand-soft: #fceaea;  /* Rojo suave: fondos de badges y avisos */
-  --surface: #fafafa;     /* Fondo general del panel */
+  /* Fondo general del panel: cálido y lo bastante marcado para que las
+     tarjetas blancas se distingan en cualquier monitor. (Se probó también
+     #ECE7E2: más beige, y el rojo de marca no llegaba al contraste mínimo
+     sobre él.) */
+  --surface: #eeeae6;
+
+  /* Sombra de las tarjetas: dos capas (una "de contacto" y una más difusa),
+     en el negro de marca. Visible sin verse pesada. */
+  --shadow-card: 0 1px 2px rgb(43 43 43 / 0.07), 0 6px 16px -6px rgb(43 43 43 / 0.14);
 
   --background: #ffffff;
   --foreground: #2b2b2b;  /* Negro de marca: texto principal */
@@ -78,15 +86,20 @@
   --popover-foreground: #2b2b2b;
   --primary: #2b2b2b;     /* Botones primarios del panel */
   --primary-foreground: #ffffff;
-  --secondary: #f5f5f5;   /* neutral-100 */
+  /* Grises con un toque cálido, que combinan con el fondo */
+  --secondary: #f6f3f0;
   --secondary-foreground: #2b2b2b;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373; /* neutral-500 */
-  --accent: #f5f5f5;
+  --muted: #f6f3f0;       /* fondos internos (selectores, miniaturas, esqueletos) */
+  /* Textos secundarios. Contraste (mínimo de accesibilidad para texto
+     chico: 4,5): 5,8 sobre blanco · 4,9 sobre el fondo del panel · 5,3
+     sobre los fondos grises internos. */
+  --muted-foreground: #6b645e;
+  --accent: #f6f3f0;
   --accent-foreground: #2b2b2b;
   --destructive: #c92728;
-  --border: #e5e5e5;      /* neutral-200 */
-  --input: #e5e5e5;
+  /* Bordes: tarjetas, barra lateral, barra superior y líneas finas */
+  --border: #ddd6cf;
+  --input: #d6cec6;       /* bordes de los campos (un poco más visibles que las tarjetas) */
   --ring: #c92728;        /* Foco en rojo de marca */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -136,6 +149,20 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ---------------------------------------------------------------------
+   Superficie de tarjeta (fondo blanco + borde fino + sombra suave).
+   La usan <Card> y todo lo que "es una tarjeta" sin serlo: listas de
+   categorías y productos, estados vacíos, esqueletos de carga.
+   Uso: className="surface-card"
+   --------------------------------------------------------------------- */
+@utility surface-card {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--shadow-card);
 }
 
 @layer base {

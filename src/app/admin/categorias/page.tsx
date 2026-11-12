@@ -23,6 +23,7 @@ export default function CategoriesPage() {
   return (
     <>
       <PageHeader
+        eyebrow={section.group}
         title={section.title}
         description={section.description}
         actions={<NewCategoryButton />}

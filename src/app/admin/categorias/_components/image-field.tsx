@@ -147,7 +147,7 @@ export function ImageField({
             void handleFile(e.dataTransfer.files?.[0]);
           }}
           className={cn(
-            "flex flex-col items-center gap-1.5 rounded-lg border border-dashed px-4 py-6 text-center transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60",
+            "flex flex-col items-center gap-1.5 rounded-lg border border-dashed px-4 py-6 text-center transition-colors outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60",
             dragOver && "border-foreground/40 bg-muted/60",
             message && "border-destructive/50",
           )}
