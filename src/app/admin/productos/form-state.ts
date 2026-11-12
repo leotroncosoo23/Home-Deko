@@ -208,12 +208,22 @@ export function toInput(values: ProductFormValues, id: string): ProductInput {
       minStock: parseInteger(v.minStock) ?? 0,
       initialStock: parseInteger(v.initialStock) ?? 0,
     })),
-    images: values.images.map((img) => ({
-      storagePath: img.storagePath,
-      isPrimary: img.isPrimary,
-      colorValueKey: img.colorValueKey,
-      altText: img.altText,
-    })),
+    // Solo las fotos ya subidas. La primera es la principal. El color, solo
+    // si ese valor sigue existiendo. El texto alternativo (para lectores de
+    // pantalla y Google) se arma solo: "Taza de cerámica – Rojo".
+    images: values.images
+      .filter((img) => img.storagePath && !img.uploading && !img.error)
+      .map((img, i) => {
+        const color = values.hasVariants
+          ? values.options.flatMap((o) => o.values).find((v) => v.key === img.colorValueKey)
+          : undefined;
+        return {
+          storagePath: img.storagePath,
+          isPrimary: i === 0,
+          colorValueKey: color ? color.key : null,
+          altText: (color ? `${values.name.trim()} – ${color.value}` : values.name.trim()).slice(0, 200),
+        };
+      }),
     discount: discountToInput(values.discount),
   };
 }

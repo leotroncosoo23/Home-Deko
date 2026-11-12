@@ -52,13 +52,23 @@ export type FormVariant = {
   savedLabel?: string;
 };
 
-/** Una imagen del producto (parte 5C). */
+/**
+ * Una imagen del producto (parte 5C). La PRIMERA de la lista es la
+ * principal (la que se ve en la tienda y en los listados).
+ */
 export type FormImage = {
+  /** Identificador para la pantalla (no cambia al subir). */
+  uid: string;
+  /** Ruta en Storage ("<id-producto>/<archivo>.webp"); vacía mientras sube. */
   storagePath: string;
+  /** URL pública (vacía mientras sube). */
   url: string;
-  isPrimary: boolean;
+  /** Vista previa local ("blob:") mientras sube. */
+  previewUrl: string | null;
+  uploading: boolean;
+  error: string | null;
+  /** Clave del valor de la opción Color al que corresponde (o null). */
   colorValueKey: string | null;
-  altText: string;
 };
 
 /** Descuento (parte 5D). Fechas en formato "AAAA-MM-DD" (o vacías). */
@@ -131,14 +141,27 @@ export type VariantCode = {
 /** Errores del formulario: clave = campo ("name", "variants.0.sku"…). */
 export type FormErrors = Record<string, string>;
 
+/**
+ * Cambio de campos: un objeto con los campos nuevos, o una función que
+ * recibe los valores MÁS RECIENTES (necesaria cuando el cambio llega más
+ * tarde, ej.: al terminar de subir una foto mientras se editaba otra cosa).
+ */
+export type FormUpdate = (
+  patch: Partial<ProductFormValues> | ((current: ProductFormValues) => Partial<ProductFormValues>),
+) => void;
+
 /** Lo que recibe cada tarjeta del formulario. */
 export type FormCardProps = {
   values: ProductFormValues;
   /** Cambia algunos campos (los demás quedan igual). */
-  update: (patch: Partial<ProductFormValues>) => void;
+  update: FormUpdate;
   errors: FormErrors;
   disabled: boolean;
 };
+
+export type UploadImageResult =
+  | { ok: true; storagePath: string; url: string }
+  | { ok: false; error: string };
 
 export type SaveProductResult =
   | { ok: true; id: string; updatedAt: string }

@@ -194,12 +194,20 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
     variants: formVariants.length ? formVariants : [defaultVariant()],
     images: p.product_images
       .sort((a, b) => a.position - b.position)
+      // La principal primero (en la pantalla, la primera ES la principal)
+      .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
       .map((img) => ({
+        uid: img.storage_path,
         storagePath: img.storage_path,
         url: publicImageUrl(img.storage_path),
-        isPrimary: img.is_primary,
-        colorValueKey: img.option_value_id,
-        altText: img.alt_text ?? "",
+        previewUrl: null,
+        uploading: false,
+        error: null,
+        // Solo si ese color sigue en las opciones que se muestran
+        colorValueKey:
+          img.option_value_id && options.some((o) => o.values.some((v) => v.key === img.option_value_id))
+            ? img.option_value_id
+            : null,
       })),
     excludedKeys: [],
     savedVariants: formVariants.map((v, i) => ({ ...v, savedLabel: codes[i]?.label })),

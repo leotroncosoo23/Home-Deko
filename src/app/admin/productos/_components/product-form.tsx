@@ -9,7 +9,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { saveProduct } from "../actions";
 import { emptyValues, toInput } from "../form-state";
 import { issuesToErrors, productInputSchema } from "../schema";
-import type { CategoryChoice, FormErrors, ProductFormValues } from "../types";
+import type { CategoryChoice, FormErrors, FormUpdate, ProductFormValues } from "../types";
+import { ImagesCard } from "./images-card";
 import { GeneralCard } from "./general-card";
 import { InventoryCard } from "./inventory-card";
 import { OrganizationCard } from "./organization-card";
@@ -43,7 +44,14 @@ export function ProductForm({
   const [pending, startTransition] = useTransition();
   const [pendingMode, setPendingMode] = useState<SaveMode>("save");
 
-  const update = (patch: Partial<ProductFormValues>) => {
+  const update: FormUpdate = (patchOrFn) => {
+    if (typeof patchOrFn === "function") {
+      // Cambio que llega "más tarde" (ej.: terminó de subir una foto):
+      // se aplica sobre los valores más recientes, sin pisar nada.
+      setValues((v) => ({ ...v, ...patchOrFn(v) }));
+      return;
+    }
+    const patch = patchOrFn;
     setValues((v) => ({ ...v, ...patch }));
     // Al tocar un campo con error, el error se va.
     const touched = Object.keys(patch);
@@ -65,6 +73,11 @@ export function ProductForm({
   }
 
   function save(mode: SaveMode) {
+    if (values.images.some((img) => img.uploading)) {
+      toast.info("Esperá a que terminen de subir las fotos.");
+      return;
+    }
+
     // El id se genera recién ahora (un producto nuevo todavía no tiene).
     // Se guarda en el estado: si algo falla y se reintenta, usa el mismo.
     const id = values.id ?? crypto.randomUUID();
@@ -154,6 +167,7 @@ export function ProductForm({
         {/* Columna principal */}
         <div className="flex min-w-0 flex-col gap-6">
           <GeneralCard {...cardProps} />
+          <ImagesCard {...cardProps} />
           <PricingCard {...cardProps} />
           <VariantsCard {...cardProps} />
           {/* Sin variantes: un solo stock y stock mínimo */}

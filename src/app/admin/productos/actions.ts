@@ -2,12 +2,11 @@
 
 import { refresh } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { IMAGES_BUCKET } from "@/lib/storage";
+import { IMAGES_BUCKET, publicImageUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/database.types";
 import { issuesToErrors, productInputSchema, type ProductInput } from "./schema";
-import type { SaveProductResult } from "./types";
-
+import type { SaveProductResult, UploadImageResult } from "./types";
 /**
  * Server Actions de Productos.
  * Todas: requireAdmin() → validar con zod → base (RLS) → refresh().
@@ -42,6 +41,62 @@ export async function saveProduct(rawInput: unknown): Promise<SaveProductResult>
 
   refresh();
   return { ok: true, id: result.id, updatedAt: result.updated_at };
+}
+
+// ---------------------------------------------------------------------
+// Imágenes (parte 5C)
+// ---------------------------------------------------------------------
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IMAGE_MAX_BYTES = 2 * 1024 * 1024; // llegan comprimidas (~100–300 KB)
+const IMAGE_TYPES: Record<string, string> = { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png" };
+
+/**
+ * Sube UNA foto a la carpeta del producto: product-images/<id>/<azar>.webp
+ * La foto queda en Storage, pero recién se "engancha" al producto cuando
+ * se guarda el formulario (save_product).
+ *
+ * FormData: productId, file (ya comprimida en el navegador)
+ */
+export async function uploadProductImage(formData: FormData): Promise<UploadImageResult> {
+  await requireAdmin();
+
+  const productId = String(formData.get("productId") ?? "");
+  const file = formData.get("file");
+  if (!UUID_PATTERN.test(productId)) return { ok: false, error: "Producto inválido." };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "No llegó la imagen." };
+  if (!(file.type in IMAGE_TYPES)) return { ok: false, error: "Tiene que ser JPG, PNG o WebP." };
+  if (file.size > IMAGE_MAX_BYTES) return { ok: false, error: "La imagen es demasiado pesada (máx. 2 MB)." };
+
+  // Nombre al azar: nunca pisa otra foto y evita que el navegador muestre una vieja.
+  const storagePath = `${productId}/${crypto.randomUUID()}.${IMAGE_TYPES[file.type]}`;
+  const supabase = await createClient();
+  const { error } = await supabase.storage
+    .from(IMAGES_BUCKET)
+    .upload(storagePath, file, { contentType: file.type, upsert: false });
+  if (error) return { ok: false, error: "No se pudo subir. Probá de nuevo." };
+
+  return { ok: true, storagePath, url: publicImageUrl(storagePath) };
+}
+
+/**
+ * Borra fotos que se subieron pero se quitaron ANTES de guardar (no están
+ * en la base). Las que ya estaban guardadas las borra saveProduct.
+ * Por seguridad: solo de la carpeta de ese producto y solo si la base no
+ * las usa.
+ */
+export async function discardProductImages(productId: string, paths: string[]): Promise<void> {
+  await requireAdmin();
+  if (!UUID_PATTERN.test(productId) || !Array.isArray(paths) || paths.length === 0 || paths.length > 50) return;
+
+  const inFolder = paths.filter((p) => typeof p === "string" && p.startsWith(`${productId}/`) && !p.includes(".."));
+  if (inFolder.length === 0) return;
+
+  const supabase = await createClient();
+  const { data: used } = await supabase.from("product_images").select("storage_path").in("storage_path", inFolder);
+  const usedSet = new Set((used ?? []).map((u) => u.storage_path));
+  const unused = inFolder.filter((p) => !usedSet.has(p));
+  if (unused.length > 0) await supabase.storage.from(IMAGES_BUCKET).remove(unused);
 }
 
 /** Del formato de la app (camelCase) al JSON que espera save_product. */
