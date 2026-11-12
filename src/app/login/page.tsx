@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext } from "@/lib/redirects";
 import { LoginForm } from "./login-form";
@@ -52,20 +50,7 @@ async function LoginContent({ searchParams }: Pick<PageProps<"/login">, "searchP
   if (user?.isAdmin) redirect(next);
 
   // Ya inició sesión, pero su cuenta no es admin
-  if (user) {
-    return (
-      <div className="flex flex-col gap-4 text-center text-sm">
-        <p className="text-muted-foreground">
-          Iniciaste sesión como <span className="font-medium text-foreground">{user.email}</span>,
-          que no tiene acceso al panel.
-        </p>
-        <SignOutButton className="h-10 w-full" />
-        <Link href="/" className="text-muted-foreground underline-offset-4 hover:underline">
-          Ir a la tienda
-        </Link>
-      </div>
-    );
-  }
+  if (user) redirect("/sin-acceso");
 
   return <LoginForm next={next} initialError={errorKey ? ERRORS[errorKey] : undefined} />;
 }

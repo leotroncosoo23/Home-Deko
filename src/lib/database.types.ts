@@ -476,6 +476,7 @@ export type Database = {
         Args: { p_confirmed_at: string; p_email: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
     }
