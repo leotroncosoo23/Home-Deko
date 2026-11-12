@@ -1,8 +1,10 @@
 "use client";
 
-import { Boxes, Info } from "lucide-react";
+import { Boxes, Info, SlidersHorizontal } from "lucide-react";
 import { SectionCard } from "@/components/admin/section-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAdjustStockDialog } from "../../stock/_components/adjust-stock-dialog";
 import type { FormCardProps, FormVariant } from "../types";
 import { Field, fieldProps } from "./field";
 import { QuantityInput } from "./number-inputs";
@@ -11,9 +13,12 @@ import { QuantityInput } from "./number-inputs";
  * Inventario de un producto SIN variantes: su única variante.
  * (Con variantes, esto lo maneja la tabla de combinaciones, parte 5B.)
  */
-export function InventoryCard({ values, update, errors, disabled }: FormCardProps) {
+export function InventoryCard({ values, update, errors, disabled, liveStock }: FormCardProps) {
   const variant = values.variants[0];
   const isExisting = variant.id !== null;
+  const adjust = useAdjustStockDialog();
+  // El stock real (se actualiza al ajustar) o, si no llegó, el de la carga
+  const stock = (variant.id && liveStock[variant.id]) ?? variant.stock ?? 0;
   const err = (field: keyof FormVariant) => errors[`variants.0.${field}`];
 
   function change(patch: Partial<FormVariant>) {
@@ -30,11 +35,22 @@ export function InventoryCard({ values, update, errors, disabled }: FormCardProp
       {isExisting ? (
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Stock actual</span>
-          <span className="flex h-8 items-center text-lg font-semibold tabular-nums">{variant.stock ?? 0}</span>
+          <div className="flex h-8 items-center gap-3">
+            <span className="text-lg font-semibold tabular-nums">{stock}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => values.id && adjust.openFor(values.id, values.name, variant.id ?? undefined)}
+            >
+              <SlidersHorizontal /> Ajustar stock
+            </Button>
+          </div>
           <p className="flex gap-1 text-xs text-muted-foreground">
             <Info className="mt-px size-3 shrink-0" aria-hidden />
-            Se cambia con «Ajustar stock» (próximamente).
+            Ingresos, ventas, roturas o correcciones.
           </p>
+          {adjust.dialog}
         </div>
       ) : (
         <Field

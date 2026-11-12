@@ -12,7 +12,7 @@ import { SidebarNav } from "./sidebar-nav";
  * como un panel deslizable desde la izquierda. Se cierra solo al elegir
  * una sección.
  */
-export function MobileNav() {
+export function MobileNav({ badges }: { badges?: Record<string, number> }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,7 +34,7 @@ export function MobileNav() {
           <Logo variant="horizontal" />
         </div>
         <div className="p-3">
-          <SidebarNav onNavigate={() => setOpen(false)} />
+          <SidebarNav onNavigate={() => setOpen(false)} badges={badges} />
         </div>
       </SheetContent>
     </Sheet>

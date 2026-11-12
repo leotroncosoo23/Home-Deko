@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { deleteProduct, setProductsCategory, setProductsStatus } from "../actions";
 import { DEFAULT_PARAMS, hasFilters, toQueryString, type ListParams } from "../list-params";
 import type { CategoryChoice, ListActionResult, ProductListItem, ProductListPage } from "../types";
+import { useAdjustStockDialog } from "../../stock/_components/adjust-stock-dialog";
 import { ArchiveDialog, ChangeCategoryDialog, DeleteProductDialog } from "./list-dialogs";
 import { BulkActionsBar, NoProducts, NoResults, Pagination } from "./list-parts";
 import { rememberListUrl } from "./list-url";
@@ -100,8 +101,12 @@ export function ProductsBrowser({
       await run(action);
     });
 
+  // "Ajustar stock" (el diálogo compartido con Stock)
+  const adjust = useAdjustStockDialog();
+
   function handleRowAction({ type, item }: RowAction) {
-    if (type === "archive") openDialog({ type: "archive", ids: [item.id], names: [item.name] });
+    if (type === "stock") adjust.openFor(item.id, item.name);
+    else if (type === "archive") openDialog({ type: "archive", ids: [item.id], names: [item.name] });
     else if (type === "unarchive") runNow(() => setProductsStatus([item.id], "draft"));
     else openDialog({ type: "delete", item });
   }
@@ -172,6 +177,7 @@ export function ProductsBrowser({
       </div>
 
       {/* ----- Diálogos ----- */}
+      {adjust.dialog}
       <ArchiveDialog
         open={dialogOpen && dialog?.type === "archive"}
         onOpenChange={setDialogOpen}

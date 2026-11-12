@@ -43,11 +43,14 @@ export function ProductForm({
   initialValues,
   categories,
   aside,
+  liveStock = {},
 }: {
   initialValues: ProductFormValues;
   categories: CategoryChoice[];
   /** Contenido extra para la columna derecha (ej.: tarjeta "Códigos"). */
   aside?: React.ReactNode;
+  /** Stock actual por variante (en la edición). Ver FormCardProps.liveStock. */
+  liveStock?: Record<string, number>;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -166,7 +169,7 @@ export function ProductForm({
 
   // Errores que no son de un campo puntual (ej.: "tiene que haber una combinación")
   const generalErrors = ["_form", "variants", "options"].map((k) => errors[k]).filter(Boolean);
-  const cardProps = { values, update, errors, disabled: pending };
+  const cardProps = { values, update, errors, disabled: pending, liveStock };
 
   return (
     <form

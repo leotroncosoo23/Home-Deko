@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, ArchiveRestore, Copy, ImageIcon, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, ImageIcon, MoreHorizontal, Pencil, SlidersHorizontal, Trash2 } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +17,7 @@ import type { ProductListItem } from "../types";
 import { PriceCell, StockCell, variantsText } from "./list-cells";
 import { StatusBadge } from "./status-badge";
 
-export type RowAction = { type: "archive" | "unarchive" | "delete"; item: ProductListItem };
+export type RowAction = { type: "stock" | "archive" | "unarchive" | "delete"; item: ProductListItem };
 
 /**
  * La lista de productos: en PC una tabla, en el celular una tarjeta por
@@ -170,6 +170,11 @@ function RowMenu({ item, href, onAction }: { item: ProductListItem; href: string
         <DropdownMenuItem render={<Link href={`/admin/productos/nuevo?duplicar=${item.id}`} />}>
           <Copy /> Duplicar
         </DropdownMenuItem>
+        {!archived && (
+          <DropdownMenuItem onClick={() => onAction({ type: "stock", item })}>
+            <SlidersHorizontal /> Ajustar stock
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {archived ? (
           <DropdownMenuItem onClick={() => onAction({ type: "unarchive", item })}>

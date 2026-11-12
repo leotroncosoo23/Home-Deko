@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isNavItemActive } from "./nav-items";
 
-type NavProps = { onNavigate?: () => void };
+type NavProps = {
+  onNavigate?: () => void;
+  /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). */
+  badges?: Record<string, number>;
+};
 
 /**
  * Lista de secciones del panel. Se usa en la barra lateral fija (PC) y en
@@ -36,13 +40,14 @@ function ActiveNav(props: NavProps) {
   return <NavLinks pathname={pathname} {...props} />;
 }
 
-function NavLinks({ pathname, onNavigate }: NavProps & { pathname: string | null }) {
+function NavLinks({ pathname, onNavigate, badges }: NavProps & { pathname: string | null }) {
   return (
     <nav aria-label="Secciones del panel">
       <ul className="flex flex-col gap-0.5">
         {NAV_ITEMS.map((item) => {
           const active = pathname !== null && isNavItemActive(item.href, pathname);
           const Icon = item.icon;
+          const badge = badges?.[item.href] ?? 0;
           return (
             <li key={item.href}>
               <Link
@@ -72,6 +77,15 @@ function NavLinks({ pathname, onNavigate }: NavProps & { pathname: string | null
                   )}
                 />
                 {item.title}
+                {badge > 0 && (
+                  <span
+                    className="ml-auto min-w-5 rounded-full bg-brand-soft px-1.5 py-px text-center text-xs font-semibold text-brand tabular-nums"
+                    aria-label={`${badge} para reponer`}
+                    title={`${badge} ${badge === 1 ? "variante" : "variantes"} para reponer`}
+                  >
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </Link>
             </li>
           );

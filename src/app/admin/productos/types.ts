@@ -179,6 +179,12 @@ export type FormCardProps = {
   update: FormUpdate;
   errors: FormErrors;
   disabled: boolean;
+  /**
+   * Stock ACTUAL de cada variante guardada (id → stock), que llega aparte
+   * de los datos del formulario: así, al ajustar el stock, los números se
+   * actualizan sin borrar lo que se está editando. Vacío en un producto nuevo.
+   */
+  liveStock: Record<string, number>;
 };
 
 export type UploadImageResult =

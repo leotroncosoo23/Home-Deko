@@ -75,7 +75,8 @@ export function VariantsCard(props: FormCardProps) {
 
   // ----- Aviso: combinaciones guardadas con stock que se quitarían -------
   const currentKeys = new Set(values.variants.map((v) => v.key));
-  const lostWithStock = values.savedVariants.filter((v) => (v.stock ?? 0) > 0 && !currentKeys.has(v.key));
+  const stockOf = (v: { id: string | null; stock: number | null }) => (v.id ? (props.liveStock[v.id] ?? v.stock ?? 0) : 0);
+  const lostWithStock = values.savedVariants.filter((v) => stockOf(v) > 0 && !currentKeys.has(v.key));
 
   return (
     <SectionCard
@@ -106,7 +107,7 @@ export function VariantsCard(props: FormCardProps) {
             <p className="font-medium">Así no se va a poder guardar</p>
             <p>
               Se quitarían variantes que todavía tienen stock:{" "}
-              {lostWithStock.map((v) => `${v.savedLabel ?? "variante"} (${v.stock})`).join(", ")}. Primero
+              {lostWithStock.map((v) => `${v.savedLabel ?? "variante"} (${stockOf(v)})`).join(", ")}. Primero
               ajustá su stock a 0, o volvé a agregarlas.
             </p>
           </div>
