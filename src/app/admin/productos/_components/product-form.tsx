@@ -10,14 +10,27 @@ import { saveProduct } from "../actions";
 import { emptyValues, toInput } from "../form-state";
 import { issuesToErrors, productInputSchema } from "../schema";
 import type { CategoryChoice, FormErrors, FormUpdate, ProductFormValues } from "../types";
+import { DiscountCard } from "./discount-card";
 import { ImagesCard } from "./images-card";
 import { GeneralCard } from "./general-card";
+import { useUnsavedWarning } from "./use-unsaved-warning";
 import { InventoryCard } from "./inventory-card";
 import { OrganizationCard } from "./organization-card";
 import { PricingCard } from "./pricing-card";
 import { VariantsCard } from "./variants-card";
 
 type SaveMode = "save" | "save-and-new";
+
+/**
+ * "Foto" de los datos que importan, para saber si algo cambió.
+ * Usa toInput (lo que se enviaría al guardar), así detalles como
+ * "15000" vs "15.000" no cuentan como cambio. Las fotos que todavía
+ * están subiendo sí cuentan.
+ */
+function snapshot(values: ProductFormValues): string {
+  const data = toInput(values, "");
+  return JSON.stringify({ ...data, expectedUpdatedAt: null, imageCount: values.images.length });
+}
 
 /**
  * Formulario de producto: el mismo para crear y para editar.
@@ -43,6 +56,12 @@ export function ProductForm({
   const [formKey, setFormKey] = useState(0);
   const [pending, startTransition] = useTransition();
   const [pendingMode, setPendingMode] = useState<SaveMode>("save");
+
+  // ¿Hay cambios sin guardar? Se compara con cómo estaba al abrir (o al
+  // empezar uno nuevo con "Guardar y cargar otro").
+  const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot(initialValues));
+  const dirty = snapshot(values) !== savedSnapshot;
+  const { allowLeave } = useUnsavedWarning(dirty);
 
   const update: FormUpdate = (patchOrFn) => {
     if (typeof patchOrFn === "function") {
@@ -119,14 +138,18 @@ export function ProductForm({
           });
           if (values.isNew) {
             // Formulario limpio, conservando categoría y estado.
-            setValues(emptyValues({ categoryId: values.categoryId, status: values.status }));
+            const fresh = emptyValues({ categoryId: values.categoryId, status: values.status });
+            setValues(fresh);
+            setSavedSnapshot(snapshot(fresh));
             setFormKey((k) => k + 1);
             window.scrollTo({ top: 0, behavior: "smooth" });
           } else {
+            allowLeave();
             router.push("/admin/productos/nuevo");
           }
         } else if (values.isNew) {
           toast.success("Producto creado");
+          allowLeave();
           router.push(`/admin/productos/${result.id}`);
         } else {
           // La página se vuelve a cargar sola con los datos nuevos (refresh).
@@ -169,6 +192,7 @@ export function ProductForm({
           <GeneralCard {...cardProps} />
           <ImagesCard {...cardProps} />
           <PricingCard {...cardProps} />
+          <DiscountCard {...cardProps} />
           <VariantsCard {...cardProps} />
           {/* Sin variantes: un solo stock y stock mínimo */}
           {!values.hasVariants && <InventoryCard {...cardProps} />}

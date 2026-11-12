@@ -3,7 +3,8 @@ import { requireAdmin } from "@/lib/auth";
 import { formatMoneyInput } from "@/lib/format";
 import { publicImageUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
-import { defaultVariant, isoToArgentinaDay } from "./form-state";
+import { slugify } from "@/lib/slug";
+import { allCombinations, combinationKey, defaultVariant, isoToArgentinaDay } from "./form-state";
 import type {
   CategoryChoice,
   FormOption,
@@ -225,4 +226,77 @@ export async function getProductForEdit(id: string): Promise<ProductForEdit | nu
   };
 
   return { values, codes, name: p.name, status: p.status as ProductStatus, updatedAt: p.updated_at };
+}
+
+// ---------------------------------------------------------------------
+// Duplicar (parte 5D)
+// ---------------------------------------------------------------------
+
+/**
+ * Un producto existente como punto de partida para uno NUEVO: copia todo
+ * menos el stock, los SKU, los códigos de barras y las fotos (esas son de
+ * cada producto). Queda en Borrador, con "(copia)" en el nombre y un slug
+ * libre.
+ */
+export async function getProductCopy(id: string): Promise<{ values: ProductFormValues; sourceName: string } | null> {
+  const original = await getProductForEdit(id); // ya hace requireAdmin()
+  if (!original) return null;
+  const v = original.values;
+
+  const name = `${v.name} (copia)`.slice(0, 120);
+  const options = v.options.map((o) => ({
+    ...o,
+    id: null,
+    values: o.values.map((val) => ({ ...val, id: null })),
+  }));
+  const variants = v.variants.map((variant) => ({
+    ...variant,
+    id: null,
+    sku: "",
+    initialStock: "",
+    stock: null,
+    barcode: null,
+    savedLabel: undefined,
+  }));
+  // Las combinaciones que el original no tiene ("no existe Rojo / 500 ml")
+  // se marcan como quitadas, para que la copia arranque igual.
+  const present = new Set(variants.map((x) => x.key));
+  const excludedKeys = v.hasVariants
+    ? allCombinations(options).map(combinationKey).filter((key) => !present.has(key))
+    : [];
+
+  return {
+    sourceName: v.name,
+    values: {
+      ...v,
+      id: null,
+      isNew: true,
+      expectedUpdatedAt: null,
+      name,
+      slug: await freeSlug(slugify(`${v.slug}-copia`)),
+      status: "draft",
+      options,
+      variants,
+      images: [],
+      excludedKeys,
+      savedVariants: [],
+      stashedSimple: null,
+      stashedVariants: null,
+    },
+  };
+}
+
+/** "taza-copia" si está libre; si no, "taza-copia-2", "taza-copia-3"… */
+async function freeSlug(slug: string): Promise<string> {
+  // Dejar lugar para "-999" sin pasar el máximo de 80 caracteres
+  const base = slug.slice(0, 76).replace(/-+$/, "");
+  const supabase = await createClient();
+  const { data } = await supabase.from("products").select("slug").like("slug", `${base}%`);
+  const taken = new Set((data ?? []).map((p) => p.slug));
+  if (!taken.has(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
 }

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Copy } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryChoices, getProductForEdit } from "../data";
 import { CodesCard } from "../_components/codes-card";
@@ -43,7 +46,14 @@ async function EditProduct({ id }: { id: string }) {
     <>
       <PageHeader
         title={product.name}
-        actions={<StatusBadge status={product.status} />}
+        actions={
+          <>
+            <StatusBadge status={product.status} />
+            <Link href={`/admin/productos/nuevo?duplicar=${id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Copy /> Duplicar
+            </Link>
+          </>
+        }
       />
       {/* key: cuando se guarda, la página trae datos nuevos (otra fecha de
           actualización) y el formulario se rearma con ellos. */}
