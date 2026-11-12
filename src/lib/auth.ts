@@ -43,13 +43,18 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 });
 
 /**
- * Para usar al principio de las Server Actions del panel (guardar producto,
- * ajustar stock, etc.): si no es admin, corta con un error.
+ * Verificación de admin para los DATOS del panel. Usarla:
+ *   - al principio de cada Server Action del panel (guardar, ajustar stock…)
+ *   - en cada componente/función que lea datos del panel (dentro de <Suspense>)
  *
- * No usarla en páginas de /admin: ahí el control lo hace el layout, y una
- * redirección desde la página puede generar un bucle.
+ * Esquema de seguridad del panel:
+ *   1. src/proxy.ts → redirige según el rol del token (rápido, puede tener
+ *      hasta ~1 h de atraso).
+ *   2. requireAdmin() → lee el rol de la BASE en el momento.
+ *   3. RLS en la base → la última barrera, aunque todo lo demás fallara.
  *
- * (La base igual lo protege con RLS; esto es para dar un error claro antes.)
+ * El layout de /admin NO controla el acceso: un layout no impide que la
+ * página se ejecute, y si "esconde" la página, Next no puede pre-armarla.
  */
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await getCurrentUser();
