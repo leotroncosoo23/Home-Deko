@@ -7,9 +7,19 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /* Tipografías (se cargan en src/app/layout.tsx con next/font).
+     Inter y Playfair Display son temporales: cuando estén los archivos y la
+     licencia web de Gabriel Sans y Frunchy Sage, se cambian solo en layout.tsx. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+
+  /* Colores de marca → clases bg-brand, text-brand, bg-brand-soft, bg-surface, etc. */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-surface: var(--surface);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,25 +58,36 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------------------------------------------------------------------
+   Paleta oficial Home Deko (ver CLAUDE.md → Diseño e identidad visual)
+   - Rojo de marca SOLO como acento (logo, foco, ítem activo, indicadores).
+   - Botones primarios en negro de marca, no en rojo.
+   --------------------------------------------------------------------- */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Marca */
+  --brand: #c92728;       /* Rojo Home Deko */
+  --brand-hover: #a81f20; /* Rojo hover */
+  --brand-soft: #fceaea;  /* Rojo suave: fondos de badges y avisos */
+  --surface: #fafafa;     /* Fondo general del panel */
+
+  --background: #ffffff;
+  --foreground: #2b2b2b;  /* Negro de marca: texto principal */
+  --card: #ffffff;
+  --card-foreground: #2b2b2b;
+  --popover: #ffffff;
+  --popover-foreground: #2b2b2b;
+  --primary: #2b2b2b;     /* Botones primarios del panel */
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;   /* neutral-100 */
+  --secondary-foreground: #2b2b2b;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373; /* neutral-500 */
+  --accent: #f5f5f5;
+  --accent-foreground: #2b2b2b;
+  --destructive: #c92728;
+  --border: #e5e5e5;      /* neutral-200 */
+  --input: #e5e5e5;
+  --ring: #c92728;        /* Foco en rojo de marca */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
