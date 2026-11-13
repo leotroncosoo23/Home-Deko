@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import { SectionCard } from "@/components/admin/section-card";
 import { Button } from "@/components/ui/button";
+import { FloatingPanel } from "@/components/ui/floating-panel";
 import { parseInteger } from "@/lib/format";
 import { adjustVariantStock, searchVariants } from "../actions";
 import { variantFullName, type VariantStock } from "../types";
@@ -38,6 +39,8 @@ export function QuickIntake() {
   const [done, setDone] = useState<Done[]>([]);
   // Para descartar respuestas viejas si se escribe rápido
   const lastQuery = useRef("");
+  // Contenedor del buscador: la lista de resultados flota pegada a él
+  const [searchBox, setSearchBox] = useState<HTMLElement | null>(null);
 
   function runSearch(query: string, pickExact: boolean) {
     lastQuery.current = query;
@@ -111,7 +114,8 @@ export function QuickIntake() {
       contentClassName="flex flex-col gap-4"
     >
       {!selected ? (
-        <div className="relative">
+        // La lista de resultados se ancla a este contenedor (mismo ancho)
+        <div ref={setSearchBox} className="relative">
           <ScanBarcode className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input
             ref={searchRef}
@@ -123,12 +127,12 @@ export function QuickIntake() {
               timer.current = setTimeout(() => runSearch(value, false), 250);
             }}
             onKeyDown={(e) => {
-              if (e.key === "ArrowDown" && results.length) {
+              if ((e.key === "ArrowDown" || e.key === "ArrowUp") && results.length) {
                 e.preventDefault();
-                setHighlight((h) => (h + 1) % results.length);
-              } else if (e.key === "ArrowUp" && results.length) {
-                e.preventDefault();
-                setHighlight((h) => (h - 1 + results.length) % results.length);
+                const next = (highlight + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
+                setHighlight(next);
+                // Que el marcado quede a la vista si la lista tiene scroll
+                document.getElementById(`intake-${results[next].variantId}`)?.scrollIntoView({ block: "nearest" });
               } else if (e.key === "Enter") {
                 e.preventDefault();
                 if (timer.current) clearTimeout(timer.current);
@@ -155,37 +159,42 @@ export function QuickIntake() {
             <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden />
           )}
 
-          {results.length > 0 && (
-            <ul
-              id="intake-results"
-              role="listbox"
-              className="absolute inset-x-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg"
-            >
-              {results.map((v, i) => (
-                <li
-                  key={v.variantId}
-                  id={`intake-${v.variantId}`}
-                  role="option"
-                  aria-selected={i === highlight}
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // que el clic no le saque el foco al buscador
-                    select(v);
-                  }}
-                  onMouseEnter={() => setHighlight(i)}
-                  className={cn("flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5", i === highlight && "bg-muted")}
-                >
-                  <Thumb url={v.imageUrl} />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-medium">{v.productName}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {v.variantLabel ?? "Única"} · {v.sku ?? v.barcode}
-                    </span>
+          {/* Flota por encima de todo (no la recorta la tarjeta) */}
+          <FloatingPanel
+            anchor={searchBox}
+            open={results.length > 0}
+            onDismiss={() => setResults([])}
+            id="intake-results"
+            role="listbox"
+            aria-label="Resultados"
+          >
+            {results.map((v, i) => (
+              <div
+                key={v.variantId}
+                id={`intake-${v.variantId}`}
+                role="option"
+                aria-selected={i === highlight}
+                // mousedown: que tocar la lista no le saque el foco al buscador;
+                // click: elige (funciona igual con el mouse y con el dedo)
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => select(v)}
+                onMouseEnter={() => setHighlight(i)}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 sm:py-1.5",
+                  i === highlight && "bg-muted",
+                )}
+              >
+                <Thumb url={v.imageUrl} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm font-medium">{v.productName}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {v.variantLabel ?? "Única"} · {v.sku ?? v.barcode}
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">stock {v.stock}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">stock {v.stock}</span>
+              </div>
+            ))}
+          </FloatingPanel>
         </div>
       ) : (
         <form
