@@ -68,6 +68,48 @@ export type Database = {
         }
         Relationships: []
       }
+      label_queue: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          quantity: number
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          quantity: number
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          quantity?: number
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_costs: {
         Row: {
           cost_price: number
@@ -88,6 +130,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_costs_product_id_fkey"
             columns: ["product_id"]
@@ -152,6 +201,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "product_option_values"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "product_images_product_id_fkey"
@@ -244,6 +300,13 @@ export type Database = {
             foreignKeyName: "product_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "admin_products"
             referencedColumns: ["id"]
           },
@@ -307,6 +370,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]
@@ -542,6 +612,37 @@ export type Database = {
       }
     }
     Views: {
+      admin_label_queue: {
+        Row: {
+          barcode: string | null
+          image_path: string | null
+          position: number | null
+          product_id: string | null
+          product_name: string | null
+          quantity: number | null
+          queued_at: string | null
+          sku: string | null
+          stock: number | null
+          variant_id: string | null
+          variant_label: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_products: {
         Row: {
           base_price: number | null
@@ -601,6 +702,13 @@ export type Database = {
           variant_label: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]

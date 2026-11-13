@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { deleteProduct, setProductsCategory, setProductsStatus } from "../actions";
 import { DEFAULT_PARAMS, hasFilters, toQueryString, type ListParams } from "../list-params";
 import type { CategoryChoice, ListActionResult, ProductListItem, ProductListPage } from "../types";
+import { useAddLabelsDialog } from "../../etiquetas/_components/add-labels-dialog";
 import { useAdjustStockDialog } from "../../stock/_components/adjust-stock-dialog";
 import { ArchiveDialog, ChangeCategoryDialog, DeleteProductDialog } from "./list-dialogs";
 import { BulkActionsBar, NoProducts, NoResults, Pagination } from "./list-parts";
@@ -103,6 +104,8 @@ export function ProductsBrowser({
 
   // "Ajustar stock" (el diálogo compartido con Stock)
   const adjust = useAdjustStockDialog();
+  // "Imprimir etiquetas" (el diálogo compartido con la edición del producto)
+  const labels = useAddLabelsDialog();
 
   function handleRowAction({ type, item }: RowAction) {
     if (type === "stock") adjust.openFor(item.id, item.name);
@@ -137,6 +140,14 @@ export function ProductsBrowser({
           onUnarchive={() =>
             runNow(() => setProductsStatus(selectedItems.filter((i) => i.status === "archived").map((i) => i.id), "draft"))
           }
+          onLabels={() => {
+            // Los archivados no llevan etiquetas (no se venden)
+            const items = selectedItems.filter((i) => i.status !== "archived");
+            labels.openFor(
+              items.map((i) => i.id),
+              items.length === 1 ? items[0].name : `${items.length} productos`,
+            );
+          }}
           onClear={() => setSelected(new Set())}
         />
       )}
@@ -178,6 +189,7 @@ export function ProductsBrowser({
 
       {/* ----- Diálogos ----- */}
       {adjust.dialog}
+      {labels.dialog}
       <ArchiveDialog
         open={dialogOpen && dialog?.type === "archive"}
         onOpenChange={setDialogOpen}

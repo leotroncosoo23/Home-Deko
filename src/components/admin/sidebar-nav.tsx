@@ -8,7 +8,7 @@ import { NAV_ITEMS, isNavItemActive } from "./nav-items";
 
 type NavProps = {
   onNavigate?: () => void;
-  /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). */
+  /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). Ver badgeLabel en nav-items.ts. */
   badges?: Record<string, number>;
 };
 
@@ -80,8 +80,8 @@ function NavLinks({ pathname, onNavigate, badges }: NavProps & { pathname: strin
                 {badge > 0 && (
                   <span
                     className="ml-auto min-w-5 rounded-full bg-brand-soft px-1.5 py-px text-center text-xs font-semibold text-brand tabular-nums"
-                    aria-label={`${badge} para reponer`}
-                    title={`${badge} ${badge === 1 ? "variante" : "variantes"} para reponer`}
+                    aria-label={item.badgeLabel?.(badge) ?? String(badge)}
+                    title={item.badgeLabel?.(badge)}
                   >
                     {badge > 99 ? "99+" : badge}
                   </span>
