@@ -12,6 +12,7 @@ import { BackToProducts } from "../_components/back-to-products";
 import { ProductFormSkeleton } from "../_components/form-skeleton";
 import { ProductForm } from "../_components/product-form";
 import { StatusBadge } from "../_components/status-badge";
+import { ProductStockHistory } from "../../stock/_components/product-stock-history";
 
 export const metadata: Metadata = { title: "Editar producto" };
 
@@ -63,8 +64,12 @@ async function EditProduct({ id }: { id: string }) {
         key={product.updatedAt}
         initialValues={product.values}
         categories={categories}
-        aside={<CodesCard codes={product.codes} />}
+        aside={<CodesCard codes={product.codes} productId={id} productName={product.name} />}
+        liveStock={Object.fromEntries(product.codes.map((c) => [c.id, c.stock]))}
       />
+      <Suspense fallback={<Skeleton className="h-48 rounded-xl" />}>
+        <ProductStockHistory productId={id} />
+      </Suspense>
     </>
   );
 }

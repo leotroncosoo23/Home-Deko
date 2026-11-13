@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { MobileNav } from "@/components/admin/mobile-nav";
+import { MobileNavWithCounts, SidebarNavWithCounts } from "@/components/admin/nav-with-counts";
 import { SidebarNav } from "@/components/admin/sidebar-nav";
 import { UserMenu, UserMenuSkeleton } from "@/components/admin/user-menu";
 
@@ -32,14 +33,19 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
-          <SidebarNav />
+          {/* Con contadores (ej.: Stock 4). Mientras cargan: la barra sin ellos */}
+          <Suspense fallback={<SidebarNav />}>
+            <SidebarNavWithCounts />
+          </Suspense>
         </div>
       </aside>
 
       {/* ---------- Columna principal ---------- */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80 sm:px-6">
-          <MobileNav />
+          <Suspense fallback={<MobileNav />}>
+            <MobileNavWithCounts />
+          </Suspense>
           {/* En celular el logo va en la barra superior */}
           <Link href="/admin" aria-label="Home Deko — Inicio del panel" className="lg:hidden">
             <Logo variant="horizontal" className="text-lg" />

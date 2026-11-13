@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, RotateCcw, Trash2, Wand2 } from "lucide-react";
+import { Lock, RotateCcw, SlidersHorizontal, Trash2, Wand2 } from "lucide-react";
+import { useAdjustStockDialog } from "../../stock/_components/adjust-stock-dialog";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,11 @@ import { MoneyInput, QuantityInput } from "./number-inputs";
  *
  * En PC es una tabla; en el celular, una tarjeta por combinación.
  */
-export function CombinationsTable({ values, update, errors, disabled }: FormCardProps) {
+export function CombinationsTable({ values, update, errors, disabled, liveStock }: FormCardProps) {
   const { variants, options } = values;
+  const adjust = useAdjustStockDialog();
+  // Stock real de una variante guardada (se actualiza al ajustar)
+  const stockOf = (v: FormVariant) => (v.id ? (liveStock[v.id] ?? v.stock ?? 0) : 0);
   const [showCosts, setShowCosts] = useState(() => variants.some((v) => v.costPrice !== ""));
 
   function changeVariant(index: number, patch: Partial<FormVariant>) {
@@ -106,7 +110,7 @@ export function CombinationsTable({ values, update, errors, disabled }: FormCard
             const label = variantLabel(v.valueKeys, options);
             const color = variantColor(v.valueKeys, options);
             const err = (field: string) => errors[`variants.${i}.${field}`];
-            const hasStock = v.id !== null && (v.stock ?? 0) > 0;
+            const hasStock = v.id !== null && stockOf(v) > 0;
             return (
               <li
                 key={v.key}
@@ -126,9 +130,17 @@ export function CombinationsTable({ values, update, errors, disabled }: FormCard
                 {/* Stock inicial (nueva) o stock actual (existente) */}
                 <Cell label={v.id ? "Stock" : "Stock inicial"} error={err("initialStock")}>
                   {v.id ? (
-                    <span className="flex h-8 items-center justify-end text-sm font-medium tabular-nums" title="Se cambia con «Ajustar stock»">
-                      {v.stock ?? 0}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => values.id && adjust.openFor(values.id, values.name, v.id ?? undefined)}
+                      disabled={disabled}
+                      title="Ajustar el stock"
+                      aria-label={`Stock de ${label}: ${stockOf(v)}. Ajustar`}
+                      className="flex h-8 w-full items-center justify-end gap-1.5 rounded-md px-2 text-sm font-medium tabular-nums outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
+                    >
+                      {stockOf(v)}
+                      <SlidersHorizontal className="size-3.5 text-muted-foreground" aria-hidden />
+                    </button>
                   ) : (
                     <QuantityInput
                       value={v.initialStock}
@@ -211,6 +223,8 @@ export function CombinationsTable({ values, update, errors, disabled }: FormCard
           })}
         </ul>
       </div>
+
+      {adjust.dialog}
 
       {removed.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

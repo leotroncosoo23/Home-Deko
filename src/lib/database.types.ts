@@ -99,6 +99,13 @@ export type Database = {
             foreignKeyName: "product_costs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -152,6 +159,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "admin_products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "product_images_product_id_fkey"
@@ -237,6 +251,13 @@ export type Database = {
             foreignKeyName: "product_options_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -292,6 +313,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "admin_products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "product_variants_product_id_fkey"
@@ -427,6 +455,13 @@ export type Database = {
             foreignKeyName: "stock_movements_variant_id_fkey"
             columns: ["variant_id"]
             isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
@@ -456,6 +491,13 @@ export type Database = {
             foreignKeyName: "variant_costs_variant_id_fkey"
             columns: ["variant_id"]
             isOneToOne: true
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "variant_costs_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
@@ -481,6 +523,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "product_option_values"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variant_option_values_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
           },
           {
             foreignKeyName: "variant_option_values_variant_id_fkey"
@@ -532,6 +581,84 @@ export type Database = {
           },
         ]
       }
+      admin_stock_movements: {
+        Row: {
+          author_name: string | null
+          barcode: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          note: string | null
+          order_id: string | null
+          product_id: string | null
+          product_name: string | null
+          quantity: number | null
+          reason: Database["public"]["Enums"]["stock_reason"] | null
+          search_text: string | null
+          sku: string | null
+          stock_after: number | null
+          variant_id: string | null
+          variant_label: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_variant_stock: {
+        Row: {
+          barcode: string | null
+          category_name: string | null
+          image_path: string | null
+          is_default: boolean | null
+          min_stock: number | null
+          position: number | null
+          product_id: string | null
+          product_name: string | null
+          product_status: Database["public"]["Enums"]["product_status"] | null
+          product_updated_at: string | null
+          search_text: string | null
+          sku: string | null
+          stock: number | null
+          stock_status: string | null
+          variant_id: string | null
+          variant_label: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adjust_stock: {
@@ -547,6 +674,10 @@ export type Database = {
       compute_role: {
         Args: { p_confirmed_at: string; p_email: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      count_stock: {
+        Args: { p_counted: number; p_note?: string; p_variant_id: string }
+        Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_product: { Args: { p_id: string }; Returns: Json }
