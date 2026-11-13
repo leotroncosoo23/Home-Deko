@@ -18,6 +18,7 @@ export function BulkActionsBar({
   onCategory,
   onArchive,
   onUnarchive,
+  onLabels,
   onClear,
 }: {
   count: number;
@@ -29,6 +30,7 @@ export function BulkActionsBar({
   onCategory: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
+  onLabels: () => void;
   onClear: () => void;
 }) {
   return (
@@ -63,10 +65,12 @@ export function BulkActionsBar({
           <ArchiveRestore /> Desarchivar
         </BarButton>
       )}
-      {/* Se conecta a la cola de impresión en el paso 9 (Etiquetas) */}
-      <BarButton disabled title="Disponible cuando esté la sección Etiquetas">
-        <Printer /> Imprimir etiquetas
-      </BarButton>
+      {/* Abre "Agregar a etiquetas" con las variantes de los seleccionados */}
+      {anyNotArchived && (
+        <BarButton onClick={onLabels} disabled={disabled}>
+          <Printer /> Imprimir etiquetas
+        </BarButton>
+      )}
       <button
         type="button"
         onClick={onClear}

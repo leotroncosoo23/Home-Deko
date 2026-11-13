@@ -293,7 +293,7 @@ export async function deleteProduct(id: string): Promise<ListActionResult> {
 
 /**
  * Busca un producto por código de barras o SKU EXACTO (lo que escribe el
- * lector USB al escanear, y en el paso 8 la cámara).
+ * lector USB al escanear; más adelante, también la cámara de la App Home Deko).
  * Devuelve el id si hay exactamente un producto con ese código.
  */
 export async function findProductByCode(code: string): Promise<{ productId: string } | null> {

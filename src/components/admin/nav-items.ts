@@ -11,6 +11,8 @@ export type NavItem = {
    * Análisis). Se muestra en rojo de marca arriba del título de la página.
    */
   group?: string;
+  /** Qué significa el contador de la sección (para el lector de pantalla y el tooltip). */
+  badgeLabel?: (n: number) => string;
 };
 
 /**
@@ -45,6 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Tag,
     group: "Inventario",
     description: "Prepará e imprimí etiquetas con código de barras en hojas A4.",
+    badgeLabel: (n) => (n === 1 ? "1 etiqueta en la cola" : `${n} etiquetas en la cola`),
   },
   {
     title: "Stock",
@@ -52,6 +55,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Boxes,
     group: "Inventario",
     description: "Ajustá el stock y revisá el historial de movimientos.",
+    badgeLabel: (n) => (n === 1 ? "1 variante para reponer" : `${n} variantes para reponer`),
   },
 ];
 
