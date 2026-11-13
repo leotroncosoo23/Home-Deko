@@ -127,10 +127,10 @@ Tipografías de marca:
 - Cada variante tiene `min_stock` para las alertas de "poco stock".
 
 ## Escaneo
-- Un único componente de búsqueda que acepta tres entradas:
+- Un único componente de búsqueda que acepta dos entradas:
   1. Texto tipeado (nombre, SKU o código)
   2. **Lector USB** (actúa como teclado: escribe el código y presiona Enter)
-  3. **Cámara del celular** (botón de escáner; usar una librería tipo ZXing; requiere HTTPS)
+- El escáner con la cámara del celular **no se implementa**: va en el extra futuro "App Home Deko".
 - Al escanear, abre el producto o variante correspondiente.
 
 ## Etiquetas (impresión A4)
@@ -181,7 +181,7 @@ Tipografías de marca:
 5. Formulario de producto con variantes e imágenes
 6. Listado con buscador y filtros
 7. Ajuste de stock e historial
-8.(Extra futuro, NO implementar) Escáner con cámara: va en el módulo "App Home Deko" (PWA)
+8. (Extra futuro, NO implementar) Escáner con cámara: va en el módulo "App Home Deko" (PWA)
 9. Cola de etiquetas y PDF A4
 
 ## Arquitectura del panel (visión final)
