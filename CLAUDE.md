@@ -164,6 +164,8 @@ Tipografías de marca:
 - Tienda pública, carrito y checkout con Mercado Pago (el webhook confirma el pago consultando la API
   de Mercado Pago y descuenta stock vía `adjust_stock`; nunca confiar en la redirección).
 - Panel general: últimas ventas, poco stock y métricas.
+- Módulo "App Home Deko" (extra a cotizar): PWA instalable, escáner con la cámara del celular,
+  venta rápida en el local y notificaciones. Hoy el escaneo funciona solo con lector USB.
 
 ## Forma de trabajo
 - **Una función por vez**: implementar, probar en `localhost:3000`, commit y recién ahí seguir.
@@ -179,7 +181,7 @@ Tipografías de marca:
 5. Formulario de producto con variantes e imágenes
 6. Listado con buscador y filtros
 7. Ajuste de stock e historial
-8. Escáner con cámara
+8.(Extra futuro, NO implementar) Escáner con cámara: va en el módulo "App Home Deko" (PWA)
 9. Cola de etiquetas y PDF A4
 
 ## Arquitectura del panel (visión final)
@@ -200,3 +202,10 @@ Inicio = "qué tengo que hacer hoy":
 6. Últimos pedidos
 
 Visitas por producto: tabla de vistas registrada desde la página del producto en la tienda.
+
+## Pruebas y datos reales
+- La base de Supabase es la de producción: los dueños cargan productos reales.
+- Las pruebas de SQL corren dentro de una transacción con rollback.
+- Las pruebas de punta a punta solo crean datos con el prefijo "prueba-" y los borran al terminar.
+- Nunca modificar ni borrar datos que no hayan sido creados por la prueba.
+- Si una prueba necesita crear muchos datos, avisar antes.
