@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Plus } from "lucide-react";
+import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { buttonVariants } from "@/components/ui/button";
@@ -29,9 +30,12 @@ export default function ProductsPage({ searchParams }: PageProps<"/admin/product
         title={section.title}
         description={section.description}
         actions={
-          <Link href="/admin/productos/nuevo" className={buttonVariants()}>
-            <Plus /> Nuevo producto
-          </Link>
+          <>
+            <HelpSheet guia="productos" />
+            <Link href="/admin/productos/nuevo" className={buttonVariants()}>
+              <Plus /> Nuevo producto
+            </Link>
+          </>
         }
       />
       <Suspense fallback={<ProductsSkeleton />}>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FileStack, Tag } from "lucide-react";
+import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { SectionCard } from "@/components/admin/section-card";
@@ -22,7 +23,12 @@ export const metadata: Metadata = { title: "Etiquetas" };
 export default function LabelsPage() {
   return (
     <>
-      <PageHeader eyebrow={section.group} title={section.title} description={section.description} />
+      <PageHeader
+        eyebrow={section.group}
+        title={section.title}
+        description={section.description}
+        actions={<HelpSheet guia="etiquetas" />}
+      />
       <Suspense fallback={<LabelsSkeleton />}>
         <Queue />
       </Suspense>

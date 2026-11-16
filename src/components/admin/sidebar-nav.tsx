@@ -4,12 +4,19 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, isNavItemActive } from "./nav-items";
+import { HELP_ITEM, NAV_ITEMS, isNavItemActive } from "./nav-items";
 
 type NavProps = {
   onNavigate?: () => void;
   /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). Ver badgeLabel en nav-items.ts. */
   badges?: Record<string, number>;
+  /**
+   * Qué lista mostrar: las secciones de trabajo ("main") o solo "Ayuda"
+   * ("help"), que va aparte, abajo de la barra. Se pasa un texto y no la
+   * lista en sí porque los íconos (funciones) no pueden viajar del
+   * servidor al cliente.
+   */
+  list?: "main" | "help";
 };
 
 /**
@@ -40,11 +47,12 @@ function ActiveNav(props: NavProps) {
   return <NavLinks pathname={pathname} {...props} />;
 }
 
-function NavLinks({ pathname, onNavigate, badges }: NavProps & { pathname: string | null }) {
+function NavLinks({ pathname, onNavigate, badges, list = "main" }: NavProps & { pathname: string | null }) {
+  const items = list === "help" ? [HELP_ITEM] : NAV_ITEMS;
   return (
-    <nav aria-label="Secciones del panel">
+    <nav aria-label={list === "help" ? "Ayuda" : "Secciones del panel"}>
       <ul className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname !== null && isNavItemActive(item.href, pathname);
           const Icon = item.icon;
           const badge = badges?.[item.href] ?? 0;

@@ -33,8 +33,12 @@ export function MobileNav({ badges }: { badges?: Record<string, number> }) {
         <div className="flex h-14 items-center border-b px-5">
           <Logo variant="horizontal" />
         </div>
-        <div className="p-3">
+        <div className="flex-1 overflow-y-auto p-3">
           <SidebarNav onNavigate={() => setOpen(false)} badges={badges} />
+        </div>
+        {/* "Ayuda" abajo de todo, separada (igual que en la barra de PC) */}
+        <div className="shrink-0 border-t p-3">
+          <SidebarNav list="help" onNavigate={() => setOpen(false)} />
         </div>
       </SheetContent>
     </Sheet>

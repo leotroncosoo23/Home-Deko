@@ -1,4 +1,4 @@
-import { Boxes, House, LayoutGrid, Package, Tag, type LucideIcon } from "lucide-react";
+import { Boxes, CircleHelp, House, LayoutGrid, Package, Tag, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -59,9 +59,20 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+/**
+ * "Ayuda" va aparte, abajo de todo en la barra lateral (separada de las
+ * secciones de trabajo). Los textos de la ayuda están en src/content/ayuda.ts.
+ */
+export const HELP_ITEM: NavItem = {
+  title: "Ayuda",
+  href: "/admin/ayuda",
+  icon: CircleHelp,
+  description: "Paso a paso de cada sección, preguntas frecuentes y contacto.",
+};
+
 /** Busca la sección por su ruta (para títulos y descripciones). */
 export function getNavItem(href: string): NavItem {
-  const item = NAV_ITEMS.find((i) => i.href === href);
+  const item = [...NAV_ITEMS, HELP_ITEM].find((i) => i.href === href);
   if (!item) throw new Error(`No existe la sección ${href} en NAV_ITEMS`);
   return item;
 }

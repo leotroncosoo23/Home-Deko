@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { getCategories } from "./data";
@@ -26,7 +27,12 @@ export default function CategoriesPage() {
         eyebrow={section.group}
         title={section.title}
         description={section.description}
-        actions={<NewCategoryButton />}
+        actions={
+          <>
+            <HelpSheet guia="categorias" />
+            <NewCategoryButton />
+          </>
+        }
       />
       {/* El <main> del layout ya separa los bloques (gap-6) */}
       <div>
