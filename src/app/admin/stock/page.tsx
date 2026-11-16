@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AlertTriangle, History } from "lucide-react";
+import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { SectionCard } from "@/components/admin/section-card";
@@ -26,7 +27,12 @@ export const metadata: Metadata = { title: "Stock" };
 export default function StockPage({ searchParams }: PageProps<"/admin/stock">) {
   return (
     <>
-      <PageHeader eyebrow={section.group} title={section.title} description={section.description} />
+      <PageHeader
+        eyebrow={section.group}
+        title={section.title}
+        description={section.description}
+        actions={<HelpSheet guia="stock" />}
+      />
       <QuickIntake />
       <Suspense fallback={<CardSkeleton title="Para reponer" icon="alert" />}>
         {searchParams.then((raw) => (

@@ -38,6 +38,10 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
             <SidebarNavWithCounts />
           </Suspense>
         </div>
+        {/* "Ayuda" abajo de todo, separada de las secciones de trabajo */}
+        <div className="shrink-0 border-t p-3">
+          <SidebarNav list="help" />
+        </div>
       </aside>
 
       {/* ---------- Columna principal ---------- */}
