@@ -22,24 +22,25 @@ const FILES = {
 } as const;
 
 /**
- * Tamaño en pantalla de referencia (en px CSS). NO es el tamaño del archivo:
- * Next usa este ancho para armar las versiones 1x / 2x (srcset), así el
- * celular baja una imagen chica pero nítida en pantallas de alta densidad.
- * Si un lugar muestra el logo bastante más grande, conviene subir estos valores.
+ * Ancho máximo con el que se muestra cada variante (en px CSS). El navegador
+ * lo multiplica por la densidad de la pantalla (2x, 3x) y baja la versión
+ * justa, así se ve nítido en celular sin descargar el archivo original.
+ * Si un lugar muestra el logo más grande, subir este valor.
  */
-const DISPLAY = {
-  horizontal: { width: 133, height: 40 },
-  stacked: { width: 200, height: 150 },
+const SIZES = {
+  horizontal: "133px",
+  stacked: "200px",
 } as const;
 
 /** Logo de Home Deko (archivos reales en public/brand/). */
 export function Logo({ variant = "horizontal", tone = "dark", className, preload }: LogoProps) {
   return (
     <Image
+      // width/height salen del archivo importado: proporción exacta, sin
+      // deformarse ni avisos de Next. El tamaño en pantalla lo da className.
       src={FILES[variant][tone]}
       alt="Home Deko"
-      width={DISPLAY[variant].width}
-      height={DISPLAY[variant].height}
+      sizes={SIZES[variant]}
       // Los trazos finos del logo se notan con la compresión por defecto (75)
       quality={90}
       preload={preload}
