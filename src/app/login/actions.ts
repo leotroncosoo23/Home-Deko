@@ -14,8 +14,8 @@ export type AuthFormState = {
 
 /**
  * Origin actual (ej. http://localhost:3000 o https://homedeko.vercel.app).
- * Se usa para que Supabase/Google devuelvan al usuario al MISMO sitio
- * desde donde inició sesión (en local vuelve a localhost).
+ * Se usa para que el link del email de confirmación devuelva al usuario
+ * al MISMO sitio desde donde se registró (en local vuelve a localhost).
  */
 async function getOrigin(): Promise<string> {
   const h = await headers();
@@ -130,25 +130,5 @@ export async function signUp(
   };
 }
 
-// ---------------------------------------------------------------------
-// Continuar con Google
-// ---------------------------------------------------------------------
-export async function signInWithGoogle(formData: FormData): Promise<void> {
-  const next = safeNext(String(formData.get("next") ?? ""));
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl(await getOrigin(), next),
-    },
-  });
-
-  if (error || !data.url) {
-    console.error("Error al iniciar sesión con Google:", error);
-    redirect("/login?error=google");
-  }
-
-  // Lleva al usuario a la pantalla de Google
-  redirect(data.url);
-}
+// "Continuar con Google" ya no pasa por acá: lo hace el botón oficial de
+// Google en el navegador (src/components/auth/google-sign-in-button.tsx).
