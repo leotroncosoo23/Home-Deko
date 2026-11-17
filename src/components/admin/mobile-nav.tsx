@@ -31,7 +31,7 @@ export function MobileNav({ badges }: { badges?: Record<string, number> }) {
         <SheetDescription className="sr-only">Secciones del panel de Home Deko</SheetDescription>
 
         <div className="flex h-14 items-center border-b px-5">
-          <Logo variant="horizontal" />
+          <Logo variant="horizontal" className="h-10 w-auto" />
         </div>
         <div className="flex-1 overflow-y-auto p-3">
           <SidebarNav onNavigate={() => setOpen(false)} badges={badges} />

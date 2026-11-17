@@ -8,7 +8,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center bg-surface px-4 py-12">
       <div className="w-full max-w-sm">
-        <Logo variant="stacked" className="mb-8" />
+        <Logo variant="stacked" preload className="mx-auto mb-8 h-auto w-50" />
         {children}
       </div>
     </main>
