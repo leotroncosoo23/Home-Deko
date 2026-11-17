@@ -13,6 +13,9 @@ import { updateSession } from "@/lib/supabase/proxy";
  * requireAdmin() (src/lib/auth.ts, lee el rol de la base en el momento)
  * y con RLS en la base. Por eso no importa que el rol del token pueda
  * tener hasta ~1 hora de atraso.
+ *
+ * Modo construcción (paso 0, pendiente): las rutas de isAlwaysPublic()
+ * (src/lib/public-routes.ts) no deben redirigirse a "Muy pronto".
  */
 export async function proxy(request: NextRequest) {
   const { response, hasSession, role } = await updateSession(request);

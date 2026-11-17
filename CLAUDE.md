@@ -168,6 +168,11 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   Instagram, TikTok y WhatsApp.
 - Los **admins logueados** ven la tienda real tal como va quedando.
 - Se apaga con una sola configuración el día del lanzamiento.
+- Las rutas de `src/lib/public-routes.ts` (`/privacidad`, `/terminos`, login) se ven siempre, también en modo construcción.
+
+### Páginas legales (adelantadas del paso 9)
+- `/privacidad` y `/terminos` ya están hechas (grupo `src/app/(legal)/`), textos en `src/content/legales.ts`.
+  Los datos que faltan están marcados `[COMPLETAR]` y se ven resaltados en la página.
 
 ### Orden de los pasos
 1. Inicio de la tienda: banner y productos destacados
