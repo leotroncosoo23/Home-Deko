@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { GoogleIcon } from "@/components/auth/google-icon";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import {
-  signInWithGoogle,
   signInWithPassword,
   signUp,
   type AuthFormState,
@@ -22,6 +21,7 @@ const initialState: AuthFormState = {};
 export function LoginForm({ next, initialError }: { next: string; initialError?: string }) {
   const [mode, setMode] = useState<Mode>("login");
   const [showPassword, setShowPassword] = useState(false);
+  const [googleError, setGoogleError] = useState<string>();
 
   // useActionState: llama a la Server Action y nos devuelve lo que respondió
   // (error o mensaje de éxito) + si está procesando.
@@ -34,10 +34,8 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
   return (
     <div className="flex flex-col gap-5">
       {/* ---------- Google ---------- */}
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <GoogleButton />
-      </form>
+      <GoogleSignInButton redirectTo={next} onError={setGoogleError} />
+      {googleError && <Notice tone="error">{googleError}</Notice>}
 
       {/* ---------- Separador "o" ---------- */}
       <div className="flex items-center gap-3">
@@ -120,17 +118,6 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
         </button>
       </p>
     </div>
-  );
-}
-
-function GoogleButton() {
-  // useFormStatus: sabe si el <form> que lo contiene se está enviando
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="outline" size="lg" disabled={pending} className="h-10 w-full">
-      {pending ? <Loader2 className="animate-spin" /> : <GoogleIcon className="size-4" />}
-      Continuar con Google
-    </Button>
   );
 }
 
