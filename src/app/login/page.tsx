@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -35,6 +36,20 @@ export default function LoginPage(props: PageProps<"/login">) {
           </Suspense>
         </CardContent>
       </Card>
+
+      {/* Google pide que estas páginas estén enlazadas desde el inicio de sesión */}
+      <nav
+        aria-label="Páginas legales"
+        className="mt-6 flex flex-wrap justify-center gap-x-2 text-xs text-muted-foreground"
+      >
+        <Link href="/privacidad" className="underline-offset-4 hover:text-foreground hover:underline">
+          Política de privacidad
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href="/terminos" className="underline-offset-4 hover:text-foreground hover:underline">
+          Términos y condiciones
+        </Link>
+      </nav>
     </AuthShell>
   );
 }
