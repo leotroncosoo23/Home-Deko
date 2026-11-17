@@ -104,9 +104,30 @@ export const PRIVACIDAD: DocumentoLegal = {
       id: "google",
       titulo: "Inicio de sesión con Google",
       bloques: [
-        "Si elegís \"Continuar con Google\", Google nos comparte solo tu nombre, tu email y tu foto de perfil. No tenemos acceso a tu contraseña de Google, ni a tus correos, contactos, archivos ni a ningún otro dato de tu cuenta.",
-        "Usamos esa información únicamente para identificarte en la tienda, mostrarte tus pedidos y avisarte sobre tus compras. No la vendemos, no la usamos para publicidad y no la compartimos con terceros, salvo con los proveedores que necesitamos para que el sitio funcione (ver \"Con quién compartimos tus datos\").",
-        "Podés quitarle el acceso a Home Deko cuando quieras desde la configuración de seguridad de tu cuenta de Google.",
+        `Podés crear tu cuenta en ${C.sitio} con el botón "Continuar con Google". Es opcional: también podés comprar como invitado o crear la cuenta con email y contraseña.`,
+        "Qué datos de Google usamos. Al iniciar sesión, Google nos comparte únicamente:",
+        {
+          lista: [
+            "Tu nombre.",
+            "Tu dirección de email.",
+            "Tu foto de perfil.",
+          ],
+        },
+        "No pedimos ni recibimos tu contraseña de Google, ni acceso a tus correos de Gmail, contactos, calendario, archivos de Drive, ubicación ni a ningún otro dato o servicio de tu cuenta de Google.",
+        "Para qué los usamos. Solo para:",
+        {
+          lista: [
+            "Crear tu cuenta en la tienda e identificarte cada vez que entrás, sin que tengas que crear otra contraseña.",
+            "Mostrarte tus pedidos y su seguimiento (preparando, enviado con código de seguimiento, listo para retirar, entregado).",
+            "Completar tu nombre y email al comprar y mandarte los emails de tus compras (confirmación, envío y aviso de retiro).",
+            "Mostrar tu nombre y tu foto en el menú de tu cuenta.",
+          ],
+        },
+        "No usamos tus datos de Google para publicidad, no los usamos para armar perfiles y no te mandamos promociones sin tu permiso.",
+        "No los compartimos ni los vendemos. Nunca vendemos, alquilamos ni cedemos tus datos de Google a nadie. Solo los guarda, en nuestro nombre, el proveedor de base de datos e inicio de sesión que hace funcionar la tienda, que no puede usarlos para nada más. Además, el uso de la información recibida de las API de Google cumple con la Política de datos del usuario de los servicios de API de Google (Google API Services User Data Policy), incluidos los requisitos de uso limitado.",
+        "Cuánto tiempo los guardamos. Tu nombre, email y foto de perfil se guardan mientras tengas tu cuenta. Si pedís borrar la cuenta, los eliminamos dentro de los 5 días hábiles. Lo único que conservamos son los datos de las compras que ya hiciste (por ejemplo, el nombre y el email que figuran en un pedido), durante el plazo que exigen las leyes contables e impositivas (hasta 10 años, según el artículo 328 del Código Civil y Comercial), y solo para cumplir esas obligaciones.",
+        `Cómo pedir que se borren. Escribinos a ${C.email} desde el email de tu cuenta de Google, con el asunto "Borrar mi cuenta", o pedilo personalmente en el local (${C.direccion}). Te confirmamos por email cuando esté hecho. Es gratis y no tenés que explicar el motivo.`,
+        "Cómo quitarnos el acceso. Además, podés desconectar Home Deko de tu cuenta de Google cuando quieras en myaccount.google.com/connections. Así Google deja de compartirnos tus datos; para borrar los que ya guardamos, pedilo como se explica arriba.",
       ],
     },
     {
@@ -168,7 +189,7 @@ export const PRIVACIDAD: DocumentoLegal = {
       id: "conservacion",
       titulo: "Cuánto tiempo guardamos tus datos",
       bloques: [
-        "Los datos de tu cuenta se guardan mientras la tengas activa. Si nos pedís que la borremos, lo hacemos.",
+        "Los datos de tu cuenta se guardan mientras la tengas activa. Si nos pedís que la borremos, lo hacemos dentro de los 5 días hábiles (ver \"Inicio de sesión con Google\").",
         "Los datos de las compras los conservamos el tiempo que exigen las normas contables e impositivas, aunque borres tu cuenta.",
       ],
     },
