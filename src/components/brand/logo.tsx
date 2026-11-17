@@ -14,6 +14,8 @@ type LogoProps = {
   className?: string;
   /** Precargar la imagen: usarlo solo donde el logo se ve apenas abre la página. */
   preload?: boolean;
+  /** true si al lado ya está escrito "Home Deko" (así el lector de pantalla no lo repite). */
+  decorative?: boolean;
 };
 
 const FILES = {
@@ -33,13 +35,19 @@ const SIZES = {
 } as const;
 
 /** Logo de Home Deko (archivos reales en public/brand/). */
-export function Logo({ variant = "horizontal", tone = "dark", className, preload }: LogoProps) {
+export function Logo({
+  variant = "horizontal",
+  tone = "dark",
+  className,
+  preload,
+  decorative,
+}: LogoProps) {
   return (
     <Image
       // width/height salen del archivo importado: proporción exacta, sin
       // deformarse ni avisos de Next. El tamaño en pantalla lo da className.
       src={FILES[variant][tone]}
-      alt="Home Deko"
+      alt={decorative ? "" : "Home Deko"}
       sizes={SIZES[variant]}
       // Los trazos finos del logo se notan con la compresión por defecto (75)
       quality={90}

@@ -169,6 +169,10 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - Los **admins logueados** ven la tienda real tal como va quedando.
 - Se apaga con una sola configuración el día del lanzamiento.
 - Las rutas de `src/lib/public-routes.ts` (`/privacidad`, `/terminos`, login) se ven siempre, también en modo construcción.
+- La página "Muy pronto" ya está hecha en `src/app/page.tsx` (hoy es `/` para todos; falta el interruptor
+  y que los admins vean la tienda). Requisitos de Google para verificar la marca, NO quitarlos:
+  pública (nunca redirigir al login), `<title>` y `<h1>` "Home Deko", texto que explique qué es la tienda,
+  cómo se compra y para qué sirve la cuenta con Google, y links a `/privacidad` y `/terminos` en el pie.
 
 ### Páginas legales (adelantadas del paso 9)
 - `/privacidad` y `/terminos` ya están hechas (grupo `src/app/(legal)/`), textos en `src/content/legales.ts`.
