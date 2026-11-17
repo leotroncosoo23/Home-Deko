@@ -1,51 +1,49 @@
-import { Heart } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import apiladoBlanco from "../../../public/brand/logo-apilado-blanco.png";
+import apiladoNegro from "../../../public/brand/logo-apilado-negro.png";
+import horizontalBlanco from "../../../public/brand/logo-horizontal-blanco.png";
+import horizontalNegro from "../../../public/brand/logo-horizontal-negro.png";
 
 type LogoProps = {
-  /** "stacked" (apilado): login. "horizontal": barra lateral del panel. */
-  variant?: "stacked" | "horizontal";
+  /** "horizontal": barra lateral y encabezados. "stacked" (apilado): login y páginas legales. */
+  variant?: "horizontal" | "stacked";
+  /** "dark": logo negro (fondos claros). "light": logo blanco (fondos rojos). */
+  tone?: "dark" | "light";
+  /** Ajustá el tamaño con el alto o el ancho, ej.: "h-10 w-auto" o "w-50 h-auto". */
   className?: string;
+  /** Precargar la imagen: usarlo solo donde el logo se ve apenas abre la página. */
+  preload?: boolean;
 };
 
-/**
- * Logo de Home Deko.
- *
- * PROVISORIO: mientras no estén los archivos en public/brand/, se dibuja con
- * texto (Playfair Display + corazón rojo). Cuando estén, reemplazar el
- * contenido por, por ejemplo:
- *
- *   import Image from "next/image";
- *   <Image src="/brand/logo-apilado.svg" alt="Home Deko" width={180} height={90} priority />
- *
- * y el resto de la app no cambia, porque todos usan <Logo />.
- */
-export function Logo({ variant = "horizontal", className }: LogoProps) {
-  if (variant === "stacked") {
-    return (
-      <div className={cn("flex flex-col items-center text-center", className)}>
-        <span className="font-display text-4xl leading-none font-semibold tracking-tight text-foreground">
-          Home Deko
-          <Heart
-            aria-hidden
-            className="ml-1 inline-block size-5 -translate-y-3 fill-brand text-brand"
-          />
-        </span>
-        <span className="mt-2 text-[0.7rem] font-medium tracking-[0.25em] text-muted-foreground uppercase">
-          Artículos del hogar
-        </span>
-      </div>
-    );
-  }
+const FILES = {
+  horizontal: { dark: horizontalNegro, light: horizontalBlanco },
+  stacked: { dark: apiladoNegro, light: apiladoBlanco },
+} as const;
 
+/**
+ * Tamaño en pantalla de referencia (en px CSS). NO es el tamaño del archivo:
+ * Next usa este ancho para armar las versiones 1x / 2x (srcset), así el
+ * celular baja una imagen chica pero nítida en pantallas de alta densidad.
+ * Si un lugar muestra el logo bastante más grande, conviene subir estos valores.
+ */
+const DISPLAY = {
+  horizontal: { width: 133, height: 40 },
+  stacked: { width: 200, height: 150 },
+} as const;
+
+/** Logo de Home Deko (archivos reales en public/brand/). */
+export function Logo({ variant = "horizontal", tone = "dark", className, preload }: LogoProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 font-display text-xl leading-none font-semibold tracking-tight text-foreground",
-        className,
-      )}
-    >
-      Home Deko
-      <Heart aria-hidden className="size-3.5 -translate-y-1.5 fill-brand text-brand" />
-    </span>
+    <Image
+      src={FILES[variant][tone]}
+      alt="Home Deko"
+      width={DISPLAY[variant].width}
+      height={DISPLAY[variant].height}
+      // Los trazos finos del logo se notan con la compresión por defecto (75)
+      quality={90}
+      preload={preload}
+      className={cn(variant === "horizontal" ? "h-10 w-auto" : "h-auto w-50", className)}
+    />
   );
 }

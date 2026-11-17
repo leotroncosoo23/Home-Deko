@@ -52,7 +52,7 @@ function redirectWithCookies(
 
 export const config = {
   matcher: [
-    // Todas las rutas menos archivos estáticos e imágenes
-    "/((?!_next/static|_next/image|favicon.ico|brand/|fonts/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    // Todas las rutas menos archivos estáticos e imágenes (apple-icon: ícono de iPhone)
+    "/((?!_next/static|_next/image|favicon.ico|apple-icon|brand/|fonts/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };

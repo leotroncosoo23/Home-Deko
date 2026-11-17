@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
     remotePatterns: supabaseImages,
+    // Calidades permitidas: 75 (por defecto) y 90 (logos, ver components/brand/logo.tsx)
+    qualities: [75, 90],
   },
   experimental: {
     serverActions: {
