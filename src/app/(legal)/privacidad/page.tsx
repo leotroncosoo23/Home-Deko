@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/legal-document";
-import { PRIVACIDAD } from "@/content/legales";
+import { privacidad } from "@/content/legales";
+import { datosComercio, getStoreSettings } from "@/lib/store-settings";
 
-export const metadata: Metadata = {
-  title: PRIVACIDAD.titulo,
-  description: PRIVACIDAD.resumen,
-};
+/** Arma el documento con los datos del comercio cargados en el panel (cacheados). */
+async function getDoc() {
+  return privacidad(datosComercio(await getStoreSettings()));
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const doc = await getDoc();
+  return { title: doc.titulo, description: doc.resumen };
+}
 
 /** /privacidad — los textos están en src/content/legales.ts */
-export default function PrivacidadPage() {
-  return <LegalDocument doc={PRIVACIDAD} />;
+export default async function PrivacidadPage() {
+  return <LegalDocument doc={await getDoc()} />;
 }

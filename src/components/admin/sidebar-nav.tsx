@@ -4,19 +4,19 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { HELP_ITEM, NAV_ITEMS, isNavItemActive } from "./nav-items";
+import { BOTTOM_ITEMS, NAV_ITEMS, STORE_LINK, isNavItemActive } from "./nav-items";
 
 type NavProps = {
   onNavigate?: () => void;
   /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). Ver badgeLabel en nav-items.ts. */
   badges?: Record<string, number>;
   /**
-   * Qué lista mostrar: las secciones de trabajo ("main") o solo "Ayuda"
-   * ("help"), que va aparte, abajo de la barra. Se pasa un texto y no la
-   * lista en sí porque los íconos (funciones) no pueden viajar del
-   * servidor al cliente.
+   * Qué lista mostrar: las secciones de trabajo ("main") o las de abajo de
+   * la barra ("bottom": Configuración, Ayuda y "Ver tienda"). Se pasa un
+   * texto y no la lista en sí porque los íconos (funciones) no pueden
+   * viajar del servidor al cliente.
    */
-  list?: "main" | "help";
+  list?: "main" | "bottom";
 };
 
 /**
@@ -48,9 +48,9 @@ function ActiveNav(props: NavProps) {
 }
 
 function NavLinks({ pathname, onNavigate, badges, list = "main" }: NavProps & { pathname: string | null }) {
-  const items = list === "help" ? [HELP_ITEM] : NAV_ITEMS;
+  const items = list === "bottom" ? BOTTOM_ITEMS : NAV_ITEMS;
   return (
-    <nav aria-label={list === "help" ? "Ayuda" : "Secciones del panel"}>
+    <nav aria-label={list === "bottom" ? "Configuración y ayuda" : "Secciones del panel"}>
       <ul className="flex flex-col gap-0.5">
         {items.map((item) => {
           const active = pathname !== null && isNavItemActive(item.href, pathname);
@@ -98,6 +98,22 @@ function NavLinks({ pathname, onNavigate, badges, list = "main" }: NavProps & { 
             </li>
           );
         })}
+        {/* "Ver tienda": en otra pestaña, así el panel queda abierto */}
+        {list === "bottom" && (
+          <li>
+            <a
+              href={STORE_LINK.href}
+              target="_blank"
+              rel="noopener"
+              onClick={onNavigate}
+              className="group flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              <STORE_LINK.icon aria-hidden className="size-4 shrink-0 text-muted-foreground/70 group-hover:text-foreground" />
+              {STORE_LINK.title}
+              <span className="sr-only">(se abre en otra pestaña)</span>
+            </a>
+          </li>
+        )}
       </ul>
     </nav>
   );

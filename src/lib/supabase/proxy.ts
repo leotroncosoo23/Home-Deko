@@ -9,6 +9,7 @@ import type { Database } from "@/lib/database.types";
  *   - role: el rol que viene DENTRO del token ("admin" | "customer"), que
  *     agrega el Custom Access Token Hook (migración 20261113000001).
  *     null si no hay sesión o si el hook todavía no está activado.
+ *   - supabase: el cliente, con la sesión de quien hace el pedido.
  *
  * Lo usa src/proxy.ts para redirigir rápido, sin consultar la base. El
  * control de los DATOS lo hacen requireAdmin() (src/lib/auth.ts) y el RLS.
@@ -49,5 +50,7 @@ export async function updateSession(request: NextRequest) {
   const claims = data?.claims;
   const role = typeof claims?.user_role === "string" ? claims.user_role : null;
 
-  return { response, hasSession: Boolean(claims), role };
+  // `supabase` también se devuelve: el proxy lo usa para consultar si la
+  // tienda está lanzada (modo construcción).
+  return { response, hasSession: Boolean(claims), role, supabase };
 }

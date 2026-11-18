@@ -1,16 +1,24 @@
 import Link from "next/link";
 import { highlightMissing } from "@/components/legal/legal-document";
-import { COMERCIO } from "@/content/legales";
+import { SocialLinks } from "@/components/social-links";
+import { datosComercio, getStoreSettings, redesSociales } from "@/lib/store-settings";
 
 /**
- * Pie de página público: links a las páginas legales y datos del comercio.
- * Lo usan la página "Muy pronto" (/) y las páginas legales. Google pide que
- * los links a /privacidad y /terminos se vean en la página de inicio.
+ * Pie de página público: redes, links a las páginas legales y datos del
+ * comercio. Lo usan "Muy pronto", la tienda y las páginas legales. Google
+ * pide que los links a /privacidad y /terminos se vean en la página de inicio.
+ *
+ * Los datos salen de la configuración del panel (cacheada: el pie sigue
+ * siendo estático). Lo que falta cargar se ve como "[COMPLETAR]" resaltado.
  */
-export function SiteFooter() {
+export async function SiteFooter() {
+  const settings = await getStoreSettings();
+  const c = datosComercio(settings);
+
   return (
     <footer className="border-t bg-background">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 text-sm text-muted-foreground">
+        <SocialLinks redes={redesSociales(settings)} />
         <nav aria-label="Páginas legales" className="flex flex-wrap gap-x-4 gap-y-1">
           <Link href="/privacidad" className="underline-offset-4 hover:text-foreground hover:underline">
             Política de privacidad
@@ -20,9 +28,11 @@ export function SiteFooter() {
           </Link>
         </nav>
         <p className="text-xs leading-5">
-          {COMERCIO.nombre} · {COMERCIO.direccion}
+          {c.nombre} · {highlightMissing(c.direccion)}
           <br />
-          Razón social: {highlightMissing(COMERCIO.razonSocial)} · CUIT: {highlightMissing(COMERCIO.cuit)}
+          Razón social: {highlightMissing(c.razonSocial)} · CUIT: {highlightMissing(c.cuit)}
+          <br />
+          Contacto: {highlightMissing(c.email)}
         </p>
       </div>
     </footer>

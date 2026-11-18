@@ -1,4 +1,14 @@
-import { Boxes, CircleHelp, House, LayoutGrid, Package, Tag, type LucideIcon } from "lucide-react";
+import {
+  Boxes,
+  CircleHelp,
+  ExternalLink,
+  House,
+  LayoutGrid,
+  Package,
+  Settings,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -59,6 +69,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+/** Configuración de la tienda (datos del comercio, redes, envío y lanzamiento). */
+export const SETTINGS_ITEM: NavItem = {
+  title: "Configuración",
+  href: "/admin/configuracion",
+  icon: Settings,
+  description: "Datos del comercio, redes, envío y el lanzamiento de la tienda.",
+};
+
 /**
  * "Ayuda" va aparte, abajo de todo en la barra lateral (separada de las
  * secciones de trabajo). Los textos de la ayuda están en src/content/ayuda.ts.
@@ -70,9 +88,15 @@ export const HELP_ITEM: NavItem = {
   description: "Paso a paso de cada sección, preguntas frecuentes y contacto.",
 };
 
+/** Lo que va abajo de todo en el menú: Configuración y Ayuda (+ "Ver tienda"). */
+export const BOTTOM_ITEMS: NavItem[] = [SETTINGS_ITEM, HELP_ITEM];
+
+/** "Ver tienda": abre la tienda en otra pestaña (no es una sección del panel). */
+export const STORE_LINK = { title: "Ver tienda", href: "/", icon: ExternalLink };
+
 /** Busca la sección por su ruta (para títulos y descripciones). */
 export function getNavItem(href: string): NavItem {
-  const item = [...NAV_ITEMS, HELP_ITEM].find((i) => i.href === href);
+  const item = [...NAV_ITEMS, ...BOTTOM_ITEMS].find((i) => i.href === href);
   if (!item) throw new Error(`No existe la sección ${href} en NAV_ITEMS`);
   return item;
 }
