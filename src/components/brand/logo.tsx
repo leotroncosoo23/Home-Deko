@@ -4,10 +4,16 @@ import apiladoBlanco from "../../../public/brand/logo-apilado-blanco.png";
 import apiladoNegro from "../../../public/brand/logo-apilado-negro.png";
 import horizontalBlanco from "../../../public/brand/logo-horizontal-blanco.png";
 import horizontalNegro from "../../../public/brand/logo-horizontal-negro.png";
+import sinFraseBlanco from "../../../public/brand/logo-horizontal-sin-frase-blanco.png";
+import sinFraseNegro from "../../../public/brand/logo-horizontal-sin-frase-negro.png";
 
 type LogoProps = {
-  /** "horizontal": barra lateral y encabezados. "stacked" (apilado): login y páginas legales. */
-  variant?: "horizontal" | "stacked";
+  /**
+   * "horizontal": barra lateral del panel. "stacked" (apilado): login y páginas legales.
+   * "wordmark": "Home ♥ Deko" SIN la frase "Artículos del hogar" (a tamaño de
+   * encabezado la frase quedaba ilegible): encabezado y pie de la tienda.
+   */
+  variant?: "horizontal" | "stacked" | "wordmark";
   /** "dark": logo negro (fondos claros). "light": logo blanco (fondos rojos). */
   tone?: "dark" | "light";
   /** Ajustá el tamaño con el alto o el ancho, ej.: "h-10 w-auto" o "w-50 h-auto". */
@@ -21,6 +27,7 @@ type LogoProps = {
 const FILES = {
   horizontal: { dark: horizontalNegro, light: horizontalBlanco },
   stacked: { dark: apiladoNegro, light: apiladoBlanco },
+  wordmark: { dark: sinFraseNegro, light: sinFraseBlanco },
 } as const;
 
 /**
@@ -32,6 +39,7 @@ const FILES = {
 const SIZES = {
   horizontal: "133px",
   stacked: "200px",
+  wordmark: "260px",
 } as const;
 
 /** Logo de Home Deko (archivos reales en public/brand/). */
@@ -52,7 +60,7 @@ export function Logo({
       // Los trazos finos del logo se notan con la compresión por defecto (75)
       quality={90}
       preload={preload}
-      className={cn(variant === "horizontal" ? "h-10 w-auto" : "h-auto w-50", className)}
+      className={cn(variant === "stacked" ? "h-auto w-50" : "h-10 w-auto", className)}
     />
   );
 }

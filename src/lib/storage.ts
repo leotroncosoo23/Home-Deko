@@ -3,7 +3,8 @@
  *
  * Usamos un solo bucket público, "product-images", con carpetas:
  *   categories/<archivo>.webp   → imágenes de categorías
- *   <product_id>/<archivo>.webp → imágenes de productos (paso 5)
+ *   <product_id>/<archivo>.webp → imágenes de productos
+ *   banners/<archivo>.webp      → banner principal del inicio (sección Banner)
  *
  * En la base se guarda solo la RUTA (ej. "categories/abc.webp"); la URL
  * completa se arma acá. Así, si cambia el dominio, no hay que tocar datos.

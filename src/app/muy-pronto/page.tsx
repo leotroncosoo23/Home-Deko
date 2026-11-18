@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { CreditCard, MapPin, Store, Truck, UserRound } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { SiteFooter } from "@/components/site-footer";
 import { SocialLinks } from "@/components/social-links";
+import { StoreHighlights } from "@/components/store/store-highlights";
+import { WhatsAppButton } from "@/components/store/whatsapp-button";
 import { highlightMissing } from "@/components/legal/legal-document";
 import { datosComercio, getStoreSettings, redesSociales } from "@/lib/store-settings";
 
@@ -57,29 +58,7 @@ export default async function ComingSoonPage() {
           <h2 id="que-es" className="text-lg font-semibold tracking-tight">
             Qué vas a encontrar en este sitio
           </h2>
-          <ul className="flex flex-col gap-5">
-            <Feature icon={Store} title="La tienda online de Home Deko">
-              Somos un local de artículos del hogar, bazar y blanquería en{" "}
-              {highlightMissing(c.direccion)}. En este sitio vas a poder ver nuestro catálogo y
-              comprar desde tu casa.
-            </Feature>
-            <Feature icon={CreditCard} title="Compra online con Mercado Pago">
-              Pagás de forma segura con Mercado Pago: tarjeta de crédito, débito o dinero en cuenta.
-            </Feature>
-            <Feature icon={Truck} title="Envío a domicilio o retiro en el local">
-              Te lo enviamos a cualquier lugar del país ({c.envioDomicilio}, precio fijo) o lo
-              retirás gratis en el local.
-            </Feature>
-            <Feature icon={UserRound} title="Tu cuenta, con Google">
-              Podés crear una cuenta con tu cuenta de Google para ver tus pedidos y seguir su estado
-              (preparando, enviado, listo para retirar). Solo usamos tu nombre, tu email y tu foto de
-              perfil: te lo explicamos en la{" "}
-              <Link href="/privacidad#google" className="font-medium text-foreground underline underline-offset-4">
-                Política de privacidad
-              </Link>
-              .
-            </Feature>
-          </ul>
+          <StoreHighlights comercio={c} upcoming />
         </section>
 
         {redes.length > 0 && (
@@ -100,28 +79,7 @@ export default async function ComingSoonPage() {
       </main>
 
       <SiteFooter />
+      <WhatsAppButton />
     </div>
-  );
-}
-
-function Feature({
-  icon: Icon,
-  title,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex gap-4">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft">
-        <Icon aria-hidden className="size-5 text-brand" />
-      </span>
-      <div className="flex flex-col gap-1">
-        <h3 className="font-semibold">{title}</h3>
-        <p className="text-[15px] leading-6 text-muted-foreground">{children}</p>
-      </div>
-    </li>
   );
 }

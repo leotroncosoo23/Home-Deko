@@ -1,6 +1,7 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
+import { STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +57,7 @@ export async function adjustVariantStock(raw: unknown): Promise<AdjustResult> {
     });
     if (error) return { ok: false, error: translate(error) };
     const result = data as { previous: number; new: number; difference: number };
+    updateTag(STORE_PRODUCTS_TAG);
     refresh();
     if (result.difference === 0) {
       return { ok: true, message: `${name}: el stock ya era ${result.new}. No se registró nada.`, newStock: result.new };
@@ -70,6 +72,7 @@ export async function adjustVariantStock(raw: unknown): Promise<AdjustResult> {
     p_note: note || undefined,
   });
   if (error) return { ok: false, error: translate(error) };
+  updateTag(STORE_PRODUCTS_TAG);
   refresh();
   const previous = newStock - info.sign * amount;
   return { ok: true, message: `${name}: ${previous} → ${newStock}`, newStock };

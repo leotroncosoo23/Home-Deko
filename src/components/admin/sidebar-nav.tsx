@@ -4,12 +4,17 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BOTTOM_ITEMS, NAV_ITEMS, STORE_LINK, isNavItemActive } from "./nav-items";
+import { BOTTOM_ITEMS, NAV_ITEMS, STORE_LINK, isNavItemActive, isNavItemVisible, type NavAccess } from "./nav-items";
 
 type NavProps = {
   onNavigate?: () => void;
   /** Contadores por sección (ej.: { "/admin/stock": 4 } = 4 variantes para reponer). Ver badgeLabel en nav-items.ts. */
   badges?: Record<string, number>;
+  /**
+   * Permisos de las secciones reservadas (ej.: { banners: true }). Sin esto
+   * (mientras carga), las reservadas NO se muestran: nunca aparecen "de pasada".
+   */
+  access?: NavAccess;
   /**
    * Qué lista mostrar: las secciones de trabajo ("main") o las de abajo de
    * la barra ("bottom": Configuración, Ayuda y "Ver tienda"). Se pasa un
@@ -47,8 +52,8 @@ function ActiveNav(props: NavProps) {
   return <NavLinks pathname={pathname} {...props} />;
 }
 
-function NavLinks({ pathname, onNavigate, badges, list = "main" }: NavProps & { pathname: string | null }) {
-  const items = list === "bottom" ? BOTTOM_ITEMS : NAV_ITEMS;
+function NavLinks({ pathname, onNavigate, badges, access, list = "main" }: NavProps & { pathname: string | null }) {
+  const items = (list === "bottom" ? BOTTOM_ITEMS : NAV_ITEMS).filter((item) => isNavItemVisible(item, access));
   return (
     <nav aria-label={list === "bottom" ? "Configuración y ayuda" : "Secciones del panel"}>
       <ul className="flex flex-col gap-0.5">

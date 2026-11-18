@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { SiteFooter } from "@/components/site-footer";
+import { WhatsAppButton } from "@/components/store/whatsapp-button";
 
 /**
  * Marco de las páginas legales (/privacidad y /terminos).
@@ -26,6 +27,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-12">{children}</main>
 
       <SiteFooter />
+      <WhatsAppButton />
     </div>
   );
 }

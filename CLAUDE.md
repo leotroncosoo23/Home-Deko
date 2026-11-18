@@ -44,6 +44,8 @@ Marca: "Home Deko — Artículos del hogar". Logo en serif display de alto contr
 Concepto: "Tu casa, tu refugio, con diseño y calidez". Elegante pero accesible.
 Versiones del logo: horizontal, apilada, negra sobre blanco y blanca sobre rojo. Archivos en `public/brand/`
 (mientras no estén, el componente `logo.tsx` muestra el texto; se cambia solo ahí).
+Versión `wordmark` ("Home ♥ Deko" sin la frase, `logo-horizontal-sin-frase-*.png`) para el encabezado y el pie de
+la tienda: a ese tamaño "Artículos del hogar" quedaba ilegible (en el pie va como texto).
 
 Paleta (variables CSS del tema de shadcn en `globals.css`):
 - **Rojo Home Deko** `#C92728` (acento) · hover `#A81F20` · rojo suave `#FCEAEA`
@@ -93,6 +95,21 @@ Tipografías:
   Para sumar o sacar un admin, se edita `admin_emails` (nunca el rol a mano en `profiles`).
 - El rol viaja en el token (Custom Access Token Hook) y lo lee `proxy.ts`. Cada consulta del panel pasa
   igual por `requireAdmin()`, y por debajo está el RLS.
+- **Desarrollador**: `admin_emails.is_developer` marca a Leo (`troncosoleooficial@gmail.com`). Es admin con
+  todo y además usa las **secciones reservadas**. Función `is_developer()` en la base.
+- **Secciones reservadas** (hoy solo **Apariencia de la tienda** = barra de anuncios + Banner, solo para el
+  desarrollador; los dueños le escriben a Leo para cambiarlos):
+  - Quién la usa lo decide UNA función de la base: `can_manage_appearance()` (RLS de `banners` y
+    `store_announcements` + la app vía `getPanelAccess()` en `src/lib/auth.ts`).
+  - Servidor: páginas dentro de `AppearanceGate` / datos con `requireAppearanceAccess()` (sin permiso →
+    `notFound()`); Server Actions con su propio chequeo. Menú: `feature: "appearance"` en `nav-items.ts`.
+    Ayuda: `feature` en la guía.
+  - **Para habilitársela a los dueños** (por ejemplo, si contratan "Fechas especiales"): una migración que
+    cambie el cuerpo de `can_manage_appearance()` de `is_developer()` a `is_admin()`. No se toca la app:
+    menú, páginas, acciones y ayuda aparecen solos. Actualizar también la pregunta frecuente
+    "¿Cómo cambio el banner del inicio o los mensajes de la barra de arriba?" de `ayuda.ts`.
+- `/login` es SOLO el ingreso del panel: nunca enlazarlo desde la tienda. "Ingresá" / "Mi cuenta" del encabezado
+  lleva a `/mi-cuenta` (hoy un texto para clientes; en el paso 6, el ingreso de clientes). Con sesión de admin dice "Panel" → `/admin`.
 - Hoy el login de los dueños está en `/login`. En la etapa de la tienda: login de admins en `/admin/login`
   y login de clientes en la tienda (ver más abajo).
 
@@ -134,6 +151,8 @@ Menú agrupado por tarea. Cada sección se suma al menú recién cuando está im
 - VENTAS: Pedidos (contador de pendientes)
 - CATÁLOGO: Productos, Categorías
 - INVENTARIO: Stock (contador de stock bajo), Etiquetas
+- TIENDA ONLINE: Apariencia de la tienda (`/admin/apariencia`: barra de anuncios y Banner) — **solo desarrollador**
+  (ver "Usuarios y roles")
 - Abajo: Ayuda, Configuración y "Ver tienda"
 
 ## Inicio del panel (etapa de la tienda)
@@ -167,6 +186,10 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - Tabla `store_settings` (**una sola fila**): `is_launched`, WhatsApp, Instagram, TikTok, costo de envío,
   dirección y horarios del local, plazo de cambios por gusto (`exchange_days`, 30 por defecto, 0 = no se
   aceptan), nombre o razón social, CUIT y email de contacto.
+- Barra de anuncios: tabla `store_announcements` (hasta 4 mensajes de 120 caracteres, con orden), se guarda
+  toda junta con `save_store_announcements()`. Se edita en "Apariencia de la tienda" (solo desarrollador).
+  1 mensaje = fijo; 2 o más = cinta (marquee) que se pausa con hover/foco; con `prefers-reduced-motion`,
+  rotación con fundido cada 4 s.
   Se edita en el panel: **Configuración** (`/admin/configuracion`).
 - Lectura pública por columna (grant por columna + policy `using (true)`); solo admins editan; nadie
   inserta ni borra. **Nunca guardar secretos ahí** (tokens de Mercado Pago, etc.): todo es legible.
@@ -206,7 +229,7 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 9. Páginas de información, legales y revisión final (muestra del 27/11)
 
 ### Inicio de la tienda
-- **Banner principal** como plantilla de marca editable desde el panel: título, texto, botón con link,
+- **Banner principal** como plantilla de marca editable desde el panel (Apariencia de la tienda, hoy solo el desarrollador): título, texto, botón con link,
   foto de producto, fondo (rojo o blanco) y fechas de inicio y fin (se activa y se apaga solo).
   Opción de subir una imagen completa diseñada aparte.
 - Productos destacados, botón "Ver todos los productos" y categorías.
@@ -225,6 +248,10 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - **Envío a domicilio: $ 20.000** fijo, a cualquier zona del país, sin conexión con el Correo.
     El negocio despacha por Correo Argentino y carga el código de seguimiento.
   - **Retiro en el local: gratis**, mostrando dirección y horarios.
+- **Total del pedido, calculado SIEMPRE en el servidor** (nunca confiar en lo que mande el navegador):
+  productos − cupón + envío (envío = $ 0 si es retiro). El costo de envío se lee de `store_settings` en el
+  momento del pago y **se guarda en el pedido** (igual que los precios de cada ítem), así cambiarlo después en
+  Configuración no afecta los pedidos anteriores.
 - **Compra como invitado** (nombre, email, teléfono, dirección si es envío) y **cuenta opcional**
   (Google en un clic) con "Mis pedidos" y el estado.
 
@@ -280,6 +307,10 @@ Los reportes del Inicio se calculan sobre esta tabla, así después suman las ve
 - Cierre de cada rama (lo hace Leo): push → Pull Request y **Merge en GitHub** → `git checkout main` → `git pull`.
 - Antes de crear algo grande, proponer el plan y los archivos a tocar.
 - Correr `npx tsc --noEmit`, `npm run lint` y `npm run build` antes de cada commit.
+- Todo texto visible en la tienda o en el panel es para los dueños o los clientes:
+  nunca notas de desarrollo ('lo armamos en el próximo paso', 'TODO', 'placeholder').
+  Si algo todavía no existe, usar un texto final y amable pensado para ellos.
+  Las notas para Leo van en comentarios del código o en el chat, nunca en pantalla.
 
 ## Pruebas y datos reales
 - La base es la de **producción**: los dueños ya cargan productos reales.

@@ -2,6 +2,7 @@ import {
   Boxes,
   CircleHelp,
   ExternalLink,
+  Palette,
   House,
   LayoutGrid,
   Package,
@@ -9,6 +10,16 @@ import {
   Tag,
   type LucideIcon,
 } from "lucide-react";
+
+/**
+ * Secciones reservadas: solo aparecen si la base da permiso (getPanelAccess
+ * en src/lib/auth.ts). Hoy: "appearance" (Apariencia de la tienda), solo para el
+ * desarrollador.
+ */
+export type PanelFeature = "appearance";
+
+/** Permisos de secciones reservadas que llegan del servidor. */
+export type NavAccess = Partial<Record<PanelFeature, boolean>>;
 
 export type NavItem = {
   title: string;
@@ -23,6 +34,8 @@ export type NavItem = {
   group?: string;
   /** Qué significa el contador de la sección (para el lector de pantalla y el tooltip). */
   badgeLabel?: (n: number) => string;
+  /** Sección reservada: solo se muestra con ese permiso. */
+  feature?: PanelFeature;
 };
 
 /**
@@ -67,6 +80,14 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Ajustá el stock y revisá el historial de movimientos.",
     badgeLabel: (n) => (n === 1 ? "1 variante para reponer" : `${n} variantes para reponer`),
   },
+  {
+    title: "Apariencia de la tienda",
+    href: "/admin/apariencia",
+    icon: Palette,
+    group: "Tienda online",
+    feature: "appearance",
+    description: "La barra de anuncios y el banner principal del inicio.",
+  },
 ];
 
 /** Configuración de la tienda (datos del comercio, redes, envío y lanzamiento). */
@@ -93,6 +114,11 @@ export const BOTTOM_ITEMS: NavItem[] = [SETTINGS_ITEM, HELP_ITEM];
 
 /** "Ver tienda": abre la tienda en otra pestaña (no es una sección del panel). */
 export const STORE_LINK = { title: "Ver tienda", href: "/", icon: ExternalLink };
+
+/** ¿Se muestra esta sección con estos permisos? (las reservadas, solo con permiso) */
+export function isNavItemVisible(item: NavItem, access?: NavAccess): boolean {
+  return !item.feature || access?.[item.feature] === true;
+}
 
 /** Busca la sección por su ruta (para títulos y descripciones). */
 export function getNavItem(href: string): NavItem {

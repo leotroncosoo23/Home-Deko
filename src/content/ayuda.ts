@@ -12,6 +12,8 @@
  *   - `pasos`: la versión completa, para la página de Ayuda.
  */
 
+import type { PanelFeature } from "@/components/admin/nav-items";
+
 // ---------------------------------------------------------------------------
 // Contacto
 // ---------------------------------------------------------------------------
@@ -39,7 +41,7 @@ export function whatsappHref(): string | null {
 // Guías por sección
 // ---------------------------------------------------------------------------
 
-export type GuiaId = "productos" | "categorias" | "etiquetas" | "stock" | "configuracion";
+export type GuiaId = "productos" | "categorias" | "etiquetas" | "stock" | "apariencia" | "configuracion";
 
 export type Guia = {
   id: GuiaId;
@@ -51,6 +53,12 @@ export type Guia = {
   pasosRapidos: string[];
   /** Pasos completos (título + explicación) para la página de Ayuda. */
   pasos: { titulo: string; texto: string }[];
+  /**
+   * Guía de una sección reservada: se muestra solo a quien tiene ese permiso
+   * (el mismo que el menú; ver PanelFeature en nav-items.ts). Hoy "appearance"
+   * es solo para el desarrollador; si se habilita a los dueños, aparece sola.
+   */
+  feature?: PanelFeature;
 };
 
 export const GUIAS: Record<GuiaId, Guia> = {
@@ -83,7 +91,17 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Publicar, ocultar y archivar",
         texto:
-          "\"Borrador\" no se ve en la tienda. \"Publicado\" se ve y se puede comprar. Desde el listado podés seleccionar varios productos y publicarlos, ocultarlos, cambiarles la categoría o archivarlos de una vez.",
+          "\"Borrador\" no lo ven los clientes. \"Publicado\" se ve y se puede comprar. Desde el listado podés seleccionar varios productos y publicarlos, ocultarlos, cambiarles la categoría o archivarlos de una vez.",
+      },
+      {
+        titulo: "Ver cómo queda en la tienda antes de publicar",
+        texto:
+          "Ustedes, con la sesión iniciada, ven en la tienda también los productos en \"Borrador\", con una etiqueta gris que dice \"Borrador\". Así pueden revisar las fotos y el precio antes de publicarlos. Los clientes nunca los ven. Para ver la tienda exactamente como un cliente, tocá \"Ver como cliente\" en la barra negra de arriba de la tienda.",
+      },
+      {
+        titulo: "Destacados en el inicio",
+        texto:
+          "Activá \"Destacado\" en un producto publicado para que aparezca en el inicio de la tienda, en la sección \"Destacados\" (se muestran hasta 8, los más nuevos primero).",
       },
       {
         titulo: "Buscar y duplicar",
@@ -190,6 +208,51 @@ export const GUIAS: Record<GuiaId, Guia> = {
     ],
   },
 
+  apariencia: {
+    id: "apariencia",
+    feature: "appearance", // hoy solo el desarrollador
+    titulo: "Apariencia de la tienda",
+    resumen: "La barra de anuncios de arriba de todo y el banner grande del inicio.",
+    pasosRapidos: [
+      "Barra de anuncios: escribí hasta 4 mensajes cortos y tocá \"Guardar mensajes\".",
+      "Banner: tocá \"Nuevo banner\" y elegí \"Plantilla\" (armado con la marca) o \"Imagen completa\" (diseñada aparte).",
+      "Si el banner es para una fecha (Navidad, Día de la Madre…), poné \"Desde\" y \"Hasta\": se prende y se apaga solo.",
+      "Si no hay ningún banner activo, la tienda muestra el de Home Deko.",
+    ],
+    pasos: [
+      {
+        titulo: "Barra de anuncios",
+        texto:
+          "Es la franja roja fina de arriba de todo en la tienda. Escribí hasta 4 mensajes (de hasta 120 caracteres cada uno), ordenalos con las flechas y tocá \"Guardar mensajes\". Con 1 mensaje queda fijo y centrado; con 2 o más, corren uno detrás del otro (se frenan al pasar el mouse). Si la persona tiene activado \"reducir movimiento\" en su celular o compu, en vez de correr van cambiando cada 4 segundos. Sin mensajes, la barra no se muestra.",
+      },
+      {
+        titulo: "Plantilla de marca",
+        texto:
+          "Es la forma más rápida: escribís un título, un texto corto, el botón (por ejemplo \"Ver ofertas\" que lleve a /productos) y elegís una foto de producto. Elegí el fondo \"Rojo\" (con el logo en blanco) o \"Blanco\" (con el botón en rojo). La vista previa muestra cómo queda en el celular y en la PC.",
+      },
+      {
+        titulo: "Imagen completa",
+        texto:
+          "Si el banner lo diseñan aparte (por ejemplo en Canva), subí la imagen para PC de 1920 × 800 px (va de borde a borde de la pantalla) y, si querés, otra para celular de 800 × 1000 px (si no, se usa la de PC). Dejá los textos importantes lejos de los bordes: en pantallas distintas se puede recortar un poco. Escribí una descripción corta de la imagen: la usan quienes navegan con lector de pantalla. Si ponés un link, toda la imagen se puede tocar.",
+      },
+      {
+        titulo: "Link del botón",
+        texto:
+          "Para una página de la tienda escribí la dirección que empieza con / (por ejemplo /productos o /categorias/cocina). Para otro sitio, pegá el link completo (https://…): se abre en otra pestaña.",
+      },
+      {
+        titulo: "Fechas: se prende y se apaga solo",
+        texto:
+          "\"Desde\" y \"Hasta\" son opcionales. Con fechas, el banner aparece a las 0 h del primer día y se apaga al terminar el último. Pueden dejar varios programados: si dos coinciden, se ve el que empezó más recientemente. En la lista, cada banner dice si \"Se ve ahora\", está \"Programado\", \"Terminado\" o \"Pausado\".",
+      },
+      {
+        titulo: "Pausar o eliminar",
+        texto:
+          "Apagá \"Activo\" para sacarlo de la tienda sin borrarlo (lo volvés a prender cuando quieras). \"Eliminar\" lo borra definitivamente, junto con sus imágenes. Si no queda ninguno activo, la tienda muestra el banner de Home Deko por defecto.",
+      },
+    ],
+  },
+
   configuracion: {
     id: "configuracion",
     titulo: "Configuración",
@@ -198,7 +261,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       "Completá los \"Datos del comercio\": nombre o razón social, CUIT y email de contacto.",
       "Cargá WhatsApp, Instagram y TikTok, el costo del envío, la dirección y horarios del local y el plazo para cambios.",
       "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie y las páginas legales.",
-      "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá.",
+      "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá (antes tienen que estar los datos del comercio y el WhatsApp).",
     ],
     pasos: [
       {
@@ -226,6 +289,21 @@ export const GUIAS: Record<GuiaId, Guia> = {
         texto:
           "Mientras \"Tienda lanzada\" está apagado, los visitantes ven la página \"Muy pronto\" y los buscadores no muestran la tienda. Ustedes, con la sesión iniciada, ven la tienda tal como va quedando, con una barra arriba que dice \"Vista previa\". El día del lanzamiento prendé el interruptor y confirmá: desde ese momento todos ven la tienda y pueden comprar. Si hace falta, se puede volver a apagar.",
       },
+      {
+        titulo: "Qué hace falta para lanzar",
+        texto:
+          "Para prender \"Tienda lanzada\" tienen que estar guardados el nombre o razón social, el CUIT, el email de contacto y el WhatsApp. Mientras falte alguno, el interruptor no se puede prender y arriba aparece un aviso en amarillo con lo que falta: tocá cada uno para ir directo al campo, completalo y tocá \"Guardar cambios\". Con la tienda ya lanzada, esos datos se pueden cambiar pero no dejar vacíos.",
+      },
+      {
+        titulo: "Banner y barra de anuncios",
+        texto:
+          "El banner grande del inicio y los mensajes de la barra roja de arriba de todo los actualiza Leo. Pedíselos por WhatsApp (botón \"WhatsApp\" en la Ayuda) con el texto, las fechas y la imagen si la tenés.",
+      },
+      {
+        titulo: "Ver como cliente",
+        texto:
+          "Con la sesión iniciada, en la tienda aparece una barra negra arriba (los clientes no la ven). Ahí, \"Ver como cliente\" oculta los productos en Borrador y los avisos para ustedes, y muestra la tienda exactamente como la ve un visitante. Para volver, tocá \"Volver a la vista de admin\".",
+      },
     ],
   },
 };
@@ -238,7 +316,17 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: "¿Cómo veo la tienda como la ve un cliente?",
     respuesta:
-      "Abrí el sitio en una ventana de incógnito (o desde un celular donde no hayas iniciado sesión). Si la tienda no está lanzada, vas a ver la página \"Muy pronto\", que es lo que ven los visitantes.",
+      "En la tienda, tocá \"Ver como cliente\" en la barra negra de arriba: se ocultan los productos en Borrador y los avisos para ustedes. Si la tienda todavía no está lanzada, los visitantes en realidad ven la página \"Muy pronto\": para comprobarlo, abrí el sitio en una ventana de incógnito (o desde un celular donde no hayas iniciado sesión).",
+  },
+  {
+    pregunta: "¿Cómo cambio el banner del inicio o los mensajes de la barra de arriba?",
+    respuesta:
+      "Los actualiza Leo: pedíselos por WhatsApp (botón \"WhatsApp\" arriba de esta página). Para el banner, contale qué querés mostrar y desde qué día hasta qué día, por ejemplo una promo de Navidad del 1 al 25 de diciembre, y mandale la foto o la imagen si ya la tenés: queda programado y se prende y se apaga solo en esas fechas. Para la barra roja de arriba de todo, pasale los mensajes (hasta 4 cortos, por ejemplo \"Envíos a todo el país\" o un aviso de feriado).",
+  },
+  {
+    pregunta: "¿Qué productos aparecen en \"Destacados\" del inicio?",
+    respuesta:
+      "Los productos publicados que tienen activado \"Destacado\" (hasta 8, los más nuevos primero). Si no hay ninguno, esa sección no se muestra a los clientes.",
   },
   {
     pregunta: "¿Por qué no puedo cambiar el stock desde el formulario del producto?",

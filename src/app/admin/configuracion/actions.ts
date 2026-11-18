@@ -2,10 +2,10 @@
 
 import { refresh, updateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { STORE_SETTINGS_TAG } from "@/lib/store-settings";
+import { mapStoreSettings, STORE_SETTINGS_COLUMNS, STORE_SETTINGS_TAG } from "@/lib/store-settings";
 import type { TablesUpdate } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
-import { SETTINGS_FIELDS, validateSettings, type SettingsInput } from "./schema";
+import { missingForLaunch, SETTINGS_FIELDS, validateSettings, type SettingsInput } from "./schema";
 import type { ActionResult } from "./types";
 
 /**
@@ -44,10 +44,34 @@ async function updateSettings(values: TablesUpdate<"store_settings">): Promise<A
   return { ok: true };
 }
 
-/** Prende o apaga la tienda (el modo construcción). */
+/** La fila guardada en la base, en el momento (sin caché). */
+async function readSavedSettings() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("store_settings").select(STORE_SETTINGS_COLUMNS).single();
+  return error || !data ? null : mapStoreSettings(data);
+}
+
+/**
+ * Prende o apaga la tienda (el modo construcción).
+ * Para PRENDERLA revisa los datos GUARDADOS (no lo que esté escrito sin
+ * guardar en el formulario): si falta alguno obligatorio, no la lanza y
+ * dice cuáles faltan. Apagarla se puede siempre.
+ */
 export async function setStoreLaunched(launched: boolean): Promise<ActionResult> {
   await requireAdmin();
   if (typeof launched !== "boolean") return { ok: false, error: "Valor inválido." };
+
+  if (launched) {
+    const saved = await readSavedSettings();
+    if (!saved) return { ok: false, error: GENERIC_ERROR };
+    const missing = missingForLaunch(saved);
+    if (missing.length > 0) {
+      return {
+        ok: false,
+        error: `Para lanzar la tienda falta completar: ${missing.map((m) => m.label).join(", ")}.`,
+      };
+    }
+  }
   return updateSettings({ is_launched: launched });
 }
 
@@ -59,7 +83,10 @@ export async function saveStoreSettings(formData: FormData): Promise<ActionResul
     SETTINGS_FIELDS.map((field) => [field, String(formData.get(field) ?? "")]),
   ) as SettingsInput;
 
-  const result = validateSettings(input);
+  // Con la tienda lanzada, los datos obligatorios no se pueden borrar.
+  const saved = await readSavedSettings();
+  if (!saved) return { ok: false, error: GENERIC_ERROR };
+  const result = validateSettings(input, { isLaunched: saved.isLaunched });
   if (!result.ok) {
     return { ok: false, error: "Revisá los datos marcados.", fieldErrors: result.fieldErrors };
   }

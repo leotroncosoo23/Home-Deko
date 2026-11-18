@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { slugify, SLUG_MAX_LENGTH } from "@/lib/slug";
 import { saveCategory } from "../actions";
 import type { Category, CategoryField } from "../types";
-import { ImageField, type ImageValue } from "./image-field";
+import { ImageField, type ImageValue } from "@/components/admin/image-field";
 
 /**
  * Diálogo para crear (sin `category`) o editar (con `category`).

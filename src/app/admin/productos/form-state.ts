@@ -1,3 +1,4 @@
+import { dayEndToIso, dayStartToIso, isoToArgentinaDay } from "@/lib/dates";
 import { parseInteger, parseMoney } from "@/lib/format";
 import type { ProductInput } from "./schema";
 import type { FormDiscount, FormOption, FormVariant, ProductFormValues, ProductStatus } from "./types";
@@ -145,25 +146,10 @@ export function suggestSku(productName: string, valueNames: string[]): string {
 
 // ---------------------------------------------------------------------
 // Fechas del descuento: el formulario usa días ("2026-12-01"); la base
-// guarda instantes. "Desde" = 00:00 y "Hasta" = 23:59:59 de ese día, en
-// hora de Argentina (UTC−3 todo el año, sin horario de verano).
+// guarda instantes. "Desde" = 00:00 y "Hasta" = 23:59:59 de ese día.
+// Las conversiones viven en src/lib/dates.ts (también las usan los banners).
 // ---------------------------------------------------------------------
-const AR_OFFSET = "-03:00";
-
-export function dayStartToIso(day: string): string | null {
-  return day ? `${day}T00:00:00${AR_OFFSET}` : null;
-}
-
-export function dayEndToIso(day: string): string | null {
-  return day ? `${day}T23:59:59${AR_OFFSET}` : null;
-}
-
-/** Un instante → el día en Argentina ("2026-12-01"). */
-export function isoToArgentinaDay(iso: string | null): string {
-  if (!iso) return "";
-  // "en-CA" escribe las fechas como AAAA-MM-DD.
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
-}
+export { dayEndToIso, dayStartToIso, isoToArgentinaDay };
 
 function discountToInput(d: FormDiscount | null): ProductInput["discount"] {
   if (!d) return null;
