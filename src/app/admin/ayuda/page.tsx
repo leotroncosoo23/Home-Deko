@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MessageCircle, MessagesSquare } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { HelpSteps } from "@/components/admin/help-steps";
@@ -6,7 +7,8 @@ import { getNavItem } from "@/components/admin/nav-items";
 import { SectionCard } from "@/components/admin/section-card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { buttonVariants } from "@/components/ui/button";
-import { CONTACTO, GUIAS, PREGUNTAS_FRECUENTES, whatsappHref } from "@/content/ayuda";
+import { CONTACTO, GUIAS, PREGUNTAS_FRECUENTES, whatsappHref, type Guia } from "@/content/ayuda";
+import { getPanelAccess } from "@/lib/auth";
 
 const section = getNavItem("/admin/ayuda");
 
@@ -19,10 +21,12 @@ export const metadata: Metadata = { title: "Ayuda" };
  *      "¿Cómo funciona?" de cada pantalla puede saltar directo: /admin/ayuda#stock).
  *   3. Preguntas frecuentes en acordeón.
  *
- * No lee la base: todo el texto sale de src/content/ayuda.ts.
+ * Todo el texto sale de src/content/ayuda.ts. Es estática, salvo las guías
+ * de secciones reservadas (`feature`, ej.: Banner, hoy solo para el
+ * desarrollador): esas se muestran según el permiso, dentro de <Suspense>.
  */
 export default function HelpPage() {
-  const guias = Object.values(GUIAS);
+  const guias = Object.values(GUIAS).filter((g) => !g.feature);
   const whatsapp = whatsappHref();
 
   return (
@@ -40,6 +44,9 @@ export default function HelpPage() {
             {g.titulo}
           </a>
         ))}
+        <Suspense fallback={null}>
+          <ReservedGuides variant="chips" />
+        </Suspense>
         <a
           href="#preguntas"
           className="rounded-full border bg-background px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
@@ -71,18 +78,11 @@ export default function HelpPage() {
         <h2 className="text-lg font-semibold tracking-tight">Paso a paso</h2>
         <div className="grid gap-4 lg:grid-cols-2">
           {guias.map((g) => (
-            // scroll-mt: que al saltar con #id no quede tapado por la barra superior
-            <section key={g.id} id={g.id} className="scroll-mt-20">
-              <SectionCard
-                icon={getNavItem(`/admin/${g.id}`).icon}
-                title={g.titulo}
-                description={g.resumen}
-                className="h-full"
-              >
-                <HelpSteps steps={g.pasos} />
-              </SectionCard>
-            </section>
+            <GuideCard key={g.id} guia={g} />
           ))}
+          <Suspense fallback={null}>
+            <ReservedGuides variant="cards" />
+          </Suspense>
         </div>
       </div>
 
@@ -110,4 +110,40 @@ export default function HelpPage() {
       </section>
     </>
   );
+}
+
+function GuideCard({ guia: g }: { guia: Guia }) {
+  return (
+    // scroll-mt: que al saltar con #id no quede tapado por la barra superior
+    <section id={g.id} className="scroll-mt-20">
+      <SectionCard
+        icon={getNavItem(`/admin/${g.id}`).icon}
+        title={g.titulo}
+        description={g.resumen}
+        className="h-full"
+      >
+        <HelpSteps steps={g.pasos} />
+      </SectionCard>
+    </section>
+  );
+}
+
+/**
+ * Guías de secciones reservadas que este usuario puede usar (como atajo
+ * arriba o como tarjeta). Lee el permiso de la base → va en <Suspense>.
+ */
+async function ReservedGuides({ variant }: { variant: "chips" | "cards" }) {
+  const access = await getPanelAccess();
+  const guias = Object.values(GUIAS).filter((g) => g.feature && access[g.feature]);
+
+  if (variant === "cards") return guias.map((g) => <GuideCard key={g.id} guia={g} />);
+  return guias.map((g) => (
+    <a
+      key={g.id}
+      href={`#${g.id}`}
+      className="rounded-full border bg-background px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none"
+    >
+      {g.titulo}
+    </a>
+  ));
 }

@@ -1,26 +1,41 @@
 import { getLabelQueueCount } from "@/app/admin/etiquetas/data";
 import { getRestockCount } from "@/app/admin/stock/data";
+import { getPanelAccess } from "@/lib/auth";
 import { MobileNav } from "./mobile-nav";
+import type { NavAccess } from "./nav-items";
 import { SidebarNav } from "./sidebar-nav";
 
 /**
- * La barra lateral y el menú del celular, con los contadores de cada
- * sección: variantes para reponer en "Stock" y etiquetas en la cola en
- * "Etiquetas".
+ * La barra lateral y el menú del celular, con:
+ *   - los contadores de cada sección: variantes para reponer en "Stock" y
+ *     etiquetas en la cola en "Etiquetas";
+ *   - los permisos de las secciones reservadas (hoy: Apariencia de la tienda, solo para el
+ *     desarrollador). Ocultarlas del menú es solo comodidad: la seguridad
+ *     está en requireAppearanceAccess() y en el RLS.
  *
  * Son componentes de servidor porque leen la base. El layout los pone en
- * su propio <Suspense>: mientras cargan, se ve la barra sin contadores.
- * Se actualizan solos después de cada cambio (las acciones usan refresh()).
+ * su propio <Suspense>: mientras cargan, se ve la barra sin contadores y sin
+ * las secciones reservadas. Se actualizan solos después de cada cambio
+ * (las acciones usan refresh()).
  */
-async function getBadges(): Promise<Record<string, number>> {
-  const [restock, labels] = await Promise.all([getRestockCount(), getLabelQueueCount()]);
-  return { "/admin/stock": restock, "/admin/etiquetas": labels };
+async function getNavData(): Promise<{ badges: Record<string, number>; access: NavAccess }> {
+  const [restock, labels, access] = await Promise.all([
+    getRestockCount(),
+    getLabelQueueCount(),
+    getPanelAccess(),
+  ]);
+  return {
+    badges: { "/admin/stock": restock, "/admin/etiquetas": labels },
+    access,
+  };
 }
 
 export async function SidebarNavWithCounts() {
-  return <SidebarNav badges={await getBadges()} />;
+  const { badges, access } = await getNavData();
+  return <SidebarNav badges={badges} access={access} />;
 }
 
 export async function MobileNavWithCounts() {
-  return <MobileNav badges={await getBadges()} />;
+  const { badges, access } = await getNavData();
+  return <MobileNav badges={badges} access={access} />;
 }

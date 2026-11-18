@@ -17,6 +17,8 @@ export type ImageValue = {
 /**
  * Campo de imagen opcional: elegir (o arrastrar) un archivo, ver la vista
  * previa, cambiarla o quitarla. Comprime la imagen apenas se elige.
+ *
+ * Lo usan Categorías y Banner (con más resolución y otra forma de miniatura).
  */
 export function ImageField({
   currentUrl,
@@ -24,6 +26,9 @@ export function ImageField({
   onChange,
   error,
   disabled,
+  maxSize,
+  hint = "JPG, PNG o WebP. Se optimiza automáticamente.",
+  previewClassName = "size-20",
 }: {
   /** Imagen que ya tiene guardada la categoría (al editar). */
   currentUrl: string | null;
@@ -31,6 +36,12 @@ export function ImageField({
   onChange: (value: ImageValue) => void;
   error?: string;
   disabled?: boolean;
+  /** Lado más largo al comprimir (por defecto 1200 px; los banners usan más). */
+  maxSize?: number;
+  /** Texto chico debajo de "Elegí una imagen…" (formatos, tamaño recomendado). */
+  hint?: string;
+  /** Forma y tamaño de la miniatura (ej.: "h-20 w-44" para una imagen apaisada). */
+  previewClassName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
@@ -60,7 +71,7 @@ export function ImageField({
     }
     setProcessing(true);
     try {
-      const compressed = await compressImage(file);
+      const compressed = await compressImage(file, maxSize ? { maxSize } : undefined);
       setPreview(compressed);
       onChange({ file: compressed, removed: value.removed });
     } catch (e) {
@@ -97,12 +108,12 @@ export function ImageField({
 
       {shownUrl ? (
         <div className="flex items-center gap-3">
-          <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
+          <div className={cn("relative shrink-0 overflow-hidden rounded-lg border bg-muted", previewClassName)}>
             <Image
               src={shownUrl}
               alt="Vista previa de la imagen"
               fill
-              sizes="80px"
+              sizes="180px"
               className="object-cover"
               // Las vistas previas "blob:" no pasan por el optimizador.
               unoptimized={shownUrl.startsWith("blob:")}
@@ -161,7 +172,7 @@ export function ImageField({
             {processing ? "Optimizando imagen…" : "Elegí una imagen o arrastrala acá"}
           </span>
           <span className="text-xs text-muted-foreground">
-            JPG, PNG o WebP. Se optimiza automáticamente.
+            {hint}
           </span>
         </button>
       )}

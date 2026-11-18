@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Building2, Loader2, Share2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
@@ -39,7 +39,9 @@ function toInput(s: AdminSettings): SettingsInput {
  * "usuario") y el formulario arranca de nuevo con ellos, sin cambios pendientes.
  */
 export function SettingsForm({ settings }: { settings: AdminSettings }) {
-  const ids = useId();
+  // ids fijos ("config-whatsapp"…): el aviso de "Estado de la tienda" lleva
+  // hasta cada campo que falta (ver settingsFieldId en schema.ts).
+  const ids = "config";
   const [initial] = useState(() => toInput(settings));
   const [values, setValues] = useState<SettingsInput>(initial);
   const [errors, setErrors] = useState<Partial<Record<SettingsField, string>>>({});
@@ -57,7 +59,7 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
     e.preventDefault();
 
     // Validación rápida en el navegador (el servidor valida de nuevo).
-    const check = validateSettings(values);
+    const check = validateSettings(values, { isLaunched: settings.isLaunched });
     if (!check.ok) {
       setErrors(check.fieldErrors);
       toast.error("Revisá los datos marcados.");

@@ -18,17 +18,74 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          is_developer: boolean
           note: string | null
         }
         Insert: {
           created_at?: string
           email: string
+          is_developer?: boolean
           note?: string | null
         }
         Update: {
           created_at?: string
           email?: string
+          is_developer?: boolean
           note?: string | null
+        }
+        Relationships: []
+      }
+      banners: {
+        Row: {
+          background: string
+          body: string | null
+          button_label: string | null
+          button_url: string | null
+          created_at: string
+          ends_at: string | null
+          id: string
+          image_mobile_path: string | null
+          image_path: string | null
+          is_active: boolean
+          kind: string
+          product_image_path: string | null
+          starts_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          background?: string
+          body?: string | null
+          button_label?: string | null
+          button_url?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_mobile_path?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          kind: string
+          product_image_path?: string | null
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          background?: string
+          body?: string | null
+          button_label?: string | null
+          button_url?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_mobile_path?: string | null
+          image_path?: string | null
+          is_active?: boolean
+          kind?: string
+          product_image_path?: string | null
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -158,6 +215,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_images: {
@@ -228,6 +292,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
             referencedColumns: ["id"]
           },
         ]
@@ -324,6 +395,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_options_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_variants: {
@@ -396,6 +474,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
             referencedColumns: ["id"]
           },
         ]
@@ -536,6 +621,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_announcements: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position: number
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          text?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       store_settings: {
         Row: {
@@ -785,6 +894,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_variant_id_fkey"
             columns: ["variant_id"]
             isOneToOne: false
@@ -821,6 +937,33 @@ export type Database = {
         }
         Relationships: []
       }
+      store_products: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          discount_active: boolean | null
+          final_min_price: number | null
+          has_price_range: boolean | null
+          id: string | null
+          in_stock: boolean | null
+          is_featured: boolean | null
+          min_price: number | null
+          name: string | null
+          primary_image_alt: string | null
+          primary_image_path: string | null
+          slug: string | null
+          status: Database["public"]["Enums"]["product_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       adjust_stock: {
@@ -833,6 +976,7 @@ export type Database = {
         }
         Returns: number
       }
+      can_manage_appearance: { Args: never; Returns: boolean }
       compute_role: {
         Args: { p_confirmed_at: string; p_email: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -845,8 +989,13 @@ export type Database = {
       delete_product: { Args: { p_id: string }; Returns: Json }
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      is_developer: { Args: never; Returns: boolean }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }
       save_product: { Args: { p: Json }; Returns: Json }
+      save_store_announcements: {
+        Args: { p_texts: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       discount_type: "percent" | "fixed"

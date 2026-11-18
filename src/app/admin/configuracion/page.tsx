@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSettingsForAdmin } from "./data";
+import { missingForLaunch } from "./schema";
 import { LaunchCard } from "./_components/launch-card";
 import { SettingsForm } from "./_components/settings-form";
 
@@ -40,7 +41,7 @@ async function Settings() {
   const { isLaunched, ...formSettings } = settings;
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <LaunchCard isLaunched={isLaunched} />
+      <LaunchCard isLaunched={isLaunched} missing={missingForLaunch(settings)} />
       <SettingsForm key={JSON.stringify(formSettings)} settings={settings} />
     </div>
   );

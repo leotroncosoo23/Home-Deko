@@ -165,6 +165,20 @@
   box-shadow: var(--shadow-card);
 }
 
+/* ---------------------------------------------------------------------
+   Cinta de la barra de anuncios (src/components/store/announcement-ticker.tsx).
+   La lista va dos veces seguidas: correrla la mitad (-50 %) y volver a
+   empezar no se nota. La duración la pone el componente según el texto.
+   --------------------------------------------------------------------- */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

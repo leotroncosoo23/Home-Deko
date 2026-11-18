@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = {
@@ -60,5 +60,43 @@ export async function requireAdmin(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/admin");
   if (!user.isAdmin) throw new Error("Tu cuenta no tiene acceso al panel.");
+  return user;
+}
+
+// ---------------------------------------------------------------------------
+// Secciones reservadas (hoy: "Apariencia de la tienda", solo para el desarrollador)
+// ---------------------------------------------------------------------------
+
+/** A qué secciones reservadas puede entrar el usuario. */
+export type PanelAccess = {
+  /** "Apariencia de la tienda": barra de anuncios y Banner. */
+  appearance: boolean;
+};
+
+/**
+ * Lo decide la BASE: can_manage_appearance() (migración apariencia_tienda),
+ * la misma función que usa el RLS de banners y store_announcements. Para
+ * habilitarles la sección a los dueños se cambia esa función; la app no se toca.
+ *
+ * cache() de React: el menú, la página y la ayuda preguntan una sola vez.
+ * Lee la sesión → llamarla dentro de <Suspense>.
+ */
+export const getPanelAccess = cache(async (): Promise<PanelAccess> => {
+  const user = await getCurrentUser();
+  if (!user?.isAdmin) return { appearance: false };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("can_manage_appearance");
+  return { appearance: !error && data === true };
+});
+
+/**
+ * Para "Apariencia de la tienda" (páginas y datos). Si el usuario no puede
+ * usarla, para él la sección "no existe": notFound().
+ */
+export async function requireAppearanceAccess(): Promise<CurrentUser> {
+  const user = await requireAdmin();
+  const access = await getPanelAccess();
+  if (!access.appearance) notFound();
   return user;
 }

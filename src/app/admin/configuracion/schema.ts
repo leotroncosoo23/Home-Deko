@@ -112,17 +112,58 @@ export const settingsSchema = z.object({
 
 export type SettingsValues = z.output<typeof settingsSchema>;
 
-/** Valida y devuelve los datos limpios, o un error por campo. */
+// ---------------------------------------------------------------------------
+// Datos obligatorios para lanzar la tienda
+// ---------------------------------------------------------------------------
+
+/**
+ * Sin estos datos la tienda NO se puede lanzar (y, ya lanzada, no se pueden
+ * borrar): los datos del comercio son obligatorios por ley para vender
+ * online y el WhatsApp es el contacto del botón flotante.
+ * `section` es el nombre de la tarjeta donde se cargan (tal cual en pantalla).
+ */
+export type LaunchRequirement = { field: SettingsField; label: string; section: string };
+
+export const LAUNCH_REQUIRED: LaunchRequirement[] = [
+  { field: "businessName", label: "Nombre o razón social", section: "Datos del comercio" },
+  { field: "cuit", label: "CUIT", section: "Datos del comercio" },
+  { field: "contactEmail", label: "Email de contacto", section: "Datos del comercio" },
+  { field: "whatsapp", label: "WhatsApp", section: "Redes y contacto" },
+];
+
+/** Lo que falta para poder lanzar (vacío = se puede). */
+export function missingForLaunch(values: Partial<Record<SettingsField, string | number>>) {
+  return LAUNCH_REQUIRED.filter(({ field }) => String(values[field] ?? "").trim() === "");
+}
+
+/** id fijo de cada campo del formulario (el aviso de lanzamiento lleva hasta ahí). */
+export function settingsFieldId(field: SettingsField) {
+  return `config-${field}`;
+}
+
+/**
+ * Valida y devuelve los datos limpios, o un error por campo.
+ * `isLaunched`: con la tienda lanzada, los datos de LAUNCH_REQUIRED no se pueden dejar vacíos.
+ */
 export function validateSettings(
   input: SettingsInput,
+  { isLaunched = false }: { isLaunched?: boolean } = {},
 ): { ok: true; data: SettingsValues } | { ok: false; fieldErrors: Partial<Record<SettingsField, string>> } {
   const result = settingsSchema.safeParse(input);
-  if (result.success) return { ok: true, data: result.data };
-
   const fieldErrors: Partial<Record<SettingsField, string>> = {};
-  for (const issue of result.error.issues) {
-    const field = issue.path[0] as SettingsField;
-    fieldErrors[field] ??= issue.message;
+
+  if (!result.success) {
+    for (const issue of result.error.issues) {
+      const field = issue.path[0] as SettingsField;
+      fieldErrors[field] ??= issue.message;
+    }
   }
+  if (isLaunched) {
+    for (const { field, label } of missingForLaunch(input)) {
+      fieldErrors[field] ??= `${label}: es obligatorio mientras la tienda está lanzada.`;
+    }
+  }
+
+  if (result.success && Object.keys(fieldErrors).length === 0) return { ok: true, data: result.data };
   return { ok: false, fieldErrors };
 }

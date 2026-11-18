@@ -1,6 +1,7 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
+import { STORE_CATEGORIES_TAG } from "@/lib/store-cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN } from "@/lib/slug";
@@ -147,6 +148,7 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
     await removeImageFile(previousImagePath);
   }
 
+  updateTag(STORE_CATEGORIES_TAG);
   refresh();
   return { ok: true };
 }
@@ -169,6 +171,7 @@ export async function setCategoryVisibility(id: string, isVisible: boolean): Pro
   if (error) return { ok: false, error: GENERIC_ERROR };
   if (data.length === 0) return { ok: false, error: "Esta categoría ya no existe. Recargá la página." };
 
+  updateTag(STORE_CATEGORIES_TAG);
   refresh();
   return { ok: true };
 }
@@ -204,6 +207,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 
   if (category.image_path) await removeImageFile(category.image_path);
 
+  updateTag(STORE_CATEGORIES_TAG);
   refresh();
   return { ok: true };
 }
@@ -240,6 +244,7 @@ export async function reorderCategories(ids: string[]): Promise<ActionResult> {
   const { error } = await supabase.rpc("reorder_categories", { p_ids: ids });
   if (error) return { ok: false, error: "No se pudo guardar el orden. Intentá de nuevo." };
 
+  updateTag(STORE_CATEGORIES_TAG);
   refresh();
   return { ok: true };
 }

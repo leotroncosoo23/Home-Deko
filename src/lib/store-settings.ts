@@ -127,7 +127,16 @@ export type RedSocial = {
 };
 
 /** Mensaje que aparece ya escrito al abrir el WhatsApp de la tienda. */
-const WHATSAPP_MENSAJE = "Hola Home Deko, quería hacer una consulta.";
+export const WHATSAPP_MENSAJE = "Hola Home Deko, quería hacer una consulta.";
+
+/**
+ * Link para abrir el chat con la tienda con un mensaje ya escrito, o null
+ * si todavía no cargaron el número en Configuración.
+ */
+export function whatsappLink(s: StoreSettings, mensaje: string = WHATSAPP_MENSAJE): string | null {
+  if (!s.whatsapp) return null;
+  return `https://wa.me/${s.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+}
 
 /** Links a las redes cargadas (las vacías no aparecen). */
 export function redesSociales(s: StoreSettings): RedSocial[] {
@@ -138,12 +147,7 @@ export function redesSociales(s: StoreSettings): RedSocial[] {
   if (s.tiktok) {
     redes.push({ red: "tiktok", label: "TikTok", href: `https://www.tiktok.com/@${s.tiktok}` });
   }
-  if (s.whatsapp) {
-    redes.push({
-      red: "whatsapp",
-      label: "WhatsApp",
-      href: `https://wa.me/${s.whatsapp}?text=${encodeURIComponent(WHATSAPP_MENSAJE)}`,
-    });
-  }
+  const whatsapp = whatsappLink(s);
+  if (whatsapp) redes.push({ red: "whatsapp", label: "WhatsApp", href: whatsapp });
   return redes;
 }

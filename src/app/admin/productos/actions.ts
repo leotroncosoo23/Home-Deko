@@ -1,6 +1,7 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
+import { STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { requireAdmin } from "@/lib/auth";
 import { IMAGES_BUCKET, publicImageUrl } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,8 @@ import type { ListActionResult, SaveProductResult, UploadImageResult } from "./t
 
 /**
  * Server Actions de Productos.
- * Todas: requireAdmin() → validar con zod → base (RLS) → refresh().
+ * Todas: requireAdmin() → validar con zod → base (RLS) → updateTag(STORE_PRODUCTS_TAG)
+ * (la tienda muestra el cambio en el próximo pedido) → refresh().
  */
 
 const GENERIC_ERROR = "No se pudo guardar. Intentá de nuevo en unos segundos.";
@@ -40,6 +42,8 @@ export async function saveProduct(rawInput: unknown): Promise<SaveProductResult>
     await supabase.storage.from(IMAGES_BUCKET).remove(removed);
   }
 
+  updateTag(STORE_PRODUCTS_TAG);
+  updateTag(STORE_CATEGORIES_TAG); // la barra de categorías depende de qué hay publicado
   refresh();
   return { ok: true, id: result.id, updatedAt: result.updated_at };
 }
@@ -230,6 +234,8 @@ export async function setProductsStatus(
     updated = data.length;
   }
 
+  updateTag(STORE_PRODUCTS_TAG);
+  updateTag(STORE_CATEGORIES_TAG); // la barra de categorías depende de qué hay publicado
   refresh();
   const done = { active: "publicado", draft: "pasado a borrador", archived: "archivado" }[status];
   const donePlural = { active: "publicados", draft: "pasados a borrador", archived: "archivados" }[status];
@@ -260,6 +266,8 @@ export async function setProductsCategory(rawIds: string[], categoryId: string |
       error: error.code === "23503" ? "Esa categoría ya no existe. Recargá la página." : GENERIC_LIST_ERROR,
     };
   }
+  updateTag(STORE_PRODUCTS_TAG);
+  updateTag(STORE_CATEGORIES_TAG); // la barra de categorías depende de qué hay publicado
   refresh();
   return { ok: true, message: `Categoría cambiada en ${plural(data.length, "producto", "productos")}.` };
 }
@@ -287,6 +295,8 @@ export async function deleteProduct(id: string): Promise<ListActionResult> {
   const all = [...new Set([...saved, ...(listed ?? []).map((f) => `${id}/${f.name}`)])];
   if (all.length > 0) await supabase.storage.from(IMAGES_BUCKET).remove(all);
 
+  updateTag(STORE_PRODUCTS_TAG);
+  updateTag(STORE_CATEGORIES_TAG); // la barra de categorías depende de qué hay publicado
   refresh();
   return { ok: true, message: "Producto eliminado." };
 }

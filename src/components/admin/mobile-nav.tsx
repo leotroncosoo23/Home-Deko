@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/brand/logo";
+import type { NavAccess } from "./nav-items";
 import { SidebarNav } from "./sidebar-nav";
 
 /**
@@ -12,7 +13,7 @@ import { SidebarNav } from "./sidebar-nav";
  * como un panel deslizable desde la izquierda. Se cierra solo al elegir
  * una sección.
  */
-export function MobileNav({ badges }: { badges?: Record<string, number> }) {
+export function MobileNav({ badges, access }: { badges?: Record<string, number>; access?: NavAccess }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,7 +35,7 @@ export function MobileNav({ badges }: { badges?: Record<string, number> }) {
           <Logo variant="horizontal" className="h-10 w-auto" />
         </div>
         <div className="flex-1 overflow-y-auto p-3">
-          <SidebarNav onNavigate={() => setOpen(false)} badges={badges} />
+          <SidebarNav onNavigate={() => setOpen(false)} badges={badges} access={access} />
         </div>
         {/* Configuración, Ayuda y "Ver tienda" abajo de todo (igual que en la barra de PC) */}
         <div className="shrink-0 border-t p-3">
