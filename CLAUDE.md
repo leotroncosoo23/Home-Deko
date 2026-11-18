@@ -163,20 +163,36 @@ Estados vacíos: hasta que haya ventas o visitas, un mensaje claro
 ## Etapa actual: la tienda (prometido en la propuesta)
 Se construye en pasos visibles. Cada paso: rama → probar en local → merge a `main` → los dueños lo ven.
 
-### Modo construcción (paso 0)
-- Mientras la tienda no esté lanzada, los visitantes ven una página "Muy pronto" con el logo,
-  Instagram, TikTok y WhatsApp.
-- Los **admins logueados** ven la tienda real tal como va quedando.
-- Se apaga con una sola configuración el día del lanzamiento.
-- Las rutas de `src/lib/public-routes.ts` (`/privacidad`, `/terminos`, login) se ven siempre, también en modo construcción.
-- La página "Muy pronto" ya está hecha en `src/app/page.tsx` (hoy es `/` para todos; falta el interruptor
-  y que los admins vean la tienda). Requisitos de Google para verificar la marca, NO quitarlos:
-  pública (nunca redirigir al login), `<title>` y `<h1>` "Home Deko", texto que explique qué es la tienda,
-  cómo se compra y para qué sirve la cuenta con Google, y links a `/privacidad` y `/terminos` en el pie.
+### Configuración de la tienda (implementado)
+- Tabla `store_settings` (**una sola fila**): `is_launched`, WhatsApp, Instagram, TikTok, costo de envío,
+  dirección y horarios del local, plazo de cambios por gusto (`exchange_days`, 30 por defecto, 0 = no se
+  aceptan), nombre o razón social, CUIT y email de contacto.
+  Se edita en el panel: **Configuración** (`/admin/configuracion`).
+- Lectura pública por columna (grant por columna + policy `using (true)`); solo admins editan; nadie
+  inserta ni borra. **Nunca guardar secretos ahí** (tokens de Mercado Pago, etc.): todo es legible.
+- Las páginas públicas la leen con `getStoreSettings()` (`src/lib/store-settings.ts`, `"use cache"` +
+  `cacheTag("store-settings")`); las Server Actions llaman a `updateTag` al guardar.
+- Los datos del comercio ya **no** van en `legales.ts`: `datosComercio()` los arma desde la config
+  (vacíos → `[COMPLETAR]`). En `legales.ts` quedan fijos el nombre y el sitio. El arrepentimiento (10 días)
+  y la garantía por falla van siempre en los Términos, sin importar `exchange_days` (son ley).
+
+### Modo construcción (paso 0, implementado)
+- `src/proxy.ts`: si `is_launched` es false, los visitantes ven "Muy pronto" en **cualquier** ruta de la
+  tienda (rewrite a `/muy-pronto`, la URL no cambia; `/muy-pronto` directo redirige a `/`).
+- Los **admins logueados** (rol del token) ven la tienda real (grupo `src/app/(tienda)/`) con la barra
+  "Vista previa: la tienda todavía no está publicada".
+- Se lanza con el interruptor "Tienda lanzada" en Configuración (pide confirmación).
+- Las rutas de `src/lib/public-routes.ts` (`/privacidad`, `/terminos`, login) se ven siempre.
+- Indexación sin lanzar: `/`, `/privacidad` y `/terminos` indexables (Google); el resto `noindex`
+  (header `X-Robots-Tag` en el rewrite y metadata del layout de `(tienda)`).
+- Requisitos de Google para verificar la marca, NO quitarlos (en "Muy pronto" **y** en el inicio real
+  del paso 1): pública (nunca redirigir al login), `<title>` absoluto y `<h1>` "Home Deko", texto que
+  explique qué es la tienda, cómo se compra y para qué sirve la cuenta con Google, y links a
+  `/privacidad` y `/terminos` en el pie (`SiteFooter`).
 
 ### Páginas legales (adelantadas del paso 9)
-- `/privacidad` y `/terminos` ya están hechas (grupo `src/app/(legal)/`), textos en `src/content/legales.ts`.
-  Los datos que faltan están marcados `[COMPLETAR]` y se ven resaltados en la página.
+- `/privacidad` y `/terminos` ya están hechas (grupo `src/app/(legal)/`), textos en `src/content/legales.ts`
+  y datos del comercio desde Configuración. Lo que falta cargar se ve como `[COMPLETAR]` resaltado.
 
 ### Orden de los pasos
 1. Inicio de la tienda: banner y productos destacados

@@ -537,6 +537,60 @@ export type Database = {
           },
         ]
       }
+      store_settings: {
+        Row: {
+          business_name: string
+          contact_email: string
+          created_at: string
+          cuit: string
+          exchange_days: number
+          id: string
+          instagram: string
+          is_launched: boolean
+          shipping_cost: number
+          singleton: boolean
+          store_address: string
+          store_hours: string
+          tiktok: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          business_name?: string
+          contact_email?: string
+          created_at?: string
+          cuit?: string
+          exchange_days?: number
+          id?: string
+          instagram?: string
+          is_launched?: boolean
+          shipping_cost?: number
+          singleton?: boolean
+          store_address?: string
+          store_hours?: string
+          tiktok?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Update: {
+          business_name?: string
+          contact_email?: string
+          created_at?: string
+          cuit?: string
+          exchange_days?: number
+          id?: string
+          instagram?: string
+          is_launched?: boolean
+          shipping_cost?: number
+          singleton?: boolean
+          store_address?: string
+          store_hours?: string
+          tiktok?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       variant_costs: {
         Row: {
           cost_price: number

@@ -39,7 +39,7 @@ export function whatsappHref(): string | null {
 // Guías por sección
 // ---------------------------------------------------------------------------
 
-export type GuiaId = "productos" | "categorias" | "etiquetas" | "stock";
+export type GuiaId = "productos" | "categorias" | "etiquetas" | "stock" | "configuracion";
 
 export type Guia = {
   id: GuiaId;
@@ -189,6 +189,45 @@ export const GUIAS: Record<GuiaId, Guia> = {
       },
     ],
   },
+
+  configuracion: {
+    id: "configuracion",
+    titulo: "Configuración",
+    resumen: "Los datos del comercio, las redes, el envío y el interruptor para lanzar la tienda.",
+    pasosRapidos: [
+      "Completá los \"Datos del comercio\": nombre o razón social, CUIT y email de contacto.",
+      "Cargá WhatsApp, Instagram y TikTok, el costo del envío, la dirección y horarios del local y el plazo para cambios.",
+      "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie y las páginas legales.",
+      "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá.",
+    ],
+    pasos: [
+      {
+        titulo: "Datos del comercio",
+        texto:
+          "El nombre o razón social, el CUIT y el email de contacto aparecen en el pie de la tienda y en las páginas de Privacidad y Términos (la ley pide que estén a la vista). Mientras falte alguno, en esas páginas se ve \"[COMPLETAR]\" resaltado en amarillo.",
+      },
+      {
+        titulo: "Redes y WhatsApp",
+        texto:
+          "Para Instagram y TikTok escribí solo el usuario (o pegá el link del perfil y se arregla solo). El WhatsApp va con código de país y sin el 0 ni el 15: por ejemplo 5492945123456. Si dejás una red vacía, no se muestra.",
+      },
+      {
+        titulo: "Envío y retiro",
+        texto:
+          "El costo del envío a domicilio es un precio fijo para todo el país. La dirección y los horarios del local se le muestran a quien elige retirar su compra (el retiro es gratis).",
+      },
+      {
+        titulo: "Cambios por gusto",
+        texto:
+          "En \"Cambios por gusto: plazo en días\" ponés cuántos días tiene un cliente para cambiar un producto sin falla (por defecto 30). Si ponés 0, los Términos dicen que no se aceptan cambios por gusto. El derecho de arrepentimiento (10 días) y la garantía por productos fallados aparecen siempre, porque son obligatorios por ley.",
+      },
+      {
+        titulo: "Tienda lanzada (modo construcción)",
+        texto:
+          "Mientras \"Tienda lanzada\" está apagado, los visitantes ven la página \"Muy pronto\" y los buscadores no muestran la tienda. Ustedes, con la sesión iniciada, ven la tienda tal como va quedando, con una barra arriba que dice \"Vista previa\". El día del lanzamiento prendé el interruptor y confirmá: desde ese momento todos ven la tienda y pueden comprar. Si hace falta, se puede volver a apagar.",
+      },
+    ],
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -196,6 +235,11 @@ export const GUIAS: Record<GuiaId, Guia> = {
 // ---------------------------------------------------------------------------
 
 export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
+  {
+    pregunta: "¿Cómo veo la tienda como la ve un cliente?",
+    respuesta:
+      "Abrí el sitio en una ventana de incógnito (o desde un celular donde no hayas iniciado sesión). Si la tienda no está lanzada, vas a ver la página \"Muy pronto\", que es lo que ven los visitantes.",
+  },
   {
     pregunta: "¿Por qué no puedo cambiar el stock desde el formulario del producto?",
     respuesta:

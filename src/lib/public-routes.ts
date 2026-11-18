@@ -6,8 +6,8 @@
  *     sesión con Google y la verificación de la marca.
  *   - /login, /auth y /sin-acceso: para que los dueños puedan entrar.
  *
- * Hoy no las usa nadie: las va a usar src/proxy.ts cuando exista el modo
- * construcción. Si sumás una página que tenga que verse siempre, agregala acá.
+ * Las usa src/proxy.ts. Si sumás una página que tenga que verse siempre,
+ * agregala acá.
  */
 export const ALWAYS_PUBLIC_PATHS = ["/privacidad", "/terminos", "/login", "/auth", "/sin-acceso"];
 

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { CreditCard, MapPin, Store, Truck, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { SiteFooter } from "@/components/site-footer";
-import { COMERCIO } from "@/content/legales";
+import { SocialLinks } from "@/components/social-links";
+import { highlightMissing } from "@/components/legal/legal-document";
+import { datosComercio, getStoreSettings, redesSociales } from "@/lib/store-settings";
 
 const DESCRIPTION =
   "Tienda online de Home Deko: artículos del hogar, bazar y blanquería, con local en Trevelin, Chubut. Comprá con Mercado Pago, con envío a domicilio o retiro en el local.";
@@ -17,14 +19,23 @@ export const metadata: Metadata = {
 };
 
 /**
- * Página "Muy pronto" (/): lo que ve cualquier visitante mientras la tienda
- * no está lanzada. Es PÚBLICA (el proxy solo protege /admin) y estática.
+ * Página "Muy pronto": lo que ven los visitantes mientras la tienda no está
+ * lanzada (interruptor en el panel: Configuración).
  *
- * Google la revisa para verificar la marca del inicio de sesión con Google:
- * tiene que mostrar el nombre "Home Deko", explicar qué es el sitio y
- * para qué sirve la cuenta, y tener links a /privacidad y /terminos.
+ * Nadie entra a /muy-pronto directamente: el proxy (src/proxy.ts) MUESTRA
+ * esta página en "/" (y en cualquier ruta de la tienda) sin cambiar la URL.
+ * Si alguien escribe /muy-pronto, el proxy lo manda a "/".
+ *
+ * Google la revisa en "/" para verificar la marca del inicio de sesión con
+ * Google. NO quitar: título y <h1> "Home Deko", qué es el sitio, cómo se
+ * compra, para qué sirve la cuenta y los links a /privacidad y /terminos
+ * (en el pie). Es estática: los datos del panel llegan cacheados.
  */
-export default function ComingSoonPage() {
+export default async function ComingSoonPage() {
+  const settings = await getStoreSettings();
+  const c = datosComercio(settings);
+  const redes = redesSociales(settings);
+
   return (
     <div className="flex flex-1 flex-col bg-surface">
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:py-16">
@@ -48,14 +59,15 @@ export default function ComingSoonPage() {
           </h2>
           <ul className="flex flex-col gap-5">
             <Feature icon={Store} title="La tienda online de Home Deko">
-              Somos un local de artículos del hogar, bazar y blanquería en {COMERCIO.direccion}. En
-              este sitio vas a poder ver nuestro catálogo y comprar desde tu casa.
+              Somos un local de artículos del hogar, bazar y blanquería en{" "}
+              {highlightMissing(c.direccion)}. En este sitio vas a poder ver nuestro catálogo y
+              comprar desde tu casa.
             </Feature>
             <Feature icon={CreditCard} title="Compra online con Mercado Pago">
               Pagás de forma segura con Mercado Pago: tarjeta de crédito, débito o dinero en cuenta.
             </Feature>
             <Feature icon={Truck} title="Envío a domicilio o retiro en el local">
-              Te lo enviamos a cualquier lugar del país ({COMERCIO.envioDomicilio}, precio fijo) o lo
+              Te lo enviamos a cualquier lugar del país ({c.envioDomicilio}, precio fijo) o lo
               retirás gratis en el local.
             </Feature>
             <Feature icon={UserRound} title="Tu cuenta, con Google">
@@ -70,10 +82,19 @@ export default function ComingSoonPage() {
           </ul>
         </section>
 
+        {redes.length > 0 && (
+          <section aria-labelledby="redes" className="flex flex-col items-center gap-3 text-center">
+            <h2 id="redes" className="text-sm font-semibold">
+              Seguinos para enterarte del lanzamiento
+            </h2>
+            <SocialLinks redes={redes} className="justify-center" />
+          </section>
+        )}
+
         <p className="flex items-start justify-center gap-2 text-center text-sm text-muted-foreground">
           <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
           <span>
-            Mientras tanto, te esperamos en el local: {COMERCIO.direccion}.
+            Mientras tanto, te esperamos en el local: {highlightMissing(c.direccion)}.
           </span>
         </p>
       </main>

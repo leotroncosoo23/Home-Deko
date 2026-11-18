@@ -52,6 +52,11 @@ export function parseMoney(text: string): number | null {
   return Math.round(Number(s) * 100) / 100;
 }
 
+/** "20123456786" → "20-12345678-6" (si no son 11 dígitos, lo deja como está). */
+export function formatCuit(digits: string): string {
+  return /^\d{11}$/.test(digits) ? `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}` : digits;
+}
+
 /** Lee un entero no negativo ("" → null, "12" → 12, "1.200" → 1200). */
 export function parseInteger(text: string): number | null {
   const s = text.replace(/[\s.]/g, "");
