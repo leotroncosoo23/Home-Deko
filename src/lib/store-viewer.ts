@@ -5,7 +5,10 @@ import {
   FEATURED_LIMIT,
   getFeaturedProducts,
   getPublishedCatalog,
+  getPublishedProduct,
   queryCatalog,
+  queryProduct,
+  type ProductDetail,
   STORE_PRODUCT_COLUMNS,
   toStoreProduct,
   type CatalogQuery,
@@ -95,4 +98,14 @@ export async function getCatalogForViewer(q: CatalogQuery): Promise<CatalogResul
   if (viewer.seesAdminView) return queryCatalog(await createClient(), q);
   if (q.search) return queryCatalog(createPublicClient(), q);
   return getPublishedCatalog(q);
+}
+
+/**
+ * Página de un producto para quien está mirando: los admins (vista de
+ * admin) pueden abrir también los borradores; el resto, la versión en caché.
+ */
+export async function getProductForViewer(slug: string): Promise<ProductDetail | null> {
+  const viewer = await getStoreViewer();
+  if (viewer.seesAdminView) return queryProduct(await createClient(), slug);
+  return getPublishedProduct(slug);
 }

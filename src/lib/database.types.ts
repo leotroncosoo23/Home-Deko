@@ -165,6 +165,13 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
         ]
       }
       product_costs: {
@@ -620,6 +627,13 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
         ]
       }
       store_announcements: {
@@ -734,6 +748,13 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "variant_costs_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
         ]
       }
       variant_option_values: {
@@ -771,6 +792,13 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "variant_option_values_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
         ]
       }
     }
@@ -803,6 +831,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_queue_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: true
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
           },
         ]
       }
@@ -914,6 +949,13 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
         ]
       }
       admin_variant_stock: {
@@ -956,8 +998,10 @@ export type Database = {
           primary_image_path: string | null
           search_text: string | null
           secondary_image_path: string | null
+          single_variant_id: string | null
           slug: string | null
           status: Database["public"]["Enums"]["product_status"] | null
+          variant_count: number | null
         }
         Relationships: [
           {
@@ -965,6 +1009,54 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_variants: {
+        Row: {
+          final_price: number | null
+          is_default: boolean | null
+          position: number | null
+          price: number | null
+          product_id: string | null
+          stock: number | null
+          variant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
             referencedColumns: ["id"]
           },
         ]

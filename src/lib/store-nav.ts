@@ -19,6 +19,9 @@ export function productHref(slug: string): string {
   return `/productos/${slug}`;
 }
 
+/** "Iniciar compra" del carrito (en el paso 4, el checkout con Mercado Pago). */
+export const CHECKOUT_PATH = "/finalizar-compra";
+
 /** Búsqueda (el formulario manda ?q=...). */
 export const SEARCH_PATH = "/buscar";
 

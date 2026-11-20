@@ -249,6 +249,13 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   (`few_left`, un sí/no: la tienda nunca muestra el número de unidades). Lo que cambie el stock (también las
   ventas web del paso 4) tiene que llamar a `updateTag(STORE_PRODUCTS_TAG)` para que la etiqueta se actualice.
 - Fotos grandes; al elegir un color se muestran sus fotos.
+- Página de producto (paso 3, implementado): `/productos/[slug]` (`src/components/store/product/`). Busca primero en
+  `store_products` (borrador solo para admins; archivado o categoría oculta → 404). Galería (deslizar en celular,
+  miniaturas + lupa en PC, pantalla completa), opciones en orden (un valor sin stock con lo ya elegido: tachado y
+  deshabilitado), cantidad con tope `stock − lo que ya está en el carrito`, envío/retiro de Configuración, WhatsApp
+  con el producto, "Productos relacionados" y JSON-LD `Product`.
+- **Precio por variante: vista `store_variants`** (`final_price` con el descuento vigente, misma regla que
+  `store_products`). Es la única fuente de precios de la tienda: página de producto, carrito y checkout.
 
 ### Carrito, checkout y envío
 - **Botón rápido en la tarjeta de producto** (`ProductCard`: inicio, catálogo, categorías y búsqueda):
@@ -256,12 +263,22 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - Con **varias variantes**: "Elegir opciones" lleva a la página del producto.
   - **Sin stock**: sin botón.
   - En **celular**: botón chico con ícono de carrito que **no tape la foto**.
+- **Carrito (paso 3, implementado)** — `src/components/store/cart/`:
+  - El navegador guarda SOLO `{ variantId, qty }` en localStorage (`hd_carrito`). Nombre, foto, precio y stock
+    los arma siempre el servidor con `getCartLines` (`src/app/(tienda)/actions.ts`, lee `store_variants`), que
+    además ajusta: sin stock / despublicado → se saca con aviso; bajó el stock → se baja la cantidad.
+  - `CartProvider` (en `StoreFrame`): un solo panel y un solo aviso para toda la tienda. Al agregar: botón
+    "Agregado ✓", la foto vuela al ícono (`data-cart-target`), rebote y el número sube, aviso de 3 s bajo el
+    carrito (región `role="status"` para lectores de pantalla). Con `prefers-reduced-motion`: solo el aviso.
+  - "Iniciar compra" lleva a `/finalizar-compra`: **provisoria** (pedido por WhatsApp con los precios del
+    servidor) hasta que el paso 4 la reemplace por el checkout con Mercado Pago.
 - Carrito y checkout con **Mercado Pago (Checkout Pro)**. El pedido se confirma **solo por el webhook**,
   consultando el pago a la API de Mercado Pago (nunca confiar en la redirección), y el stock se descuenta
   con `adjust_stock` (`venta_web`).
 - El cliente elige la entrega:
-  - **Envío a domicilio: $ 20.000** fijo, a cualquier zona del país, sin conexión con el Correo.
-    El negocio despacha por Correo Argentino y carga el código de seguimiento.
+  - **Envío a domicilio: $ 20.000** fijo, a cualquier zona del país, sin conexión con ningún transporte.
+    El negocio despacha y carga el código de seguimiento. **Transporte todavía sin definir**: no nombrar
+    ninguna empresa (Correo Argentino u otra) en la tienda ni en los legales hasta que los dueños lo confirmen.
   - **Retiro en el local: gratis**, mostrando dirección y horarios.
 - **Total del pedido, calculado SIEMPRE en el servidor** (nunca confiar en lo que mande el navegador):
   productos − cupón + envío (envío = $ 0 si es retiro). El costo de envío se lee de `store_settings` en el
@@ -269,6 +286,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   Configuración no afecta los pedidos anteriores.
 - **Compra como invitado** (nombre, email, teléfono, dirección si es envío) y **cuenta opcional**
   (Google en un clic) con "Mis pedidos" y el estado.
+- **Paso 6 (cuenta del cliente): al iniciar sesión, el carrito del navegador NO se pierde.** Se conserva tal
+  cual; si la cuenta llegara a guardar un carrito propio, se combinan (sumando cantidades, con el tope del stock).
 
 ### Pedidos en el panel
 - Envío: Pagado → Preparando → Enviado (con código de seguimiento) → Entregado.

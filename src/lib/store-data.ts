@@ -96,10 +96,14 @@ export type StoreProduct = {
   discountPercentVaries: boolean;
   /** Quedan entre 1 y 3 unidades en total → "¡Últimas unidades!". */
   fewLeft: boolean;
+  /** Cuántas variantes activas tiene (botón rápido: 1 → "Agregar", más → "Elegir opciones"). */
+  variantCount: number;
+  /** La variante, si tiene UNA sola (la que suma "Agregar" de la tarjeta). */
+  singleVariantId: string | null;
 };
 
 export const STORE_PRODUCT_COLUMNS =
-  "id, name, slug, status, min_price, final_min_price, discount_active, has_price_range, in_stock, primary_image_path, primary_image_alt, secondary_image_path, discount_percent_max, discount_percent_min, few_left";
+  "id, name, slug, status, min_price, final_min_price, discount_active, has_price_range, in_stock, primary_image_path, primary_image_alt, secondary_image_path, discount_percent_max, discount_percent_min, few_left, variant_count, single_variant_id";
 
 /** Cuántos destacados muestra el inicio (4 filas de 2 en el celular, 2 de 4 en PC). */
 export const FEATURED_LIMIT = 8;
@@ -120,6 +124,8 @@ type StoreProductRow = {
   discount_percent_max: number | null;
   discount_percent_min: number | null;
   few_left: boolean | null;
+  variant_count: number | null;
+  single_variant_id: string | null;
 };
 
 /** Fila de la vista → producto para la tarjeta. */
@@ -145,6 +151,8 @@ export function toStoreProduct(p: StoreProductRow): StoreProduct {
       p.discount_percent_min != null &&
       p.discount_percent_max !== p.discount_percent_min,
     fewLeft: Boolean(p.few_left) && Boolean(p.in_stock),
+    variantCount: p.variant_count ?? 0,
+    singleVariantId: p.single_variant_id,
   };
 }
 
@@ -249,6 +257,176 @@ export async function getPublishedCatalog(q: CatalogQuery): Promise<CatalogResul
 export async function getVisibleCategoryBySlug(slug: string): Promise<StoreCategory | null> {
   const categories = await getVisibleCategories();
   return categories.find((c) => c.slug === slug) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Página de producto: /productos/[slug]
+// ---------------------------------------------------------------------------
+
+export type ProductOptionValue = { id: string; value: string; colorHex: string | null };
+export type ProductOption = { id: string; name: string; values: ProductOptionValue[] };
+
+export type ProductVariant = {
+  id: string;
+  /** Sin descuento. */
+  price: number;
+  /** A pagar hoy (con el descuento vigente). De la vista store_variants. */
+  finalPrice: number;
+  /**
+   * Unidades disponibles. No se muestra nunca: solo pone el tope del
+   * selector de cantidad (el dato ya es público por la API de todos modos).
+   */
+  stock: number;
+  /** Un valor por opción ("Rojo" y "30 cm"). Vacío en la variante por defecto. */
+  optionValueIds: string[];
+};
+
+export type ProductPhoto = {
+  url: string;
+  alt: string | null;
+  /** La foto es de un color (o valor) en particular; null = foto general. */
+  optionValueId: string | null;
+};
+
+export type ProductDetail = {
+  /** Los mismos datos que la tarjeta (precio "desde", descuento, etiquetas…). */
+  card: StoreProduct;
+  description: string | null;
+  category: { id: string; name: string; slug: string } | null;
+  /** Solo las opciones y valores que usa alguna variante activa. */
+  options: ProductOption[];
+  variants: ProductVariant[];
+  photos: ProductPhoto[];
+};
+
+/**
+ * Un producto completo para su página, con el cliente que corresponda
+ * (visitante o admin). Primero se busca en store_products: si no está ahí
+ * (borrador para un visitante, archivado o con la categoría oculta), no
+ * existe para la tienda → null (404).
+ */
+export async function queryProduct(
+  supabase: SupabaseClient<Database>,
+  slug: string,
+): Promise<ProductDetail | null> {
+  const { data: row, error } = await supabase
+    .from("store_products")
+    .select(`${STORE_PRODUCT_COLUMNS}, category_id`)
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error("No se pudo leer el producto.");
+  if (!row?.id) return null;
+  const productId = row.id;
+
+  const [product, category, options, variants, images] = await Promise.all([
+    supabase.from("products").select("description").eq("id", productId).single(),
+    row.category_id
+      ? supabase.from("categories").select("id, name, slug").eq("id", row.category_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("product_options")
+      .select("id, name, position, product_option_values(id, value, color_hex, position)")
+      .eq("product_id", productId)
+      .order("position"),
+    supabase
+      .from("store_variants")
+      .select("variant_id, price, final_price, stock, position")
+      .eq("product_id", productId)
+      .order("position"),
+    supabase
+      .from("product_images")
+      .select("storage_path, alt_text, option_value_id")
+      .eq("product_id", productId)
+      .order("is_primary", { ascending: false })
+      .order("position"),
+  ]);
+  if (product.error || category.error || options.error || variants.error || images.error) {
+    throw new Error("No se pudo leer el producto.");
+  }
+
+  const variantIds = variants.data.flatMap((v) => (v.variant_id ? [v.variant_id] : []));
+  const links = variantIds.length
+    ? await supabase.from("variant_option_values").select("variant_id, option_value_id").in("variant_id", variantIds)
+    : { data: [], error: null };
+  if (links.error) throw new Error("No se pudo leer el producto.");
+
+  const valuesByVariant = new Map<string, string[]>();
+  for (const l of links.data) {
+    valuesByVariant.set(l.variant_id, [...(valuesByVariant.get(l.variant_id) ?? []), l.option_value_id]);
+  }
+  const usedValues = new Set(links.data.map((l) => l.option_value_id));
+
+  return {
+    card: toStoreProduct(row),
+    description: product.data.description?.trim() || null,
+    category: category.data,
+    options: options.data
+      .map((o) => ({
+        id: o.id,
+        name: o.name,
+        values: [...o.product_option_values]
+          .sort((a, b) => a.position - b.position)
+          .filter((v) => usedValues.has(v.id))
+          .map((v) => ({ id: v.id, value: v.value, colorHex: v.color_hex })),
+      }))
+      .filter((o) => o.values.length > 0),
+    variants: variants.data.map((v) => ({
+      id: v.variant_id ?? "",
+      price: Number(v.price ?? 0),
+      finalPrice: Number(v.final_price ?? v.price ?? 0),
+      stock: v.stock ?? 0,
+      optionValueIds: valuesByVariant.get(v.variant_id ?? "") ?? [],
+    })),
+    photos: images.data.map((i) => ({
+      url: publicImageUrl(i.storage_path),
+      alt: i.alt_text,
+      optionValueId: i.option_value_id,
+    })),
+  };
+}
+
+/** El producto que ve un visitante (solo publicados), en caché hasta que cambie algo. */
+export async function getPublishedProduct(slug: string): Promise<ProductDetail | null> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  // Cada hora: los descuentos con fecha empiezan y terminan solos.
+  cacheLife("hours");
+
+  return queryProduct(createPublicClient(), slug);
+}
+
+/** Slugs de los productos publicados (para armar sus páginas de antemano). */
+export async function getPublishedProductSlugs(): Promise<string[]> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  cacheLife("hours");
+
+  const { data, error } = await createPublicClient().from("store_products").select("slug");
+  if (error) throw new Error("No se pudieron leer los productos.");
+  return data.flatMap((p) => (p.slug ? [p.slug] : []));
+}
+
+/** Cuántos "Productos relacionados" se muestran (una fila de 4 en PC, 2 de 2 en el celular). */
+export const RELATED_LIMIT = 4;
+
+/** Otros productos publicados de la misma categoría (los que tienen stock primero). */
+export async function getRelatedProducts(categoryId: string, excludeId: string): Promise<StoreProduct[]> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  cacheLife("hours");
+
+  const { data, error } = await createPublicClient()
+    .from("store_products")
+    .select(STORE_PRODUCT_COLUMNS)
+    .eq("category_id", categoryId)
+    .neq("id", excludeId)
+    .order("in_stock", { ascending: false })
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(RELATED_LIMIT);
+  if (error) throw new Error("No se pudieron leer los productos relacionados.");
+
+  return data.map(toStoreProduct);
 }
 
 // ---------------------------------------------------------------------------
