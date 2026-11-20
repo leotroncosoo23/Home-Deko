@@ -237,10 +237,25 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 
 ### Catálogo y producto
 - Catálogo por categorías, con buscador, filtros y orden. Cada color o medida con su propio stock.
-- **Sin stock, sin venta**: una variante en 0 no se puede comprar.
+- **Sin stock, sin venta**: una variante en 0 no se puede comprar. En los listados, los sin stock van siempre al final.
+- **Categoría oculta → sus productos no se ven en la tienda** (catálogo, búsqueda, inicio y página de producto).
+  Lo resuelve la vista `store_products`: toda lectura pública de productos pasa por ahí. Sin categoría = se ve.
+- Catálogo (paso 2, implementado): `/productos`, `/categorias/[slug]` y `/buscar?q=` comparten `CatalogView`
+  (`src/components/store/catalog/`). Estado en la URL (`?orden=&min=&max=&pagina=`, + `q` y `categoria` en
+  `/buscar`), parseado en `src/lib/catalog-params.ts`. 24 por tanda; "Ver más" es un link a `?pagina=N`.
+  Búsqueda sobre `store_products.search_text` (nombre + categoría + códigos de barras, sin tildes).
+- Tarjeta de producto (`product-card.tsx`): descuento como "-10%" (redondeado) o "Hasta -20%" si las variantes
+  ahorran distinto (`discount_percent_max/min` de la vista); "¡Últimas unidades!" si quedan 1 a 3 en total
+  (`few_left`, un sí/no: la tienda nunca muestra el número de unidades). Lo que cambie el stock (también las
+  ventas web del paso 4) tiene que llamar a `updateTag(STORE_PRODUCTS_TAG)` para que la etiqueta se actualice.
 - Fotos grandes; al elegir un color se muestran sus fotos.
 
 ### Carrito, checkout y envío
+- **Botón rápido en la tarjeta de producto** (`ProductCard`: inicio, catálogo, categorías y búsqueda):
+  - Producto con **una sola variante**: "Agregar" lo suma al carrito, con el aviso "Agregado ✓".
+  - Con **varias variantes**: "Elegir opciones" lleva a la página del producto.
+  - **Sin stock**: sin botón.
+  - En **celular**: botón chico con ícono de carrito que **no tape la foto**.
 - Carrito y checkout con **Mercado Pago (Checkout Pro)**. El pedido se confirma **solo por el webhook**,
   consultando el pago a la API de Mercado Pago (nunca confiar en la redirección), y el stock se descuenta
   con `adjust_stock` (`venta_web`).

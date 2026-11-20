@@ -1,6 +1,9 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { BANNER_VIEW_COLUMNS, toBannerView, type BannerView } from "@/lib/banners";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CatalogSort } from "@/lib/catalog-params";
+import type { Database } from "@/lib/database.types";
 import { STORE_ANNOUNCEMENTS_TAG, STORE_BANNERS_TAG, STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { publicImageUrl } from "@/lib/storage";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -27,6 +30,8 @@ export type StoreCategory = {
   id: string;
   name: string;
   slug: string;
+  /** La que cargan en el panel (o null). Se usa como descripción para Google. */
+  description: string | null;
   imageUrl: string | null;
   /**
    * Productos PUBLICADOS de la categoría. Se consulta como visitante, así que
@@ -44,7 +49,7 @@ export async function getVisibleCategories(): Promise<StoreCategory[]> {
 
   const { data, error } = await createPublicClient()
     .from("categories")
-    .select("id, name, slug, image_path, products(count)")
+    .select("id, name, slug, description, image_path, products(count)")
     .eq("is_visible", true)
     .order("sort_order")
     .order("name");
@@ -54,6 +59,7 @@ export async function getVisibleCategories(): Promise<StoreCategory[]> {
     id: c.id,
     name: c.name,
     slug: c.slug,
+    description: c.description?.trim() || null,
     imageUrl: c.image_path ? publicImageUrl(c.image_path) : null,
     productCount: c.products[0]?.count ?? 0,
   }));
@@ -79,10 +85,21 @@ export type StoreProduct = {
   inStock: boolean;
   imageUrl: string | null;
   imageAlt: string | null;
+  /** Segunda foto: aparece al pasar el mouse por la tarjeta. */
+  secondaryImageUrl: string | null;
+  /**
+   * Descuento vigente en %, redondeado (el de la variante que más ahorra),
+   * o null si no hay descuento. Ej.: 10 → "-10%".
+   */
+  discountPercent: number | null;
+  /** Las variantes ahorran distinto % (descuento de monto fijo) → "Hasta -20%". */
+  discountPercentVaries: boolean;
+  /** Quedan entre 1 y 3 unidades en total → "¡Últimas unidades!". */
+  fewLeft: boolean;
 };
 
 export const STORE_PRODUCT_COLUMNS =
-  "id, name, slug, status, min_price, final_min_price, discount_active, has_price_range, in_stock, primary_image_path, primary_image_alt";
+  "id, name, slug, status, min_price, final_min_price, discount_active, has_price_range, in_stock, primary_image_path, primary_image_alt, secondary_image_path, discount_percent_max, discount_percent_min, few_left";
 
 /** Cuántos destacados muestra el inicio (4 filas de 2 en el celular, 2 de 4 en PC). */
 export const FEATURED_LIMIT = 8;
@@ -99,6 +116,10 @@ type StoreProductRow = {
   in_stock: boolean | null;
   primary_image_path: string | null;
   primary_image_alt: string | null;
+  secondary_image_path: string | null;
+  discount_percent_max: number | null;
+  discount_percent_min: number | null;
+  few_left: boolean | null;
 };
 
 /** Fila de la vista → producto para la tarjeta. */
@@ -116,6 +137,14 @@ export function toStoreProduct(p: StoreProductRow): StoreProduct {
     inStock: Boolean(p.in_stock),
     imageUrl: p.primary_image_path ? publicImageUrl(p.primary_image_path) : null,
     imageAlt: p.primary_image_alt,
+    secondaryImageUrl: p.secondary_image_path ? publicImageUrl(p.secondary_image_path) : null,
+    // Un descuento que redondea a 0 % no se anuncia como porcentaje.
+    discountPercent: p.discount_percent_max && p.discount_percent_max > 0 ? p.discount_percent_max : null,
+    discountPercentVaries:
+      p.discount_percent_max != null &&
+      p.discount_percent_min != null &&
+      p.discount_percent_max !== p.discount_percent_min,
+    fewLeft: Boolean(p.few_left) && Boolean(p.in_stock),
   };
 }
 
@@ -136,24 +165,84 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
   return data.map(toStoreProduct);
 }
 
-/** Máximo de productos por listado (la paginación llega con el catálogo completo). */
-export const LIST_LIMIT = 120;
+// ---------------------------------------------------------------------------
+// Catálogo: /productos, /categorias/[slug] y /buscar
+// ---------------------------------------------------------------------------
+
+export type CatalogQuery = {
+  categoryId: string | null;
+  /** Ya normalizada con normalizeSearch() (minúsculas, sin tildes). Vacía = sin búsqueda. */
+  search: string;
+  orden: CatalogSort;
+  min: number | null;
+  max: number | null;
+  /** Cuántos productos traer desde el principio (PAGE_SIZE × tandas). */
+  limit: number;
+};
+
+export type CatalogResult = {
+  products: StoreProduct[];
+  /** Cuántos productos hay en total con estos filtros (para "Ver más"). */
+  total: number;
+};
+
+/** Escapa los comodines de LIKE (% y _): se buscan como texto. */
+function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
 
 /**
- * Productos publicados (todos o de una categoría), del más nuevo al más
- * viejo. Lo que ve un visitante; en caché hasta que cambie algo.
+ * La consulta del catálogo, con el cliente que corresponda (visitante o
+ * admin). Todo se filtra, ordena y corta EN LA BASE: funciona igual con
+ * 50 productos que con 5.000.
  */
-export async function getPublishedProducts(categoryId: string | null): Promise<StoreProduct[]> {
+export async function queryCatalog(
+  supabase: SupabaseClient<Database>,
+  q: CatalogQuery,
+): Promise<CatalogResult> {
+  let query = supabase.from("store_products").select(STORE_PRODUCT_COLUMNS, { count: "exact" });
+
+  if (q.categoryId) query = query.eq("category_id", q.categoryId);
+  if (q.min !== null) query = query.gte("final_min_price", q.min);
+  if (q.max !== null) query = query.lte("final_min_price", q.max);
+
+  // Cada palabra tiene que aparecer (en cualquier orden): "sabana blanca"
+  // encuentra "Sábana de algodón blanca".
+  const words = q.search.split(/\s+/).filter(Boolean).slice(0, 6);
+  for (const word of words) query = query.ilike("search_text", `%${escapeLike(word)}%`);
+
+  // "Sin stock, sin venta": los agotados siempre al final, en cualquier orden.
+  query = query.order("in_stock", { ascending: false });
+  switch (q.orden) {
+    case "destacados":
+      query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
+      break;
+    case "nuevos":
+      query = query.order("created_at", { ascending: false });
+      break;
+    case "menor-precio":
+      query = query.order("final_min_price", { ascending: true });
+      break;
+    case "mayor-precio":
+      query = query.order("final_min_price", { ascending: false });
+      break;
+  }
+  // Desempate fijo: así "Ver más" nunca repite ni saltea productos.
+  query = query.order("id");
+
+  const { data, error, count } = await query.range(0, q.limit - 1);
+  if (error) throw new Error("No se pudieron leer los productos.");
+
+  return { products: data.map(toStoreProduct), total: count ?? data.length };
+}
+
+/** El catálogo que ve un visitante (solo publicados), en caché hasta que cambie algo. */
+export async function getPublishedCatalog(q: CatalogQuery): Promise<CatalogResult> {
   "use cache";
   cacheTag(STORE_PRODUCTS_TAG);
   cacheLife("hours");
 
-  let query = createPublicClient().from("store_products").select(STORE_PRODUCT_COLUMNS);
-  if (categoryId) query = query.eq("category_id", categoryId);
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(LIST_LIMIT);
-  if (error) throw new Error("No se pudieron leer los productos.");
-
-  return data.map(toStoreProduct);
+  return queryCatalog(createPublicClient(), q);
 }
 
 /** Una categoría visible por su slug (o null si no existe o está oculta). */

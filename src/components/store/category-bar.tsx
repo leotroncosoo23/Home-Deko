@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { StoreCategory } from "@/lib/store-data";
+import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, categoryHref } from "@/lib/store-nav";
 
 /** Espacio entre links (px). Igual que la clase gap-1 de abajo. */
@@ -86,8 +87,9 @@ function Bar({ categories, pathname }: { categories: StoreCategory[]; pathname: 
 
   return (
     <nav aria-label="Categorías" className="border-t">
-      <div className="mx-auto flex h-12 w-full max-w-6xl items-center px-6">
-      <div ref={containerRef} className="relative flex min-w-0 flex-1 items-center">
+      {/* -ml-3 en la fila: el texto del primer link queda alineado con el logo (cada link tiene px-3) */}
+      <div className={cn(STORE_CONTAINER, "flex h-12 items-center")}>
+      <div ref={containerRef} className="relative -ml-3 flex min-w-0 flex-1 items-center">
         {/* Fila para medir (invisible, no se puede tocar ni la lee el lector de pantalla) */}
         <div ref={measureRef} aria-hidden inert className="pointer-events-none invisible absolute flex whitespace-nowrap">
           <BarLink href={ALL_PRODUCTS_LINK.href} label={ALL_PRODUCTS_LINK.label} active={false} />

@@ -20,7 +20,7 @@ export function productHref(slug: string): string {
 }
 
 /** Búsqueda (el formulario manda ?q=...). */
-export const SEARCH_PATH = "/productos";
+export const SEARCH_PATH = "/buscar";
 
 /** Páginas de información y legales. */
 export const INFO_LINKS: StoreLink[] = [

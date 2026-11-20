@@ -3,19 +3,26 @@ import { cn } from "@/lib/utils";
 import { SEARCH_PATH } from "@/lib/store-nav";
 
 /**
- * Buscador de la tienda: un formulario común que va a /productos?q=...
+ * Buscador de la tienda: un formulario común que va a /buscar?q=...
  * (funciona aunque no cargue JavaScript).
  */
 export function SearchForm({
   autoFocus,
   className,
+  inputId,
+  defaultValue,
 }: {
   autoFocus?: boolean;
   className?: string;
+  /** Hace falta si hay más de un buscador en la página (el del encabezado usa "buscar"). */
+  inputId?: string;
+  /** En /buscar: la búsqueda actual, para corregirla sin volver a escribir todo. */
+  defaultValue?: string;
 }) {
+  const id = inputId ?? (autoFocus ? "buscar-celular" : "buscar");
   return (
     <form action={SEARCH_PATH} method="get" role="search" className={cn("relative", className)}>
-      <label htmlFor={autoFocus ? "buscar-celular" : "buscar"} className="sr-only">
+      <label htmlFor={id} className="sr-only">
         Buscar productos
       </label>
       <Search
@@ -23,7 +30,8 @@ export function SearchForm({
         className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
       />
       <input
-        id={autoFocus ? "buscar-celular" : "buscar"}
+        id={id}
+        defaultValue={defaultValue}
         name="q"
         type="search"
         required

@@ -4,10 +4,12 @@ import { cookies } from "next/headers";
 import {
   FEATURED_LIMIT,
   getFeaturedProducts,
-  getPublishedProducts,
-  LIST_LIMIT,
+  getPublishedCatalog,
+  queryCatalog,
   STORE_PRODUCT_COLUMNS,
   toStoreProduct,
+  type CatalogQuery,
+  type CatalogResult,
   type StoreProduct,
 } from "@/lib/store-data";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -80,34 +82,17 @@ export async function getFeaturedProductsForViewer(): Promise<StoreProduct[]> {
 }
 
 /**
- * Listado de productos (todos, de una categoría o una búsqueda por nombre)
- * para quien está mirando. Igual que los destacados: los admins ven
- * también los borradores.
+ * Catálogo (todos, una categoría o una búsqueda) para quien está mirando.
+ * Igual que los destacados: los admins ven también los borradores.
+ *
+ *   - Visitante sin búsqueda → la versión en caché (igual para todos).
+ *   - Visitante con búsqueda → como "anon", sin caché (cada búsqueda es
+ *     distinta: guardarlas todas llenaría la caché de cosas que no se repiten).
+ *   - Admin → con su sesión (el RLS le deja ver los borradores).
  */
-export async function getProductsForViewer({
-  categoryId = null,
-  search = "",
-}: {
-  categoryId?: string | null;
-  search?: string;
-}): Promise<StoreProduct[]> {
+export async function getCatalogForViewer(q: CatalogQuery): Promise<CatalogResult> {
   const viewer = await getStoreViewer();
-  const term = search.trim().slice(0, 80);
-
-  // Visitante sin búsqueda: la versión en caché.
-  if (!viewer.seesAdminView && !term) return getPublishedProducts(categoryId);
-
-  // Admin: con su sesión (el RLS le deja ver los borradores).
-  // Visitante con búsqueda: como "anon" (el RLS solo le deja ver publicados).
-  const supabase = viewer.seesAdminView ? await createClient() : createPublicClient();
-  let query = supabase.from("store_products").select(STORE_PRODUCT_COLUMNS);
-  if (categoryId) query = query.eq("category_id", categoryId);
-  if (term) {
-    // Los comodines de LIKE (% y _) se escapan: se buscan como texto.
-    query = query.ilike("name", `%${term.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`);
-  }
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(LIST_LIMIT);
-  if (error) throw new Error("No se pudieron leer los productos.");
-
-  return data.map(toStoreProduct);
+  if (viewer.seesAdminView) return queryCatalog(await createClient(), q);
+  if (q.search) return queryCatalog(createPublicClient(), q);
+  return getPublishedCatalog(q);
 }

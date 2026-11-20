@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
-import { STORE_CATEGORIES_TAG } from "@/lib/store-cache";
+import { STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN } from "@/lib/slug";
@@ -149,6 +149,9 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
   }
 
   updateTag(STORE_CATEGORIES_TAG);
+  // El nombre de la categoría está en el buscador, y ocultarla esconde sus
+  // productos: el catálogo también se actualiza.
+  updateTag(STORE_PRODUCTS_TAG);
   refresh();
   return { ok: true };
 }
@@ -172,6 +175,7 @@ export async function setCategoryVisibility(id: string, isVisible: boolean): Pro
   if (data.length === 0) return { ok: false, error: "Esta categoría ya no existe. Recargá la página." };
 
   updateTag(STORE_CATEGORIES_TAG);
+  updateTag(STORE_PRODUCTS_TAG); // ocultar la categoría esconde sus productos de la tienda
   refresh();
   return { ok: true };
 }

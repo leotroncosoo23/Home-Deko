@@ -942,6 +942,9 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           discount_active: boolean | null
+          discount_percent_max: number | null
+          discount_percent_min: number | null
+          few_left: boolean | null
           final_min_price: number | null
           has_price_range: boolean | null
           id: string | null
@@ -951,6 +954,8 @@ export type Database = {
           name: string | null
           primary_image_alt: string | null
           primary_image_path: string | null
+          search_text: string | null
+          secondary_image_path: string | null
           slug: string | null
           status: Database["public"]["Enums"]["product_status"] | null
         }

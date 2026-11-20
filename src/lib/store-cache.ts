@@ -5,8 +5,10 @@
  * para ser rápidas. Cuando el panel cambia algo, la Server Action llama a
  * updateTag(<etiqueta>) y la tienda muestra el dato nuevo en el próximo pedido.
  *
- *   Productos y stock → STORE_PRODUCTS_TAG  (destacados, "Sin stock", precios)
- *   Categorías        → STORE_CATEGORIES_TAG (menú y grilla del inicio)
+ *   Productos y stock → STORE_PRODUCTS_TAG  (destacados, catálogo, búsqueda, "Sin stock", precios)
+ *   Categorías        → STORE_CATEGORIES_TAG (menú, grilla del inicio y filtro del catálogo)
+ *                       + STORE_PRODUCTS_TAG al editarla u ocultarla (cambia la búsqueda
+ *                       y oculta sus productos)
  *   Banners           → STORE_BANNERS_TAG    (banner principal)
  *   Barra de anuncios → STORE_ANNOUNCEMENTS_TAG
  */
