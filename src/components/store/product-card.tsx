@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { formatARS } from "@/lib/format";
 import type { StoreProduct } from "@/lib/store-data";
 import { productHref } from "@/lib/store-nav";
+import { QuickAdd } from "./cart/quick-add";
 
 // ---------------------------------------------------------------------------
 // Grillas (las comparten el catálogo, el inicio y los esqueletos de carga)
@@ -22,15 +23,17 @@ export const HOME_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 2
 
 /**
  * Tarjeta de producto de la tienda (inicio, catálogo, categorías, búsqueda):
- * foto grande cuadrada, nombre (hasta 2 líneas) y precio.
+ * foto grande cuadrada, nombre (hasta 2 líneas), precio y botón rápido.
  *
  *   - Con descuento vigente: etiqueta "-10%" (o "Hasta -20%"), precio final
  *     en rojo y el anterior tachado.
  *   - Quedan 1 a 3 unidades: "¡Últimas unidades!" (nunca junto a "Sin stock").
  *   - Con variantes de distinto precio: "Desde $ …".
- *   - Sin stock: etiqueta "Sin stock" y la foto un poco apagada.
+ *   - Sin stock: etiqueta "Sin stock", la foto un poco apagada y sin botón.
  *   - Con 2 fotos o más: la segunda aparece al pasar el mouse.
  *   - Borrador: etiqueta gris "Borrador" (solo les llegan a los admins).
+ *   - Botón rápido: "Agregar" (una variante) o "Elegir opciones" (varias).
+ *     En el celular es un ícono al lado del precio, para no tapar la foto.
  *   - Al pasar el mouse: zoom leve de la foto y una sombra suave. En
  *     Tailwind v4, hover/group-hover solo aplican en dispositivos con
  *     mouse: en el celular nada queda "pegado" después de tocar.
@@ -46,93 +49,134 @@ export function ProductCard({
 }) {
   const p = product;
   const discount = p.discountActive && p.finalPrice < p.price;
+  const href = productHref(p.slug);
+  // Botón rápido: sin stock no hay; con una variante "Agregar"; con varias "Elegir opciones".
+  const quick =
+    p.inStock && p.variantCount > 0
+      ? { variantId: p.variantCount === 1 ? p.singleVariantId : null, href, name: p.name, imageUrl: p.imageUrl }
+      : null;
 
   return (
-    <Link
-      href={productHref(p.slug)}
-      className="group flex flex-col gap-3 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:ring-offset-4"
-    >
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-muted transition-shadow duration-300 group-hover:shadow-[0_12px_28px_-14px_rgb(43_43_43/0.35)]">
-        {p.imageUrl ? (
-          <Image
-            src={p.imageUrl}
-            alt={p.imageAlt || p.name}
-            fill
-            sizes={sizes}
-            preload={priority}
-            className={cn(
-              "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]",
-              !p.inStock && "opacity-60",
-            )}
-          />
-        ) : (
-          <NoPhoto />
-        )}
-
-        {/* Segunda foto: aparece con un fundido al pasar el mouse. Carga diferida (lazy). */}
-        {p.imageUrl && p.secondaryImageUrl && (
-          <Image
-            src={p.secondaryImageUrl}
-            alt=""
-            fill
-            sizes={sizes}
-            className={cn(
-              "object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] group-hover:opacity-100",
-              !p.inStock && "group-hover:opacity-60",
-            )}
-          />
-        )}
-
-        <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5">
-          {p.isDraft && (
-            <span className="rounded-full bg-foreground/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
-              Borrador
-            </span>
-          )}
-          {discount && (
-            <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white tabular-nums">
-              {discountLabel(p)}
-            </span>
-          )}
-          {!p.inStock ? (
-            <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur">
-              Sin stock
-            </span>
+    // <article> y no un solo <Link>: el botón "Agregar" no puede ir dentro de un link.
+    // data-product-card / data-card-image: desde esta foto vuela la miniatura al carrito.
+    <article data-product-card className="group flex flex-col gap-3">
+      <Link
+        href={href}
+        className="flex flex-col gap-3 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:ring-offset-4"
+      >
+        <div
+          data-card-image
+          className="relative aspect-square overflow-hidden rounded-xl bg-muted transition-shadow duration-300 group-hover:shadow-[0_12px_28px_-14px_rgb(43_43_43/0.35)]"
+        >
+          {p.imageUrl ? (
+            <Image
+              src={p.imageUrl}
+              alt={p.imageAlt || p.name}
+              fill
+              sizes={sizes}
+              preload={priority}
+              className={cn(
+                "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]",
+                !p.inStock && "opacity-60",
+              )}
+            />
           ) : (
-            p.fewLeft && (
-              <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-brand backdrop-blur">
-                ¡Últimas unidades!
-              </span>
-            )
+            <NoPhoto />
           )}
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-1.5 px-0.5">
+          {/* Segunda foto: aparece con un fundido al pasar el mouse. Carga diferida (lazy). */}
+          {p.imageUrl && p.secondaryImageUrl && (
+            <Image
+              src={p.secondaryImageUrl}
+              alt=""
+              fill
+              sizes={sizes}
+              className={cn(
+                "object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover:scale-[1.04] group-hover:opacity-100",
+                !p.inStock && "group-hover:opacity-60",
+              )}
+            />
+          )}
+
+          <div className="absolute top-2.5 left-2.5">
+            <ProductBadges product={p} />
+          </div>
+        </div>
+
         {/* Hasta 2 líneas con "…". min-h de 2 líneas: así los precios de una
             misma fila quedan alineados aunque un nombre sea corto. */}
-        <h3 className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-foreground md:text-[15px]">
+        <h3 className="line-clamp-2 min-h-[2lh] px-0.5 text-sm leading-snug text-foreground md:text-[15px]">
           {p.name}
         </h3>
-        <p className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
-          {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
-          <span
-            className={cn(
-              "text-base font-semibold tracking-tight md:text-[17px]",
-              discount ? "text-brand" : "text-foreground",
-            )}
-          >
-            {formatARS(p.finalPrice)}
-          </span>
-          {discount && (
-            <span className="text-sm text-muted-foreground line-through">
-              <span className="sr-only">Antes: </span>
-              {formatARS(p.price)}
+      </Link>
+
+      <div className="-mt-1.5 flex flex-col gap-3 px-0.5">
+        <div className="flex min-h-9 items-center justify-between gap-2 md:min-h-0">
+          <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 tabular-nums">
+            {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
+            <span
+              className={cn(
+                "text-base font-semibold tracking-tight md:text-[17px]",
+                discount ? "text-brand" : "text-foreground",
+              )}
+            >
+              {formatARS(p.finalPrice)}
             </span>
+            {discount && (
+              <span className="text-sm text-muted-foreground line-through">
+                <span className="sr-only">Antes: </span>
+                {formatARS(p.price)}
+              </span>
+            )}
+          </p>
+          {/* Celular: botón chico al lado del precio */}
+          {quick && (
+            <div className="md:hidden">
+              <QuickAdd {...quick} size="icon" />
+            </div>
           )}
-        </p>
+        </div>
+        {/* Tablet y PC: botón con texto debajo del precio */}
+        {quick && (
+          <div className="hidden md:block">
+            <QuickAdd {...quick} size="full" />
+          </div>
+        )}
       </div>
-    </Link>
+    </article>
+  );
+}
+
+/**
+ * Etiquetas sobre la foto: "Borrador", "-10%", "Sin stock" o "¡Últimas
+ * unidades!". Las comparten la tarjeta y la página del producto.
+ */
+export function ProductBadges({ product: p }: { product: StoreProduct }) {
+  const discount = p.discountActive && p.finalPrice < p.price;
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      {p.isDraft && (
+        <span className="rounded-full bg-foreground/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
+          Borrador
+        </span>
+      )}
+      {discount && (
+        <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white tabular-nums">
+          {discountLabel(p)}
+        </span>
+      )}
+      {!p.inStock ? (
+        <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur">
+          Sin stock
+        </span>
+      ) : (
+        p.fewLeft && (
+          <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-brand backdrop-blur">
+            ¡Últimas unidades!
+          </span>
+        )
+      )}
+    </div>
   );
 }
 
@@ -141,13 +185,13 @@ export function ProductCard({
  * distinto (descuento de monto fijo con precios distintos). Si el
  * porcentaje redondea a 0, queda "Oferta".
  */
-function discountLabel(p: StoreProduct): string {
+export function discountLabel(p: StoreProduct): string {
   if (p.discountPercent === null) return "Oferta";
   return `${p.discountPercentVaries ? "Hasta " : ""}-${p.discountPercent}%`;
 }
 
 /** Sin foto: el corazón de la marca, suave, para que la grilla no quede rota. */
-function NoPhoto() {
+export function NoPhoto() {
   return (
     <div className="flex h-full items-center justify-center">
       <Image src="/brand/corazon.png" alt="" width={56} height={56} className="opacity-20 grayscale" />

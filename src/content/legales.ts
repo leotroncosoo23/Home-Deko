@@ -183,7 +183,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
           {
             lista: [
               "Mercado Pago, para procesar el pago.",
-              "Correo Argentino, para enviarte el pedido (nombre, dirección y teléfono).",
+              "La empresa de envíos que lleva tu pedido, para entregártelo (nombre, dirección y teléfono).",
               "Los proveedores tecnológicos que hacen funcionar la tienda: alojamiento del sitio, base de datos e inicio de sesión, y envío de emails. Solo pueden usar los datos para prestarnos ese servicio.",
               "Autoridades, cuando una ley o una orden judicial nos obligue.",
             ],
@@ -343,7 +343,7 @@ export function terminos(C: DatosComercio): DocumentoLegal {
           "Al comprar elegís cómo recibir tu pedido:",
           {
             lista: [
-              `Envío a domicilio: ${C.envioDomicilio}, precio fijo a cualquier lugar del país. Lo despachamos por Correo Argentino y te mandamos el código de seguimiento por email. El plazo de entrega depende del Correo y de la zona.`,
+              `Envío a domicilio: ${C.envioDomicilio}, precio fijo a cualquier lugar del país. Te mandamos el código de seguimiento por email. El plazo de entrega depende de la empresa de envíos y de la zona.`,
               `Retiro en el local: gratis, en ${C.direccion}. Te avisamos por email cuando está listo. Horarios: ${C.horarios}. Para retirar, presentá el número de pedido y el DNI de quien hizo la compra (o de la persona que autorices).`,
             ],
           },
@@ -399,7 +399,7 @@ export function terminos(C: DatosComercio): DocumentoLegal {
         id: "responsabilidad",
         titulo: "Responsabilidad",
         bloques: [
-          "Hacemos lo posible para que el sitio funcione siempre y la información sea correcta, pero puede haber interrupciones o errores. No respondemos por fallas de servicios de terceros (como Mercado Pago, Correo Argentino o tu proveedor de internet), sin perjuicio de los derechos que te da la Ley de Defensa del Consumidor.",
+          "Hacemos lo posible para que el sitio funcione siempre y la información sea correcta, pero puede haber interrupciones o errores. No respondemos por fallas de servicios de terceros (como Mercado Pago, la empresa de envíos o tu proveedor de internet), sin perjuicio de los derechos que te da la Ley de Defensa del Consumidor.",
         ],
       },
       {

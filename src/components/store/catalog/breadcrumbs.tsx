@@ -1,14 +1,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { siteUrl } from "@/lib/site-url";
 
 export type Crumb = { label: string; href: string };
-
-/** URL pública del sitio (para los datos estructurados de Google). */
-function siteUrl(): string | null {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  return null;
-}
 
 /**
  * Migas de pan: "Inicio › Bazar". El último paso es la página actual (sin link).
