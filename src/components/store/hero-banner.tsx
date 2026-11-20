@@ -105,9 +105,9 @@ function TemplateBanner({ banner, priority }: { banner: BannerView; priority: bo
           "flex flex-col justify-center gap-4 px-6 py-8 @2xl:gap-5",
           hasPhoto
             ? // Con foto: el texto se alinea con el borde del contenido del sitio
-              // (max-w-6xl = 1152 px) aunque el banner vaya de borde a borde.
-              // 50cqw = la mitad del ancho del banner (container query).
-              "@2xl:py-16 @2xl:pr-12 @2xl:pl-[max(3rem,calc(50cqw-576px+1.5rem))]"
+              // (STORE_CONTAINER: 1440 px con 40 px de margen) aunque el banner
+              // vaya de borde a borde. 50cqw = la mitad del ancho del banner.
+              "@2xl:py-16 @2xl:pr-12 @2xl:pl-[max(2.5rem,calc(50cqw-720px+2.5rem))]"
             : "items-center text-center @2xl:px-12 @2xl:py-20",
         )}
       >

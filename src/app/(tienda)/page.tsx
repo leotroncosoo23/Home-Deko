@@ -4,10 +4,12 @@ import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
 import { CategoryGrid } from "@/components/store/category-grid";
 import { HeroBanner } from "@/components/store/hero-banner";
-import { ProductCard, ProductGridSkeleton } from "@/components/store/product-card";
+import { HOME_GRID, HOME_IMAGE_SIZES, ProductCard, ProductGridSkeleton } from "@/components/store/product-card";
 import { StoreHighlights } from "@/components/store/store-highlights";
 import { getActiveBanner, getVisibleCategories } from "@/lib/store-data";
+import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK } from "@/lib/store-nav";
+import { cn } from "@/lib/utils";
 import { datosComercio, getStoreSettings } from "@/lib/store-settings";
 import { getFeaturedProductsForViewer, getStoreViewer } from "@/lib/store-viewer";
 
@@ -53,7 +55,7 @@ export default async function TiendaHomePage() {
       {/* De borde a borde de la pantalla (sin márgenes ni bordes redondeados) */}
       <HeroBanner banner={banner} priority />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-4 pt-10 md:gap-20 md:px-6 md:pt-14">
+      <div className={cn(STORE_CONTAINER, "flex flex-col gap-14 pt-10 md:gap-20 md:pt-14")}>
         <header className="flex flex-col items-center gap-2 text-center">
           <h1 className="font-display text-4xl leading-tight font-semibold tracking-tight md:text-5xl">
             Home Deko
@@ -125,10 +127,10 @@ async function FeaturedProducts() {
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+    <ul className={HOME_GRID}>
       {products.map((p) => (
         <li key={p.id}>
-          <ProductCard product={p} />
+          <ProductCard product={p} sizes={HOME_IMAGE_SIZES} />
         </li>
       ))}
     </ul>

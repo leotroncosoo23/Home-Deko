@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { cn } from "@/lib/utils";
 import { getVisibleCategories } from "@/lib/store-data";
+import { STORE_CONTAINER } from "@/lib/store-layout";
 import { getStoreSettings, redesSociales } from "@/lib/store-settings";
 import { AccountLink, AccountLinkFallback } from "./account-link";
 import { CartButton } from "./cart-button";
@@ -36,7 +38,7 @@ export async function StoreHeader() {
           Dos íconos de 40 px por lado y el logo centrado (columnas 1fr · auto · 1fr).
           A 360 px: 336 px útiles − logo (~155 px a 28 px de alto) − 2 espacios de 4 px
           = ~86 px por lado, y cada lado necesita 80. Entra. */}
-      <div className="relative mx-auto grid h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 sm:px-4 lg:hidden">
+      <div className="relative mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 sm:px-4 lg:hidden">
         <div className="flex items-center">
           <StoreMenu
             categories={withProducts}
@@ -60,7 +62,7 @@ export async function StoreHeader() {
 
       {/* ---------- Escritorio ---------- */}
       <div className="hidden lg:block">
-        <div className="mx-auto grid h-20 w-full max-w-6xl grid-cols-[1fr_minmax(0,28rem)_1fr] items-center gap-8 px-6">
+        <div className={cn(STORE_CONTAINER, "grid h-20 grid-cols-[1fr_minmax(0,32rem)_1fr] items-center gap-8")}>
           <HomeLink className="h-11" align="start" />
           <SearchForm />
           <div className="flex items-center gap-1 justify-self-end">

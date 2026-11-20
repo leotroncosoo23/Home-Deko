@@ -1,25 +1,41 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { NoProducts, ProductGrid } from "@/components/store/product-grid";
-import { ProductGridSkeleton } from "@/components/store/product-card";
-import { getProductsForViewer } from "@/lib/store-viewer";
+import { redirect } from "next/navigation";
+import { Breadcrumbs } from "@/components/store/catalog/breadcrumbs";
+import {
+  CATALOG_HEADER,
+  CATALOG_MAIN,
+  CATALOG_TITLE,
+  CatalogSkeleton,
+  CatalogView,
+} from "@/components/store/catalog/catalog-view";
+import { parseCatalogParams } from "@/lib/catalog-params";
+import { getVisibleCategories } from "@/lib/store-data";
+import { ALL_PRODUCTS_LINK, SEARCH_PATH } from "@/lib/store-nav";
+
+const DESCRIPTION =
+  "Todos los productos de Home Deko: artículos del hogar, bazar y blanquería. Comprá online con envío a todo el país o retiro en el local en Trevelin, Chubut.";
 
 export const metadata: Metadata = {
-  title: "Productos",
-  description: "Todos los productos de Home Deko: artículos del hogar, bazar y blanquería.",
+  title: "Todos los productos",
+  description: DESCRIPTION,
+  // Una sola dirección para Google, sin importar el orden o los filtros elegidos.
+  alternates: { canonical: "/productos" },
+  openGraph: { title: "Todos los productos · Home Deko", description: DESCRIPTION },
 };
 
 /**
- * /productos — todos los productos, y los resultados del buscador (?q=).
- * Versión simple: los filtros, el orden y la paginación se suman con el
- * catálogo completo (paso 2).
- *
- * Lee la URL y la sesión (borradores para admins) → todo en <Suspense>.
+ * /productos — todo el catálogo, con filtros, orden y "Ver más".
+ * La URL (?orden=&min=&max=&pagina=) se lee dentro de <Suspense>.
  */
 export default function ProductsPage({ searchParams }: PageProps<"/productos">) {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 md:px-6 md:py-14">
-      <Suspense fallback={<ProductsSkeleton />}>
+    <main className={CATALOG_MAIN}>
+      <header className={CATALOG_HEADER}>
+        <Breadcrumbs items={[{ label: ALL_PRODUCTS_LINK.label, href: ALL_PRODUCTS_LINK.href }]} />
+        <h1 className={CATALOG_TITLE}>Todos los productos</h1>
+      </header>
+      <Suspense fallback={<CatalogSkeleton />}>
         <Products searchParams={searchParams} />
       </Suspense>
     </main>
@@ -27,46 +43,12 @@ export default function ProductsPage({ searchParams }: PageProps<"/productos">) 
 }
 
 async function Products({ searchParams }: Pick<PageProps<"/productos">, "searchParams">) {
-  const { q } = await searchParams;
-  const search = (typeof q === "string" ? q : "").trim();
-  const products = await getProductsForViewer({ search });
+  const sp = await searchParams;
+  // Links viejos del buscador (/productos?q=…): ahora la búsqueda está en /buscar.
+  if (typeof sp.q === "string" && sp.q.trim()) {
+    redirect(`${SEARCH_PATH}?q=${encodeURIComponent(sp.q.trim())}`);
+  }
 
-  return (
-    <>
-      <header className="flex flex-col items-center gap-2 text-center">
-        <h1 className="font-display text-4xl leading-tight font-semibold tracking-tight md:text-5xl">
-          {search ? "Resultados" : "Todos los productos"}
-        </h1>
-        {search && (
-          <p className="text-[17px] text-muted-foreground">
-            {products.length === 1 ? "1 producto" : `${products.length} productos`} para «{search}»
-          </p>
-        )}
-      </header>
-
-      {products.length > 0 ? (
-        <ProductGrid products={products} />
-      ) : search ? (
-        <NoProducts
-          title="No encontramos productos"
-          text="Probá con otra palabra, o escribinos por WhatsApp y te ayudamos a encontrarlo."
-        />
-      ) : (
-        <NoProducts
-          title="Estamos cargando nuestros productos"
-          text="Muy pronto vas a ver acá todo el catálogo. Mientras tanto, escribinos por WhatsApp."
-          showAllLink={false}
-        />
-      )}
-    </>
-  );
-}
-
-function ProductsSkeleton() {
-  return (
-    <>
-      <div className="mx-auto h-12 w-72 max-w-full animate-pulse rounded-lg bg-muted" />
-      <ProductGridSkeleton count={8} />
-    </>
-  );
+  const categories = await getVisibleCategories();
+  return <CatalogView scope={{ kind: "all" }} params={parseCatalogParams(sp)} categories={categories} />;
 }

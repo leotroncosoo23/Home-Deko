@@ -193,7 +193,7 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         <div className="flex flex-col gap-0.5">
           <Label htmlFor={`${ids}-visible`}>Visible en la tienda</Label>
           <p className="text-xs text-muted-foreground">
-            Si la ocultás, no aparece en la tienda, pero no se pierde nada.
+            Si la ocultás, ni la categoría ni sus productos aparecen en la tienda, pero no se pierde nada.
           </p>
         </div>
         <Switch

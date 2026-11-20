@@ -100,8 +100,8 @@ function DeleteContent({ category, onDone }: { category: Category; onDone: () =>
             Tiene {productsText} (contando borradores y archivados). Para eliminarla, primero
             pasá esos productos a otra categoría.
             {category.isVisible
-              ? " Si solo querés que no se vea, podés ocultarla: los productos no se tocan."
-              : " Ya está oculta, así que no aparece en la tienda."}
+              ? " Si solo querés que no se vea, podés ocultarla: sus productos tampoco se ven en la tienda, pero no se borra nada."
+              : " Ya está oculta, así que ni ella ni sus productos aparecen en la tienda."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

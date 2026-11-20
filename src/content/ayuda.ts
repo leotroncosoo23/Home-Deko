@@ -135,7 +135,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Editar, ocultar o eliminar",
         texto:
-          "En el menú de cada fila elegí \"Editar\" o \"Eliminar\". Solo se puede eliminar una categoría vacía: si tiene productos, editala y apagá \"Visible\" para que no aparezca en la tienda.",
+          "En el menú de cada fila elegí \"Editar\" o \"Eliminar\". Solo se puede eliminar una categoría vacía: si tiene productos, editala y apagá \"Visible\" para que no aparezca en la tienda. Al ocultar una categoría, sus productos tampoco se ven en la tienda (siguen en el panel, sin perder nada); vuelven a aparecer cuando la mostrás de nuevo.",
       },
     ],
   },

@@ -3,7 +3,9 @@ import { Clock, MapPin } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { highlightMissing } from "@/components/legal/legal-document";
 import { SocialLinks } from "@/components/social-links";
+import { STORE_CONTAINER } from "@/lib/store-layout";
 import { INFO_LINKS } from "@/lib/store-nav";
+import { cn } from "@/lib/utils";
 import { datosComercio, getStoreSettings, redesSociales } from "@/lib/store-settings";
 
 /**
@@ -23,7 +25,7 @@ export async function SiteFooter() {
 
   return (
     <footer className="border-t bg-background">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-2 md:px-6 lg:grid-cols-[1.3fr_1fr_1.3fr]">
+      <div className={cn(STORE_CONTAINER, "grid gap-8 py-10 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1.3fr]")}>
         {/* Marca y redes */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -69,7 +71,7 @@ export async function SiteFooter() {
 
       {/* Datos del comercio */}
       <div className="border-t">
-        <p className="mx-auto w-full max-w-6xl px-4 py-5 text-xs leading-5 text-muted-foreground md:px-6">
+        <p className={cn(STORE_CONTAINER, "py-5 text-xs leading-5 text-muted-foreground")}>
           © {c.nombre} · Razón social: {highlightMissing(c.razonSocial)} · CUIT:{" "}
           {highlightMissing(c.cuit)} · Contacto: {highlightMissing(c.email)}
         </p>
