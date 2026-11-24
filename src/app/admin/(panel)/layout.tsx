@@ -16,7 +16,8 @@ export const metadata: Metadata = {
  * Estructura del panel: barra lateral fija (PC), barra superior y contenido.
  *
  * IMPORTANTE: este layout NO controla el acceso y SIEMPRE muestra {children}.
- *   - Quién entra lo decide src/proxy.ts (sin sesión → /login, sin rol → /sin-acceso).
+ *   - Quién entra lo decide src/proxy.ts (sin sesión → /admin/login, sin rol → /sin-acceso).
+ *   - Vive en el grupo (panel) para que /admin/login (fuera del grupo) no lleve este menú.
  *   - Los datos se protegen con requireAdmin() y RLS.
  * Así Next puede pre-armar la estructura de cada página y la navegación entre
  * secciones es instantánea. Lo único que lee la sesión es el menú del usuario,

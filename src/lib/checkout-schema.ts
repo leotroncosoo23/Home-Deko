@@ -41,26 +41,35 @@ export type DeliveryMethod = "shipping" | "pickup";
 export const APARTMENT_MAX = 40;
 export const NOTES_MAX = 150;
 
-const optionalText = (max: number) => z.string().trim().max(max, "Es un poco largo: acortalo, por favor.").optional();
+// Reglas compartidas con "Mis datos" (src/lib/account-schema.ts): las mismas
+// que la base para los pedidos y el perfil.
+export const optionalText = (max: number) => z.string().trim().max(max, "Es un poco largo: acortalo, por favor.").optional();
+
+export const nameSchema = z
+  .string()
+  .trim()
+  .min(2, "Escribí tu nombre y apellido.")
+  .max(120, "El nombre es demasiado largo.");
+
+/** Se guardan solo los números (sin espacios, guiones ni "+"). */
+export const phoneSchema = z
+  .string()
+  .transform((v) => v.replace(/\D/g, ""))
+  .pipe(
+    z
+      .string()
+      .min(8, "Escribí tu teléfono con la característica (por ejemplo, 2945 123456).")
+      .max(15, "Revisá el teléfono: tiene demasiados números."),
+  );
+
+export const POSTAL_CODE_RE = /^[A-Za-z]?\d{4}[A-Za-z]{0,3}$/;
+export const POSTAL_CODE_ERROR = "Revisá el código postal (por ejemplo, 9203 o U9203ABC).";
 
 export const checkoutSchema = z
   .object({
-    name: z
-      .string()
-      .trim()
-      .min(2, "Escribí tu nombre y apellido.")
-      .max(120, "El nombre es demasiado largo."),
+    name: nameSchema,
     email: z.string().trim().pipe(z.email("Revisá el email: parece que falta algo.")),
-    // Se guardan solo los números (sin espacios, guiones ni "+").
-    phone: z
-      .string()
-      .transform((v) => v.replace(/\D/g, ""))
-      .pipe(
-        z
-          .string()
-          .min(8, "Escribí tu teléfono con la característica (por ejemplo, 2945 123456).")
-          .max(15, "Revisá el teléfono: tiene demasiados números."),
-      ),
+    phone: phoneSchema,
     delivery: z.enum(["shipping", "pickup"], "Elegí cómo querés recibir tu compra."),
     address: optionalText(200),
     /** Piso / depto (opcional). Mismo largo máximo que la base. */
@@ -71,6 +80,8 @@ export const checkoutSchema = z
     province: z.string().optional(),
     postalCode: optionalText(8),
     acceptTerms: z.literal(true, "Para seguir, aceptá los Términos y condiciones."),
+    /** Con sesión: guardar nombre, teléfono y dirección en "Mis datos". Sin sesión se ignora. */
+    saveToAccount: z.boolean().optional(),
     items: z
       .array(z.object({ variantId: z.uuid(), qty: z.number().int().min(1).max(CART_MAX_QTY) }))
       .min(1, "Tu carrito está vacío.")
@@ -87,25 +98,21 @@ export const checkoutSchema = z
     if (!data.province || !(PROVINCIAS as readonly string[]).includes(data.province)) {
       ctx.addIssue({ code: "custom", path: ["province"], message: "Elegí tu provincia." });
     }
-    if (!data.postalCode || !/^[A-Za-z]?\d{4}[A-Za-z]{0,3}$/.test(data.postalCode)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["postalCode"],
-        message: "Revisá el código postal (por ejemplo, 9203 o U9203ABC).",
-      });
+    if (!data.postalCode || !POSTAL_CODE_RE.test(data.postalCode)) {
+      ctx.addIssue({ code: "custom", path: ["postalCode"], message: POSTAL_CODE_ERROR });
     }
   });
 
 export type CheckoutInput = z.input<typeof checkoutSchema>;
-export type CheckoutFieldName = Exclude<keyof CheckoutInput, "items">;
+export type CheckoutFieldName = Exclude<keyof CheckoutInput, "items" | "saveToAccount">;
 export type CheckoutFieldErrors = Partial<Record<CheckoutFieldName, string>>;
 
 /** Primer error de cada campo, listo para mostrar debajo de cada uno. */
 export function fieldErrorsFrom(error: z.ZodError): CheckoutFieldErrors {
   const out: CheckoutFieldErrors = {};
   for (const issue of error.issues) {
-    const key = issue.path[0] as CheckoutFieldName | "items" | undefined;
-    if (key && key !== "items" && !out[key]) out[key] = issue.message;
+    const key = issue.path[0] as CheckoutFieldName | "items" | "saveToAccount" | undefined;
+    if (key && key !== "items" && key !== "saveToAccount" && !out[key]) out[key] = issue.message;
   }
   return out;
 }

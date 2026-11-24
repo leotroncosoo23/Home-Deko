@@ -6,13 +6,24 @@ import { replaceCart } from "../cart/cart-store";
 import { shouldClearCartFor } from "./checkout-storage";
 
 /**
+ * Ventana para vaciar el carrito: el link de pago vence a las 2 h de crear el
+ * pedido, así que el regreso de Mercado Pago siempre cae dentro de las 3 h.
+ */
+const CLEAR_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+/**
  * Pago aprobado: vacía el carrito UNA vez por pedido (si el cliente recarga
  * la página después de agregar otra cosa, no se lo volvemos a vaciar).
+ *
+ * Solo si el pedido es RECIENTE (el regreso del pago). Si abre un pedido
+ * viejo desde "Mis pedidos" o desde el mail de "Enviado", el carrito que
+ * está armando ahora no se toca.
  */
-export function ClearCartOnApproved({ orderId }: { orderId: string }) {
+export function ClearCartOnApproved({ orderId, createdAt }: { orderId: string; createdAt: string }) {
   useEffect(() => {
-    if (shouldClearCartFor(orderId)) replaceCart([]);
-  }, [orderId]);
+    const recent = Date.now() - new Date(createdAt).getTime() < CLEAR_WINDOW_MS;
+    if (recent && shouldClearCartFor(orderId)) replaceCart([]);
+  }, [orderId, createdAt]);
   return null;
 }
 

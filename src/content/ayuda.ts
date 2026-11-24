@@ -388,6 +388,16 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
       "En la tienda, tocá \"Ver como cliente\" en la barra negra de arriba: se ocultan los productos en Borrador y los avisos para ustedes. Si la tienda todavía no está lanzada, los visitantes en realidad ven la página \"Muy pronto\": para comprobarlo, abrí el sitio en una ventana de incógnito (o desde un celular donde no hayas iniciado sesión).",
   },
   {
+    pregunta: "¿Desde dónde entro al panel?",
+    respuesta:
+      "Desde homedekotrevelin.com/admin/login (guardalo en favoritos). Si ya iniciaste sesión, el botón \"Panel\" de arriba de la tienda te lleva directo. El \"Ingresá\" de la tienda es para los clientes: aunque un cliente cree una cuenta, nunca puede entrar al panel.",
+  },
+  {
+    pregunta: "¿Los clientes pueden tener una cuenta?",
+    respuesta:
+      "Sí, es opcional: entran desde \"Ingresá\" en la tienda, con Google o con su email y un código que les llega por mail (sin contraseñas). Ven sus pedidos y su estado, guardan su dirección y pueden eliminar su cuenta. Si eliminan la cuenta, sus pedidos siguen en Pedidos, con los datos de la compra: no hay que hacer nada.",
+  },
+  {
     pregunta: "¿Cómo cambio el banner del inicio o los mensajes de la barra de arriba?",
     respuesta:
       "Los actualiza Leo: pedíselos por WhatsApp (botón \"WhatsApp\" arriba de esta página). Para el banner, contale qué querés mostrar y desde qué día hasta qué día, por ejemplo una promo de Navidad del 1 al 25 de diciembre, y mandale la foto o la imagen si ya la tenés: queda programado y se prende y se apaga solo en esas fechas. Para la barra roja de arriba de todo, pasale los mensajes (hasta 4 cortos, por ejemplo \"Envíos a todo el país\" o un aviso de feriado).",

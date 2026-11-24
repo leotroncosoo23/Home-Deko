@@ -1,6 +1,6 @@
-import { getLabelQueueCount } from "@/app/admin/etiquetas/data";
-import { getOrdersAttentionCount } from "@/app/admin/pedidos/data";
-import { getRestockCount } from "@/app/admin/stock/data";
+import { getLabelQueueCount } from "@/app/admin/(panel)/etiquetas/data";
+import { getOrdersAttentionCount } from "@/app/admin/(panel)/pedidos/data";
+import { getRestockCount } from "@/app/admin/(panel)/stock/data";
 import { getPanelAccess } from "@/lib/auth";
 import { MobileNav } from "./mobile-nav";
 import type { NavAccess } from "./nav-items";

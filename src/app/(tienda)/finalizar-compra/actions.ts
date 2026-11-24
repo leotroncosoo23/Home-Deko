@@ -1,5 +1,6 @@
 "use server";
 
+import type { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { checkoutSchema, fieldErrorsFrom, type CheckoutResult } from "@/lib/checkout-schema";
 import { createPreference, isTestCredentials, mpDate, type PreferenceInput } from "@/lib/mercadopago";
@@ -11,6 +12,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const PREFERENCE_TTL_MS = 2 * 60 * 60 * 1000;
 
 const GENERIC_ERROR = "No pudimos iniciar el pago. Probá de nuevo en unos minutos o escribinos por WhatsApp.";
+
+type CheckoutData = z.output<typeof checkoutSchema>;
 
 /**
  * "Pagar con Mercado Pago".
@@ -60,6 +63,9 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       id: newOrderId,
       access_token_hash: hash,
       created_by: user?.id ?? null,
+      // Dueño del pedido ("Mis pedidos"): SIEMPRE el de la sesión verificada,
+      // nunca algo que venga del formulario.
+      customer_id: user?.id ?? null,
       customer_name: data.name,
       customer_email: data.email,
       customer_phone: data.phone,
@@ -91,6 +97,10 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
   }
 
   const { order_id: orderId, order_number: orderNumber } = created[0];
+
+  // Con sesión y "Guardar estos datos en mi cuenta": actualiza "Mis datos".
+  // Si falla, la compra sigue igual (no es parte del pago).
+  if (user && data.saveToAccount) await saveCheckoutToAccount(supabase, user.id, data);
 
   // ---- 2. Lo guardado en el pedido (precios y envío "congelados") -----
   const [{ data: order }, { data: items }] = await Promise.all([
@@ -183,4 +193,32 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
     console.error("[checkout] preferencia", e);
     return { ok: false, error: GENERIC_ERROR };
   }
+}
+
+/**
+ * Guarda en el perfil los datos usados en la compra. La dirección, solo si
+ * eligió envío (un retiro en el local no borra la dirección guardada).
+ * Va con la clave secreta pero SIEMPRE filtrado por el id de la sesión.
+ */
+async function saveCheckoutToAccount(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+  data: CheckoutData,
+) {
+  const shipping =
+    data.delivery === "shipping"
+      ? {
+          ship_address: data.address || null,
+          ship_apartment: data.apartment || null,
+          ship_city: data.city || null,
+          ship_province: data.province || null,
+          ship_postal_code: data.postalCode ? data.postalCode.toUpperCase() : null,
+          ship_notes: data.notes || null,
+        }
+      : {};
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: data.name, phone: data.phone, ...shipping })
+    .eq("id", userId);
+  if (error) console.error("[checkout] no se pudieron guardar los datos en la cuenta:", error.message);
 }

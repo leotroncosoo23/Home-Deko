@@ -80,6 +80,15 @@ export function saveCustomer(data: SavedCustomer): void {
   write(CUSTOMER_KEY, JSON.stringify(data));
 }
 
+/** Borra los datos de compra recordados (al eliminar la cuenta). El carrito no se toca. */
+export function forgetSavedCustomer(): void {
+  try {
+    window.localStorage.removeItem(CUSTOMER_KEY);
+  } catch {
+    // Sin almacenamiento: no hay nada que borrar.
+  }
+}
+
 /** Solo links internos de pedido (nunca otra cosa). */
 const ORDER_PATH = /^\/pedido\/[0-9a-f-]{36}\?t=[A-Za-z0-9_-]{43}$/;
 
