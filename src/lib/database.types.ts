@@ -125,6 +125,127 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          key_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          key_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          key_hash?: string
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          customer_email: string
+          discount_amount: number
+          id: string
+          order_id: string
+          over_limit: boolean
+          released_at: string | null
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          customer_email: string
+          discount_amount: number
+          id?: string
+          order_id: string
+          over_limit?: boolean
+          released_at?: string | null
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          customer_email?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string
+          over_limit?: boolean
+          released_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "admin_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          ends_on: string | null
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_uses: number | null
+          min_purchase: number | null
+          one_per_customer: boolean
+          starts_on: string | null
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_uses?: number | null
+          min_purchase?: number | null
+          one_per_customer?: boolean
+          starts_on?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["coupon_kind"]
+          max_uses?: number | null
+          min_purchase?: number | null
+          one_per_customer?: boolean
+          starts_on?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       label_queue: {
         Row: {
           added_by: string | null
@@ -336,6 +457,7 @@ export type Database = {
           carrier_name: string | null
           channel: Database["public"]["Enums"]["order_channel"]
           coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           created_by: string | null
           customer_email: string
@@ -388,6 +510,7 @@ export type Database = {
           carrier_name?: string | null
           channel?: Database["public"]["Enums"]["order_channel"]
           coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_email: string
@@ -440,6 +563,7 @@ export type Database = {
           carrier_name?: string | null
           channel?: Database["public"]["Enums"]["order_channel"]
           coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_email?: string
@@ -484,7 +608,22 @@ export type Database = {
           tracking_url?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "admin_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_costs: {
         Row: {
@@ -1143,6 +1282,28 @@ export type Database = {
       }
     }
     Views: {
+      admin_coupons: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          ends_on: string | null
+          ever_used: boolean | null
+          id: string | null
+          is_active: boolean | null
+          kind: Database["public"]["Enums"]["coupon_kind"] | null
+          max_uses: number | null
+          min_purchase: number | null
+          one_per_customer: boolean | null
+          over_limit_uses: number | null
+          starts_on: string | null
+          status: string | null
+          total_discount: number | null
+          updated_at: string | null
+          uses: number | null
+          value: number | null
+        }
+        Relationships: []
+      }
       admin_label_queue: {
         Row: {
           barcode: string | null
@@ -1461,6 +1622,8 @@ export type Database = {
         Args: { p_counted: number; p_note?: string; p_variant_id: string }
         Returns: Json
       }
+      coupon_attempt: { Args: { p_key: string }; Returns: boolean }
+      coupon_quote: { Args: { p: Json }; Returns: Json }
       create_order: {
         Args: { p: Json }
         Returns: {
@@ -1470,7 +1633,9 @@ export type Database = {
         }[]
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      delete_coupon: { Args: { p_id: string }; Returns: undefined }
       delete_product: { Args: { p_id: string }; Returns: Json }
+      format_ars: { Args: { v: number }; Returns: string }
       fulfillment_label: {
         Args: { p: Database["public"]["Enums"]["fulfillment_status"] }
         Returns: string
@@ -1498,6 +1663,7 @@ export type Database = {
           reason: string
         }[]
       }
+      redeem_order_coupon: { Args: { p_order_id: string }; Returns: string }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }
       resolve_review: {
         Args: { p_mode: string; p_note?: string; p_order_id: string }
@@ -1510,9 +1676,14 @@ export type Database = {
         Args: { p_mode: string; p_note?: string; p_order_id: string }
         Returns: boolean
       }
+      save_coupon: { Args: { p: Json }; Returns: string }
       save_product: { Args: { p: Json }; Returns: Json }
       save_store_announcements: {
         Args: { p_texts: string[] }
+        Returns: undefined
+      }
+      set_coupon_active: {
+        Args: { p_active: boolean; p_id: string }
         Returns: undefined
       }
       set_order_status: {
@@ -1528,6 +1699,7 @@ export type Database = {
       }
     }
     Enums: {
+      coupon_kind: "percent" | "fixed" | "free_shipping"
       delivery_method: "shipping" | "pickup"
       discount_type: "percent" | "fixed"
       fulfillment_status:
@@ -1697,6 +1869,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      coupon_kind: ["percent", "fixed", "free_shipping"],
       delivery_method: ["shipping", "pickup"],
       discount_type: ["percent", "fixed"],
       fulfillment_status: [

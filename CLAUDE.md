@@ -168,7 +168,7 @@ Tipografías:
 ## Arquitectura del panel
 Menú agrupado por tarea. Cada sección se suma al menú recién cuando está implementada.
 - Inicio
-- VENTAS: Pedidos (contador de los que requieren atención; gestión completa en el paso 5)
+- VENTAS: Pedidos (contador de los que requieren atención; gestión completa en el paso 5), Cupones (paso 7)
 - CATÁLOGO: Productos, Categorías
 - INVENTARIO: Stock (contador de stock bajo), Etiquetas
 - TIENDA ONLINE: Apariencia de la tienda (`/admin/apariencia`: barra de anuncios y Banner) — **solo desarrollador**
@@ -318,7 +318,7 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - Tablas `orders` (también es la tabla de VENTAS: `channel`, `payment_method`, `created_by`) y `order_items` (foto de
   nombre, variante, imagen y precio). Estados: `payment_status` (pending/approved/rejected/cancelled) y
   `fulfillment_status` (awaiting_payment → paid → preparing → shipped/delivered o ready_for_pickup/picked_up; cancelled).
-  `discount_total` + `coupon_code` ya existen para el paso 7. Número amable `order_number` desde 1001.
+  `discount_total` + `coupon_code` (+ `coupon_id`) los llena el paso 7 (ver "Cupones"). Número amable `order_number` desde 1001.
 - RLS: admins leen todo, clientes solo lo suyo (`customer_id`, paso 6). **Nadie escribe salvo el servidor** con
   service_role. `create_order(jsonb)` y `apply_order_payment(...)` son `security invoker`, solo `service_role`.
 - `create_order`: precios de `store_variants` (exige producto `active`: con service_role no hay RLS), envío y datos del
@@ -445,10 +445,39 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - Dominio: `homedekotrevelin.com` verificado en Resend (registros DNS en Vercel: MX + TXT SPF del subdominio `send`,
   TXT DKIM `resend._domainkey`, DMARC recomendado).
 
-### Cupones
-- Creados desde el panel: código, porcentaje o monto fijo, fechas, usos máximos y monto mínimo opcional.
-- Regla de precios: si coinciden un descuento del producto y un cupón, aplicar el mejor precio para el
-  cliente, sin sumar descuentos.
+### Cupones (paso 7, implementado)
+- Migración `20261201000001_cupones.sql`. Tablas `coupons` (código `^[A-Z0-9-]{3,30}$` en mayúsculas, `kind` =
+  `percent | fixed | free_shipping`, `value`, `starts_on`/`ends_on` = **días de Argentina** (vale hasta las 23:59 del
+  "hasta"), `max_uses`, `one_per_customer` (por email), `min_purchase` (subtotal de productos), `is_active`),
+  `coupon_redemptions` (un uso = un pedido APROBADO; `order_id` único; `released_at` al cancelar; `over_limit`) y
+  `coupon_attempts` (límite de intentos). Vista `admin_coupons` (usos, total descontado, `status`:
+  paused → expired → exhausted → scheduled → active). `orders.coupon_id` (+ `coupon_code` como foto).
+- Seguridad: las tablas solo las leen los admins (RLS `is_admin()`); nadie escribe directo. Panel: `save_coupon`,
+  `set_coupon_active`, `delete_coupon` (definer, `is_admin()` primero, errores `HD4xx`). Checkout, **solo
+  service_role**: `coupon_quote(p)` (calcula sin guardar), `coupon_attempt(key)`, `create_order` (acepta
+  `coupon_code`; si ya no vale → excepción `cupon` con el jsonb del motivo en `detail`). `redeem_order_coupon` (interna).
+- **Regla del mejor precio** (en `coupon_quote`, la única cuenta; la usan la vista previa y `create_order`): los
+  descuentos NUNCA se suman. Porcentaje: por producto, el cliente paga `min(final_price, lista × (1 − p))`; el cupón
+  aporta solo la diferencia. Monto fijo: gana la opción más barata entre A (ofertas con su descuento + cupón sobre los
+  productos sin descuento) y B (todo a lista − cupón). Envío gratis: descuento = envío (retiro → no aplica). Nunca
+  baja de $ 0; si el total daría $ 0 → `total_cero` ("escribinos por WhatsApp": MP no cobra $ 0). El descuento va en
+  `discount_total`; `order_items.unit_price` sigue con el precio de la tienda.
+- **Usos**: se cuentan en el webhook (`apply_order_payment` → `redeem_order_coupon`) y en `resolve_review('approve')`,
+  NUNCA al crear el pedido. La fila del cupón se bloquea (`for update`): dos aprobaciones simultáneas con el último uso
+  se atienden de a una; la segunda **se respeta** (ya pagó) con `over_limit = true` (decisión de Leo) y queda en el
+  historial y en la lista. `cancel_order` libera el uso (`released_at`). Un cupón usado no se borra ni cambia código/tipo.
+- **Mercado Pago**: con cupón, la preferencia va con UN solo ítem por `orders.total` ("Compra en Home Deko · Pedido
+  #N", descripción con el cupón): MP no acepta precios negativos y así coincide con el control de monto. Sin cupón,
+  igual que antes.
+- Checkout: `CouponField` (`src/components/store/checkout/coupon-field.tsx`) → `checkCoupon` (Server Action) →
+  `coupon_quote`. Se vuelve a revisar al cambiar la entrega; si al pagar ya no vale, `startCheckout` devuelve
+  `couponError` y el formulario lo quita. **Límite: 10 intentos por minuto por visitante** (`allowCouponAttempt` en
+  `src/lib/coupon-rate-limit.ts`: HMAC de la IP con `ORDER_LINK_SECRET`, contado en la base; también cuenta cada pago
+  con cupón).
+- Textos y formato compartidos: `src/lib/coupons.ts` (mensajes por motivo, estados). Formulario: `src/lib/coupon-schema.ts`.
+- Panel `/admin/cupones` (VENTAS): lista con estado, usos ("3 de 50"), descontado, interruptor Activo (optimista) y
+  diálogo crear/editar con vista previa en una frase. Se ve "Cupón CÓDIGO" en el detalle del pedido, los mails y la
+  página del pedido del cliente. Ayuda: guía `cupones` + preguntas frecuentes.
 
 ### Presencia en toda la tienda
 - **Botón de WhatsApp flotante** en todas las páginas, con un mensaje ya escrito.
@@ -472,6 +501,8 @@ tiendas online). Los textos en un archivo de contenido (como `ayuda.ts`), fácil
   pedidos de prueba #1003–#1016 ya se borraron ese día y el contador quedó en #1017). Antes, confirmar que no haya
   pedidos reales: `select count(*) from public.orders;` → 0. Después:
   `alter table public.orders alter column order_number restart with 1001;`
+- Lanzamiento: **compra real con cupón: verificar uso contado, mail, página del pedido y que vuelva al cancelar**
+  (pendiente del paso 7: la prueba local del 24/11/2026 no llegó a aprobar el pago, así que esto no se probó en el navegador).
 
 ### Ventas: preparado para el futuro Módulo Local
 La tabla de pedidos/ventas tiene desde el inicio:

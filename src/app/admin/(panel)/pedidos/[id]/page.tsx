@@ -381,7 +381,7 @@ function ItemsCard({ order }: { order: OrderDetail }) {
         </div>
         {Number(order.discount_total) > 0 && (
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Descuento{order.coupon_code ? ` (${order.coupon_code})` : ""}</dt>
+            <dt className="text-muted-foreground">{order.coupon_code ? `Cupón ${order.coupon_code}` : "Descuento"}</dt>
             <dd className="tabular-nums">− {formatARS(Number(order.discount_total))}</dd>
           </div>
         )}

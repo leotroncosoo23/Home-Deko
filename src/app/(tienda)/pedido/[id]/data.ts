@@ -19,7 +19,7 @@ export async function getGuestOrder(id: string, token: unknown) {
   const { data: order, error } = await supabase
     .from("orders")
     .select(
-      "id, order_number, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, total, mp_status, mp_expires_at, stock_issue, needs_review, created_at, carrier, carrier_name, tracking_code, tracking_url, cancelled_at",
+      "id, order_number, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_status, mp_expires_at, stock_issue, needs_review, created_at, carrier, carrier_name, tracking_code, tracking_url, cancelled_at",
     )
     .eq("id", id)
     .eq("access_token_hash", hashOrderToken(token))

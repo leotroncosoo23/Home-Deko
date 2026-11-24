@@ -9,6 +9,7 @@ import {
   Settings,
   ShoppingBag,
   Tag,
+  TicketPercent,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,13 @@ export const NAV_ITEMS: NavItem[] = [
     group: "Ventas",
     description: "Prepará, despachá y seguí los pedidos de la tienda online.",
     badgeLabel: (n) => (n === 1 ? "1 pedido requiere atención" : `${n} pedidos requieren atención`),
+  },
+  {
+    title: "Cupones",
+    href: "/admin/cupones",
+    icon: TicketPercent,
+    group: "Ventas",
+    description: "Creá códigos de descuento para la tienda online y mirá cuánto se usan.",
   },
   {
     title: "Productos",

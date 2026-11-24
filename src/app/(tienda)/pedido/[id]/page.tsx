@@ -367,8 +367,8 @@ function OrderSummary({ order }: { order: GuestOrder }) {
         </div>
         {Number(order.discount_total) > 0 && (
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Descuento</dt>
-            <dd className="tabular-nums">− {formatARS(Number(order.discount_total))}</dd>
+            <dt className="text-muted-foreground">{order.coupon_code ? `Cupón ${order.coupon_code}` : "Descuento"}</dt>
+            <dd className="text-brand tabular-nums">− {formatARS(Number(order.discount_total))}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4">

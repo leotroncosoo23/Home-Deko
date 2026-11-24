@@ -41,7 +41,15 @@ export function whatsappHref(): string | null {
 // Guías por sección
 // ---------------------------------------------------------------------------
 
-export type GuiaId = "pedidos" | "productos" | "categorias" | "etiquetas" | "stock" | "apariencia" | "configuracion";
+export type GuiaId =
+  | "pedidos"
+  | "cupones"
+  | "productos"
+  | "categorias"
+  | "etiquetas"
+  | "stock"
+  | "apariencia"
+  | "configuracion";
 
 export type Guia = {
   id: GuiaId;
@@ -117,6 +125,55 @@ export const GUIAS: Record<GuiaId, Guia> = {
         titulo: "Para revisar",
         texto:
           "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. En el pedido dice el motivo. Si el monto no coincidía pero en Mercado Pago ves el pago acreditado y te parece bien, tocá \"Confirmar el pago igual\". Si el pago se devolvió, cancelá el pedido. Si ya lo revisaron y está todo bien, \"Marcar como revisado\".",
+      },
+    ],
+  },
+
+  cupones: {
+    id: "cupones",
+    titulo: "Cómo crear un cupón",
+    resumen: "Códigos de descuento que tus clientes escriben al pagar en la tienda online.",
+    pasosRapidos: [
+      "Tocá \"Nuevo cupón\", escribí el código (por ejemplo BIENVENIDA) y elegí el tipo: porcentaje, monto fijo o envío gratis.",
+      "Si querés, poné fechas, usos máximos, compra mínima o \"Un uso por cliente\". Arriba ves el cupón resumido en una frase.",
+      "Tocá \"Crear cupón\" y compartí el código con tus clientes (Instagram, WhatsApp, el local).",
+      "Para frenarlo, apagá el interruptor \"Activo\". En la lista ves cuántas veces se usó y cuánto se descontó.",
+    ],
+    pasos: [
+      {
+        titulo: "Crear un cupón",
+        texto:
+          "Tocá \"Nuevo cupón\". Escribí el código (se guarda en mayúsculas y sin espacios; \"Generar\" inventa uno al azar). Elegí el tipo:\n• Porcentaje: un % menos en los productos.\n• Monto fijo: una cantidad de pesos menos en los productos.\n• Envío gratis: el envío a domicilio sale $ 0 (si el cliente elige retiro en el local, no aplica).\nEl porcentaje y el monto fijo se descuentan de los productos, nunca del envío. Lo demás es opcional: fechas desde/hasta, usos máximos en total, \"Un uso por cliente\" (por email) y compra mínima (en productos, sin el envío). Arriba del formulario ves cómo queda, en una frase. Tocá \"Crear cupón\".",
+      },
+      {
+        titulo: "Ejemplo 1: 10 % de bienvenida",
+        texto:
+          "Código BIENVENIDA · Porcentaje · 10 · sin fechas · \"Un uso por cliente\" encendido. Cada cliente lo puede usar una sola vez (se controla por el email de la compra). Ideal para ponerlo en la bio de Instagram: \"10 % en tu primera compra con el código BIENVENIDA\".",
+      },
+      {
+        titulo: "Ejemplo 2: envío gratis por una semana",
+        texto:
+          "Código ENVIOGRATIS · Envío gratis · Desde el lunes · Hasta el domingo. Si querés que sea solo para compras grandes, poné una compra mínima (por ejemplo $ 50.000). Empieza a funcionar solo el día \"desde\" (hasta entonces figura como \"Programado\") y se apaga solo después de las 23:59 del día \"hasta\" (pasa a \"Vencido\").",
+      },
+      {
+        titulo: "Si el producto ya tiene descuento",
+        texto:
+          "Los descuentos nunca se suman: se aplica el que más le conviene al cliente. Por ejemplo, con un cupón del 10 %: un mantel que ya tiene -20 % se queda con su -20 % (es mejor), y una taza sin descuento recibe el 10 % del cupón. Lo calcula la tienda sola.",
+      },
+      {
+        titulo: "Estados de la lista",
+        texto:
+          "Activo (verde): funciona ahora. Programado: todavía no llegó la fecha \"desde\". Pausado: lo apagaron con el interruptor. Vencido: pasó la fecha \"hasta\". Agotado (ámbar): llegó a los usos máximos. \"Usos\" cuenta solo los pedidos PAGADOS (un pedido sin pagar no gasta un uso) y \"Descontado\" es el total que se descontó en esos pedidos.",
+      },
+      {
+        titulo: "Pausar, editar y eliminar",
+        texto:
+          "El interruptor \"Activo\" lo pausa o lo vuelve a activar en un clic. \"Editar\" cambia las fechas, los límites o el valor: vale para las compras siguientes (los pedidos ya hechos no cambian). Un cupón que ya se usó no se puede eliminar ni cambiarle el código o el tipo (así el historial de los pedidos tiene sentido): pausalo y, si hace falta, creá otro. Uno que nunca se usó sí se puede eliminar desde el menú de los tres puntos.",
+      },
+      {
+        titulo: "Dónde se ve el cupón",
+        texto:
+          "En el detalle de cada pedido (fila \"Cupón CÓDIGO\" y en el historial), en el mail de confirmación del cliente y en el aviso de pedido nuevo. Si se cancela un pedido, el uso del cupón vuelve a quedar disponible.",
       },
     ],
   },
@@ -381,6 +438,16 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
     pregunta: "Un pedido dice \"Para revisar\". ¿Qué significa?",
     respuesta:
       "Que hay un detalle a verificar antes de prepararlo; el motivo aparece debajo del aviso (por ejemplo, que el monto cobrado no coincide con el pedido o que el pago se devolvió). El stock no se descuenta solo en esos casos. Si tenés dudas, escribile a Leo.",
+  },
+  {
+    pregunta: "Un cupón dice \"1 uso entró por encima del límite\". ¿Qué pasó?",
+    respuesta:
+      "Dos clientes pagaron casi al mismo tiempo con el último uso que quedaba. Como los dos ya habían pagado con el descuento, se les respetó a ambos y quedó anotado. No hay que hacer nada: pasa muy rara vez.",
+  },
+  {
+    pregunta: "¿Un cupón se puede sumar al descuento de un producto?",
+    respuesta:
+      "No: nunca se suman. La tienda aplica el que más le conviene al cliente en cada producto. Si un producto ya tiene un descuento mejor que el cupón, se queda con el suyo.",
   },
   {
     pregunta: "¿Cómo veo la tienda como la ve un cliente?",

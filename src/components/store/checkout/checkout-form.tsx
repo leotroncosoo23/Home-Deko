@@ -4,7 +4,7 @@ import { useId, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertCircle, Loader2, Lock, ShoppingBag, Store, Truck, UserRound } from "lucide-react";
-import { startCheckout } from "@/app/(tienda)/finalizar-compra/actions";
+import { checkCoupon, startCheckout } from "@/app/(tienda)/finalizar-compra/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { AccountDetails } from "@/lib/account-schema";
 import type { CartLine } from "@/lib/cart";
@@ -17,8 +17,10 @@ import {
   type CheckoutFieldErrors,
   type CheckoutFieldName,
 } from "@/lib/checkout-schema";
+import type { AppliedCoupon } from "@/lib/coupons";
 import { formatARS } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CouponField } from "./coupon-field";
 import { WhatsAppIcon } from "../whatsapp-icon";
 import { ErrorText, Field } from "../form-field";
 import { getCartSnapshot } from "../cart/cart-store";
@@ -130,6 +132,39 @@ export function CheckoutForm({
   const [redirecting, setRedirecting] = useState(false);
   const [pending, startTransition] = useTransition();
   const busy = pending || redirecting;
+  // Cupón: el descuento lo calcula SIEMPRE el servidor (checkCoupon). Acá
+  // solo se guarda lo que respondió, para mostrarlo en el resumen.
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+
+  async function runCouponCheck(code: string, delivery: SavedCustomer["delivery"]) {
+    setCouponBusy(true);
+    const result = await checkCoupon({
+      code,
+      items: getCartSnapshot(),
+      delivery: delivery || undefined,
+      email: values.email,
+    }).catch(() => null);
+    setCouponBusy(false);
+    if (!result) {
+      setCouponError("No pudimos revisar el cupón. Probá de nuevo en unos minutos.");
+      return;
+    }
+    if (result.ok) {
+      setCoupon({ code: result.code, kind: result.kind, discount: result.discount });
+      setCouponError(null);
+    } else {
+      setCoupon(null);
+      setCouponError(result.error);
+    }
+  }
+
+  /** Al cambiar la entrega, el cupón se vuelve a revisar (el envío gratis depende de eso). */
+  function selectDelivery(delivery: "shipping" | "pickup") {
+    set("delivery", delivery);
+    if (coupon && delivery !== values.delivery) void runCouponCheck(coupon.code, delivery);
+  }
 
   function set<K extends keyof SavedCustomer>(key: K, value: SavedCustomer[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -148,7 +183,13 @@ export function CheckoutForm({
     e.preventDefault();
     if (busy) return;
 
-    const payload = { ...values, acceptTerms, saveToAccount: Boolean(account) && saveToAccount, items: getCartSnapshot() };
+    const payload = {
+      ...values,
+      acceptTerms,
+      saveToAccount: Boolean(account) && saveToAccount,
+      couponCode: coupon?.code ?? "",
+      items: getCartSnapshot(),
+    };
     // Primero en el navegador, para avisar rápido. El servidor valida otra vez.
     const parsed = checkoutSchema.safeParse(payload);
     if (!parsed.success) {
@@ -174,14 +215,31 @@ export function CheckoutForm({
         window.location.assign(result.redirectUrl);
         return;
       }
+      if (result.couponError) {
+        // El cupón dejó de valer: se quita, y el motivo queda junto al campo.
+        setCoupon(null);
+        setCouponError(result.couponError);
+        showErrors(result.fieldErrors ?? {}, "No pudimos usar tu cupón: lo quitamos. Revisá el total y volvé a intentar.");
+        return;
+      }
       showErrors(result.fieldErrors ?? {}, result.error);
-      if (result.cartChanged) onCartChanged();
+      if (result.cartChanged) {
+        onCartChanged();
+        // Con otro carrito, el descuento puede cambiar: que lo vuelva a aplicar.
+        if (coupon) {
+          setCoupon(null);
+          setCouponError("Como cambió tu carrito, volvé a aplicar el cupón.");
+        }
+      }
     });
   }
 
   const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const shipping = values.delivery === "shipping" ? shippingCost : 0;
-  const total = subtotal + shipping;
+  // Envío gratis: el descuento es el envío (solo con envío a domicilio).
+  const freeShipping = coupon?.kind === "free_shipping" && values.delivery === "shipping";
+  const discount = coupon ? (coupon.kind === "free_shipping" ? (freeShipping ? shipping : 0) : coupon.discount) : 0;
+  const total = Math.max(subtotal - discount + shipping, 0);
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
@@ -261,7 +319,7 @@ export function CheckoutForm({
               <legend className="sr-only">Forma de entrega</legend>
               <DeliveryOption
                 checked={values.delivery === "shipping"}
-                onSelect={() => set("delivery", "shipping")}
+                onSelect={() => selectDelivery("shipping")}
                 icon={<Truck aria-hidden className="size-5" />}
                 title="Envío a domicilio"
                 price={shortARS(shippingCost)}
@@ -269,7 +327,7 @@ export function CheckoutForm({
               />
               <DeliveryOption
                 checked={values.delivery === "pickup"}
-                onSelect={() => set("delivery", "pickup")}
+                onSelect={() => selectDelivery("pickup")}
                 icon={<Store aria-hidden className="size-5" />}
                 title="Retiro en el local"
                 price="Gratis"
@@ -380,23 +438,56 @@ export function CheckoutForm({
               <dt className="text-muted-foreground">Subtotal</dt>
               <dd className="tabular-nums">{formatARS(subtotal)}</dd>
             </div>
-            {/* Paso 7 (cupones): acá va la fila del descuento ("Cupón XXXX  − $ ...").
-                El total ya está preparado en la base (discount_total). */}
+            {/* Descuento del cupón (productos). El de envío gratis se ve en la fila del envío. */}
+            {coupon && coupon.kind !== "free_shipping" && discount > 0 && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Cupón {coupon.code}</dt>
+                <dd className="font-medium text-brand tabular-nums">− {formatARS(discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Envío</dt>
+              <dt className="text-muted-foreground">
+                Envío{freeShipping && <span className="block text-xs">Cupón {coupon?.code}</span>}
+              </dt>
               <dd className="tabular-nums">
-                {values.delivery === "shipping"
-                  ? formatARS(shippingCost)
-                  : values.delivery === "pickup"
-                    ? "Gratis"
-                    : <span className="text-muted-foreground">Elegí la entrega</span>}
+                {freeShipping ? (
+                  <span className="flex flex-col items-end">
+                    <span className="font-medium text-brand">Gratis</span>
+                    <span className="text-xs text-muted-foreground line-through">
+                      <span className="sr-only">Antes: </span>
+                      {formatARS(shippingCost)}
+                    </span>
+                  </span>
+                ) : values.delivery === "shipping" ? (
+                  formatARS(shippingCost)
+                ) : values.delivery === "pickup" ? (
+                  "Gratis"
+                ) : (
+                  <span className="text-muted-foreground">Elegí la entrega</span>
+                )}
               </dd>
             </div>
+            {coupon?.kind === "free_shipping" && values.delivery !== "shipping" && (
+              <p className="text-xs text-muted-foreground">
+                Tu cupón {coupon.code} es de envío gratis: se aplica al elegir envío a domicilio.
+              </p>
+            )}
             <div className="flex items-baseline justify-between gap-4 border-t pt-3">
               <dt className="text-base font-semibold">Total</dt>
               <dd className="text-xl font-semibold tabular-nums">{formatARS(total)}</dd>
             </div>
           </dl>
+
+          <CouponField
+            applied={coupon}
+            error={couponError}
+            busy={couponBusy || busy}
+            onApply={(code) => void runCouponCheck(code, values.delivery)}
+            onRemove={() => {
+              setCoupon(null);
+              setCouponError(null);
+            }}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="co-acceptTerms" className="flex cursor-pointer items-start gap-3 text-sm leading-snug">
