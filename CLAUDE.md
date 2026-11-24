@@ -377,6 +377,10 @@ tiendas online). Los textos en un archivo de contenido (como `ayuda.ts`), fácil
   producción y en la URL del webhook de MP (`https://www.homedekotrevelin.com/api/mercadopago/webhook`).
 - Lanzamiento con pagos reales: cambiar `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` por las credenciales
   de producción y configurar el webhook en modo productivo.
+- Lanzamiento, al terminar las pruebas: **reiniciar la numeración de pedidos a #1001** (decidido el 24/11/2026; los
+  pedidos de prueba #1003–#1016 ya se borraron ese día y el contador quedó en #1017). Antes, confirmar que no haya
+  pedidos reales: `select count(*) from public.orders;` → 0. Después:
+  `alter table public.orders alter column order_number restart with 1001;`
 
 ### Ventas: preparado para el futuro Módulo Local
 La tabla de pedidos/ventas tiene desde el inicio:
