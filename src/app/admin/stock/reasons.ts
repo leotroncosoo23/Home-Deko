@@ -14,14 +14,15 @@ export const REASON_LABELS: Record<StockReason, string> = {
   ajuste: "Corrección",
   rotura: "Rotura",
   devolucion: "Devolución",
+  cancelacion: "Cancelación de pedido",
 };
 
 /**
  * Motivos que se eligen en "Ajustar stock".
  *   sign  +1 → la cantidad suma · −1 → resta · 0 → corrección (se escribe
  *   el stock contado y la base calcula la diferencia)
- * ("inicial" lo pone el alta del producto y "venta_web" el checkout: no se
- * eligen a mano.)
+ * ("inicial" lo pone el alta del producto, "venta_web" el checkout y
+ * "cancelacion" cancelar un pedido en Pedidos: no se eligen a mano.)
  */
 export const ADJUST_REASONS = [
   { reason: "ingreso", label: "Ingreso de mercadería", short: "Ingreso", sign: 1 },
@@ -38,6 +39,7 @@ export const REASON_STYLES: Record<StockReason, string> = {
   inicial: "bg-muted text-muted-foreground",
   ingreso: "bg-emerald-50 text-emerald-700",
   devolucion: "bg-emerald-50 text-emerald-700",
+  cancelacion: "bg-emerald-50 text-emerald-700",
   venta_local: "bg-secondary text-foreground",
   venta_web: "bg-secondary text-foreground",
   rotura: "bg-amber-50 text-amber-800",

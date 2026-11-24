@@ -16,6 +16,28 @@ export function ClearCartOnApproved({ orderId }: { orderId: string }) {
   return null;
 }
 
+/** Botón "Copiar" del código de seguimiento. */
+export function CopyCode({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1500);
+        } catch {
+          // Sin permiso para copiar: el código igual se ve y se puede seleccionar.
+        }
+      }}
+      className="inline-flex h-9 items-center rounded-full border px-4 text-sm font-semibold transition-colors hover:bg-muted"
+    >
+      {copied ? "¡Copiado!" : "Copiar código"}
+    </button>
+  );
+}
+
 const INTERVAL_MS = 5000;
 const MAX_TRIES = 12; // ~1 minuto
 

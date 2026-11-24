@@ -37,6 +37,10 @@ export const PROVINCIAS = [
 
 export type DeliveryMethod = "shipping" | "pickup";
 
+/** Largos máximos de piso/depto e indicaciones (iguales a los de la base). */
+export const APARTMENT_MAX = 40;
+export const NOTES_MAX = 150;
+
 const optionalText = (max: number) => z.string().trim().max(max, "Es un poco largo: acortalo, por favor.").optional();
 
 export const checkoutSchema = z
@@ -59,6 +63,10 @@ export const checkoutSchema = z
       ),
     delivery: z.enum(["shipping", "pickup"], "Elegí cómo querés recibir tu compra."),
     address: optionalText(200),
+    /** Piso / depto (opcional). Mismo largo máximo que la base. */
+    apartment: optionalText(APARTMENT_MAX),
+    /** Indicaciones para la entrega (opcional): entre calles, timbre… */
+    notes: optionalText(NOTES_MAX),
     city: optionalText(100),
     province: z.string().optional(),
     postalCode: optionalText(8),
@@ -71,7 +79,7 @@ export const checkoutSchema = z
   .superRefine((data, ctx) => {
     if (data.delivery !== "shipping") return;
     if (!data.address || data.address.length < 4) {
-      ctx.addIssue({ code: "custom", path: ["address"], message: "Escribí la calle, el número y, si hay, el piso o depto." });
+      ctx.addIssue({ code: "custom", path: ["address"], message: "Escribí la calle y el número." });
     }
     if (!data.city || data.city.length < 2) {
       ctx.addIssue({ code: "custom", path: ["city"], message: "Escribí tu ciudad o localidad." });

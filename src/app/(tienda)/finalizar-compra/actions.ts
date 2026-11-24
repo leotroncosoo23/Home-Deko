@@ -40,12 +40,24 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
   }
 
   const user = await getCurrentUser();
-  const { token, hash } = createOrderToken();
+  // El id lo arma el servidor ANTES de crear el pedido: el link secreto se
+  // deriva de él (ver src/lib/order-token.ts).
+  const newOrderId = crypto.randomUUID();
+  let token: string;
+  let hash: string;
+  try {
+    ({ token, hash } = createOrderToken(newOrderId));
+  } catch (e) {
+    // Para Leo: falta ORDER_LINK_SECRET (el mensaje dice cuál).
+    console.error("[checkout]", e instanceof Error ? e.message : e);
+    return { ok: false, error: GENERIC_ERROR };
+  }
   const supabase = createAdminClient();
 
   // ---- 1. Pedido en la base -------------------------------------------
   const { data: created, error } = await supabase.rpc("create_order", {
     p: {
+      id: newOrderId,
       access_token_hash: hash,
       created_by: user?.id ?? null,
       customer_name: data.name,
@@ -53,6 +65,8 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       customer_phone: data.phone,
       delivery_method: data.delivery,
       ship_address: data.address ?? null,
+      ship_apartment: data.apartment || null,
+      ship_notes: data.notes || null,
       ship_city: data.city ?? null,
       ship_province: data.province ?? null,
       ship_postal_code: data.postalCode ?? null,

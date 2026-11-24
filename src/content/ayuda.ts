@@ -65,33 +65,58 @@ export const GUIAS: Record<GuiaId, Guia> = {
   pedidos: {
     id: "pedidos",
     titulo: "Pedidos",
-    resumen: "Los pedidos de la tienda online, con el estado del pago de Mercado Pago.",
+    resumen: "Los pedidos de la tienda online: qué preparar, qué despachar y en qué estado está cada uno.",
     pasosRapidos: [
-      "Cuando un cliente paga, el pedido aparece en \"Pagados\" como \"Pago aprobado · Para preparar\".",
-      "El stock se descuenta solo en ese momento (en Stock lo ves como \"Venta web\").",
-      "Si ves \"Pagado sin stock\" en rojo o \"Para revisar\" en amarillo, ese pedido necesita que lo revisen ustedes.",
-      "El número del menú cuenta los pedidos que requieren atención.",
+      "En \"Para preparar\" están los pedidos ya pagados. Tildalos y tocá \"Lista de preparación\" para juntar los productos.",
+      "Para los envíos, tocá \"Imprimir rótulos\" (4 por hoja) y pegá cada uno en su paquete.",
+      "Al despachar, entrá al pedido, elegí la empresa, cargá el código de seguimiento y tocá \"Marcar como enviado\". Al cliente le llega un mail.",
+      "Si arriba ves un aviso rojo o amarillo, ese pedido necesita que lo revisen antes de prepararlo.",
     ],
     pasos: [
       {
         titulo: "Cómo llega un pedido",
         texto:
-          "El cliente completa sus datos, elige envío a domicilio o retiro en el local y paga en Mercado Pago. Recién cuando Mercado Pago confirma el pago, el pedido queda \"Pago aprobado\" y se descuenta el stock. Los precios y el costo del envío quedan guardados en el pedido tal como estaban al comprar: si después los cambian, ese pedido no cambia.",
+          "El cliente completa sus datos, elige envío a domicilio o retiro en el local y paga en Mercado Pago. Recién cuando Mercado Pago confirma el pago, el pedido aparece en \"Para preparar\" y se descuenta el stock solo (en Stock lo ves como \"Venta web\"). Los precios y el costo del envío quedan guardados en el pedido tal como estaban al comprar: si después los cambian, ese pedido no cambia.",
       },
       {
-        titulo: "Pagados y Todos",
+        titulo: "Cómo despachar un pedido (paso a paso)",
         texto:
-          "\"Pagados\" muestra los pedidos cobrados y los que hay que revisar. \"Todos\" suma también los intentos que quedaron sin pagar (por ejemplo, alguien que llegó a Mercado Pago y no terminó). Esos no descuentan stock ni requieren nada.",
+          "1. Entrá a Pedidos: arriba de todo están los avisos (si hay).\n2. En la pestaña \"Para preparar\", tildá los pedidos que vas a armar (o \"Seleccionar todos\"). Los más viejos aparecen primero.\n3. Tocá \"Lista de preparación\" e imprimila: arriba dice todo lo que hay que juntar del depósito, sumado; abajo, pedido por pedido, para armar cada caja. Tildá con birome a medida que juntás.\n4. Tocá \"Imprimir rótulos\": salen 4 por hoja A4, con los datos del cliente y los de Home Deko como remitente. Recortá por las líneas punteadas y pegá cada uno en su paquete.\n5. Tocá \"Marcar como Preparando\": así queda claro que ya se están armando.\n6. Cuando despaches cada paquete, entrá al pedido, elegí la empresa (Correo Argentino, Andreani, OCA u Otra), escribí el código de seguimiento del comprobante y tocá \"Marcar como enviado\". Al cliente le llega un mail con el seguimiento.\n7. Si querés, tocá \"Avisar por WhatsApp\": se abre el chat con el mensaje ya escrito.\n8. Cuando el cliente lo recibe, entrá al pedido y tocá \"Marcar como entregado\".",
+      },
+      {
+        titulo: "Pedidos para retirar en el local",
+        texto:
+          "Se preparan igual (lista de preparación y \"Preparando\"), pero no llevan rótulo. Cuando el paquete está armado, entrá al pedido y tocá \"Listo para retirar\": al cliente le llega un mail con la dirección y los horarios. Cuando pasa a buscarlo, tocá \"Marcar como retirado\".",
+      },
+      {
+        titulo: "Las pestañas",
+        texto:
+          "\"Para preparar\": pagados, todavía sin armar. \"Preparando\": se están armando. \"Enviados\": en camino. \"Para retirar\": listos, esperando al cliente en el local. \"Entregados y retirados\": terminados. \"Todos\": todo junto, también los cancelados; con \"Ver también los que no se pagaron\" suma los intentos que quedaron sin pagar (alguien que llegó a Mercado Pago y no terminó), que no descuentan stock ni requieren nada. Podés buscar por número de pedido, nombre o email, y filtrar solo envíos o solo retiros.",
+      },
+      {
+        titulo: "El detalle del pedido",
+        texto:
+          "Arriba de todo, \"Próximo paso\" dice qué hay que hacer con ese pedido y tiene el botón para hacerlo. Más abajo están los productos, los datos del cliente (con botones para copiar y para escribirle por WhatsApp), la dirección de envío (con \"Copiar\" para pegarla en el formulario del correo), el pago y el historial: cada cambio, quién lo hizo y cuándo, incluidos los mails que se mandaron. Los estados solo avanzan: un pedido enviado no puede volver a \"Preparando\". Si te equivocaste con el código de seguimiento, usá \"Corregir la empresa o el código\".",
+      },
+      {
+        titulo: "Mails automáticos",
+        texto:
+          "Al cliente le llega un mail cuando se confirma el pago, cuando lo marcan como enviado (con el código de seguimiento) y cuando está listo para retirar. A ustedes les llega un aviso por cada pedido nuevo al email del negocio que cargaron en Configuración (si no está cargado, no se manda y en Pedidos aparece un recordatorio). En el historial de cada pedido figura cada mail enviado.",
+      },
+      {
+        titulo: "Cancelar un pedido",
+        texto:
+          "Entrá al pedido y tocá \"Cancelar pedido\" (solo mientras no salió: \"Para preparar\", \"Preparando\" o \"Listo para retirar\"). El stock vuelve solo (en Stock lo ves como \"Cancelación de pedido\"). El dinero NO se devuelve solo: hacelo desde tu cuenta de Mercado Pago (Actividad → buscá el número de operación que figura en el pedido → Devolver dinero).",
       },
       {
         titulo: "Pagado sin stock",
         texto:
-          "Pasa muy rara vez: dos personas pagan la última unidad casi al mismo tiempo. El segundo pago se cobra, pero ya no hay stock. Escribile al cliente para ofrecerle otro producto o devolverle el dinero desde tu cuenta de Mercado Pago (Actividad → el pago → Devolver).",
+          "Pasa muy rara vez: dos personas pagan la última unidad casi al mismo tiempo. El segundo pago se cobra, pero ya no hay stock y no se descuenta nada. Escribile al cliente (el botón de WhatsApp está en el pedido) y elegí: si te entra mercadería, cargá el ingreso en Stock y tocá \"Descontar el stock y seguir\"; si le ofreciste otra cosa, tocá \"Lo resolvimos de otra forma\" y contá qué hicieron; si no se puede, \"Cancelar pedido\" y devolvé el dinero desde Mercado Pago.",
       },
       {
         titulo: "Para revisar",
         texto:
-          "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. Debajo del aviso dice el motivo. En esos casos el stock no se descuenta solo.",
+          "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. En el pedido dice el motivo. Si el monto no coincidía pero en Mercado Pago ves el pago acreditado y te parece bien, tocá \"Confirmar el pago igual\". Si el pago se devolvió, cancelá el pedido. Si ya lo revisaron y está todo bien, \"Marcar como revisado\".",
       },
     ],
   },
