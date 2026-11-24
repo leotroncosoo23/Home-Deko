@@ -34,10 +34,11 @@ export function StoreHighlights({
         Te lo enviamos a cualquier lugar del país ({comercio.envioDomicilio}, precio fijo) o lo retirás
         gratis en el local.
       </Feature>
-      <Feature icon={UserRound} title="Tu cuenta, con Google">
-        Podés crear una cuenta con tu cuenta de Google para ver tus pedidos y seguir su estado
-        (preparando, enviado, listo para retirar). Solo usamos tu nombre, tu email y tu foto de
-        perfil: te lo explicamos en la{" "}
+      <Feature icon={UserRound} title="Tu cuenta, con Google o con tu email">
+        Podés entrar con tu cuenta de Google o con tu email y un código que te mandamos (sin
+        contraseñas) para ver tus pedidos y seguir su estado (preparando, enviado, listo para
+        retirar) y guardar tu dirección. Si entrás con Google, solo usamos tu nombre, tu email y tu
+        foto de perfil: te lo explicamos en la{" "}
         <Link href="/privacidad#google" className="font-medium text-foreground underline underline-offset-4">
           Política de privacidad
         </Link>

@@ -87,7 +87,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
   return {
     titulo: "Política de privacidad",
     resumen: `Cómo cuidamos tus datos cuando comprás o creás una cuenta en ${C.sitio}. Lo explicamos en simple: qué datos pedimos, para qué y qué podés hacer con ellos.`,
-    actualizado: "2026-11-17",
+    actualizado: "2026-11-24",
     secciones: [
       {
         id: "responsable",
@@ -111,7 +111,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
           "Solo pedimos los datos que necesitamos para venderte y entregarte tu compra:",
           {
             lista: [
-              "Datos de tu cuenta: nombre, email y, si entrás con Google, tu foto de perfil. Si creás la cuenta con email, también una contraseña (que se guarda cifrada: nadie puede leerla, ni siquiera nosotros).",
+              "Datos de tu cuenta: nombre y email y, si entrás con Google, también tu foto de perfil. Si entrás con tu email, te mandamos un código de un solo uso: no te pedimos ninguna contraseña. Si querés, también tu teléfono y una dirección de envío (con piso o depto e indicaciones para la entrega), para completar tus compras más rápido.",
               "Datos de tus compras: productos, montos, fecha, estado del pedido y medio de pago usado.",
               "Datos de envío: nombre de quien recibe, dirección, localidad, provincia, código postal y teléfono.",
               "Datos de contacto: lo que nos escribas por email, WhatsApp o redes sociales.",
@@ -124,7 +124,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
         id: "google",
         titulo: "Inicio de sesión con Google",
         bloques: [
-          `Podés crear tu cuenta en ${C.sitio} con el botón "Continuar con Google". Es opcional: también podés comprar como invitado o crear la cuenta con email y contraseña.`,
+          `Podés crear tu cuenta en ${C.sitio} con el botón "Continuar con Google". Es opcional: también podés comprar como invitado o entrar con tu email y un código que te mandamos.`,
           "Qué datos de Google usamos. Al iniciar sesión, Google nos comparte únicamente:",
           {
             lista: [
@@ -140,14 +140,24 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
               "Crear tu cuenta en la tienda e identificarte cada vez que entrás, sin que tengas que crear otra contraseña.",
               "Mostrarte tus pedidos y su seguimiento (preparando, enviado con código de seguimiento, listo para retirar, entregado).",
               "Completar tu nombre y email al comprar y mandarte los emails de tus compras (confirmación, envío y aviso de retiro).",
-              "Mostrar tu nombre y tu foto en el menú de tu cuenta.",
+              "Mostrar tu nombre en el menú de tu cuenta.",
             ],
           },
           "No usamos tus datos de Google para publicidad, no los usamos para armar perfiles y no te mandamos promociones sin tu permiso.",
           "No los compartimos ni los vendemos. Nunca vendemos, alquilamos ni cedemos tus datos de Google a nadie. Solo los guarda, en nuestro nombre, el proveedor de base de datos e inicio de sesión que hace funcionar la tienda, que no puede usarlos para nada más. Además, el uso de la información recibida de las API de Google cumple con la Política de datos del usuario de los servicios de API de Google (Google API Services User Data Policy), incluidos los requisitos de uso limitado.",
-          "Cuánto tiempo los guardamos. Tu nombre, email y foto de perfil se guardan mientras tengas tu cuenta. Si pedís borrar la cuenta, los eliminamos dentro de los 5 días hábiles. Lo único que conservamos son los datos de las compras que ya hiciste (por ejemplo, el nombre y el email que figuran en un pedido), durante el plazo que exigen las leyes contables e impositivas (hasta 10 años, según el artículo 328 del Código Civil y Comercial), y solo para cumplir esas obligaciones.",
-          `Cómo pedir que se borren. Escribinos a ${C.email} desde el email de tu cuenta de Google, con el asunto "Borrar mi cuenta", o pedilo personalmente en el local (${C.direccion}). Te confirmamos por email cuando esté hecho. Es gratis y no tenés que explicar el motivo.`,
-          "Cómo quitarnos el acceso. Además, podés desconectar Home Deko de tu cuenta de Google cuando quieras en myaccount.google.com/connections. Así Google deja de compartirnos tus datos; para borrar los que ya guardamos, pedilo como se explica arriba.",
+          "Cuánto tiempo los guardamos. Tu nombre, email y foto de perfil se guardan mientras tengas tu cuenta. Si eliminás la cuenta, los borramos (ver \"Tu cuenta\"). Lo único que conservamos son los datos de las compras que ya hiciste (por ejemplo, el nombre y el email que figuran en un pedido), durante el plazo que exigen las leyes contables e impositivas (hasta 10 años, según el artículo 328 del Código Civil y Comercial), y solo para cumplir esas obligaciones.",
+          `Cómo pedir que se borren. Lo más rápido es hacerlo vos desde Mi cuenta → "Eliminar mi cuenta": se borran en el momento. También podés escribirnos a ${C.email} desde el email de tu cuenta, con el asunto "Borrar mi cuenta", o pedirlo personalmente en el local (${C.direccion}): lo hacemos dentro de los 5 días hábiles y te confirmamos por email. Es gratis y no tenés que explicar el motivo.`,
+          "Cómo quitarnos el acceso. Además, podés desconectar Home Deko de tu cuenta de Google cuando quieras en myaccount.google.com/connections. Así Google deja de compartirnos tus datos; para borrar los que ya guardamos, eliminá tu cuenta como se explica arriba.",
+        ],
+      },
+      {
+        id: "cuenta",
+        titulo: "Tu cuenta",
+        bloques: [
+          "Tener una cuenta es opcional. Podés entrar con Google o con tu email y un código de un solo uso que te mandamos cada vez: no te pedimos ninguna contraseña.",
+          "Desde Mi cuenta podés ver tus pedidos y su estado, y ver y corregir tus datos y tu dirección de envío guardada cuando quieras.",
+          "Cuando entrás con un email verificado, sumamos a tu cuenta las compras que hayas hecho como invitado con ese mismo email, para que las veas todas juntas.",
+          "Podés eliminar tu cuenta cuando quieras desde Mi cuenta → \"Eliminar mi cuenta\". Borramos en el momento tu nombre, tu teléfono, tu dirección guardada y tu acceso. Los pedidos que ya hiciste los conservamos, sin vincularlos a ninguna cuenta, solo para cumplir las obligaciones contables e impositivas (hasta 10 años).",
         ],
       },
       {
@@ -209,7 +219,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
         id: "conservacion",
         titulo: "Cuánto tiempo guardamos tus datos",
         bloques: [
-          "Los datos de tu cuenta se guardan mientras la tengas activa. Si nos pedís que la borremos, lo hacemos dentro de los 5 días hábiles (ver \"Inicio de sesión con Google\").",
+          "Los datos de tu cuenta se guardan mientras la tengas activa. Si la eliminás desde Mi cuenta, se borran en el momento; si nos pedís que la borremos, lo hacemos dentro de los 5 días hábiles (ver \"Tu cuenta\").",
           "Los datos de las compras los conservamos el tiempo que exigen las normas contables e impositivas, aunque borres tu cuenta.",
         ],
       },
@@ -217,7 +227,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
         id: "seguridad",
         titulo: "Seguridad",
         bloques: [
-          "Usamos conexión segura (HTTPS), contraseñas cifradas y accesos restringidos: solo los administradores de Home Deko pueden ver los datos de los pedidos. Ningún sistema es 100 % infalible, pero tomamos medidas razonables para proteger tu información.",
+          "Usamos conexión segura (HTTPS) y accesos restringidos: solo los administradores de Home Deko pueden ver los datos de los pedidos, y cada cliente ve únicamente los suyos. Para entrar a tu cuenta usás Google o un código de un solo uso que te llega por email: no guardamos contraseñas de clientes. Ningún sistema es 100 % infalible, pero tomamos medidas razonables para proteger tu información.",
         ],
       },
       {
@@ -233,7 +243,8 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
               "Pedir que no los usemos para algo en particular.",
             ],
           },
-          `Para hacerlo, escribinos a ${C.email} desde el email de tu cuenta (o indicando el email que usaste en la compra). Te respondemos dentro de los plazos que fija la ley: 10 días corridos para el acceso y 5 días hábiles para rectificar o borrar.`,
+          "Si tenés cuenta, podés ver y corregir tus datos vos mismo desde Mi cuenta, y también eliminarla.",
+          `Para cualquiera de estos pedidos, escribinos a ${C.email} desde el email de tu cuenta (o indicando el email que usaste en la compra). Te respondemos dentro de los plazos que fija la ley: 10 días corridos para el acceso y 5 días hábiles para rectificar o borrar.`,
           "El titular de los datos personales tiene la facultad de ejercer el derecho de acceso a los mismos en forma gratuita a intervalos no inferiores a seis meses, salvo que se acredite un interés legítimo al efecto conforme lo establecido en el artículo 14, inciso 3 de la Ley N° 25.326.",
           "La AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.",
         ],
@@ -277,7 +288,7 @@ export function terminos(C: DatosComercio): DocumentoLegal {
   return {
     titulo: "Términos y condiciones",
     resumen: `Las reglas para usar la tienda online de ${C.nombre} y comprar en ${C.sitio}: precios, pagos, envíos, cambios y devoluciones.`,
-    actualizado: "2026-11-17",
+    actualizado: "2026-11-24",
     secciones: [
       {
         id: "comercio",
@@ -307,8 +318,9 @@ export function terminos(C: DatosComercio): DocumentoLegal {
         id: "cuenta",
         titulo: "Cuenta y compra como invitado",
         bloques: [
-          "Podés comprar como invitado o crear una cuenta (con Google o con email y contraseña) para ver tus pedidos y su estado.",
-          "Sos responsable de que los datos que cargás sean correctos, sobre todo la dirección de envío y el teléfono, y de cuidar el acceso a tu cuenta.",
+          "Podés comprar como invitado o tener una cuenta (con Google, o con tu email y un código que te mandamos) para ver tus pedidos y su estado y guardar tus datos de envío.",
+          "Sos responsable de que los datos que cargás sean correctos, sobre todo la dirección de envío y el teléfono, y de cuidar el acceso a tu cuenta (por ejemplo, no compartir los códigos de ingreso que te mandamos).",
+          "Podés eliminar tu cuenta cuando quieras desde Mi cuenta. Los pedidos que ya hiciste se conservan, como explica la Política de privacidad.",
         ],
       },
       {

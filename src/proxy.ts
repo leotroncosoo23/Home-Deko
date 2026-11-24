@@ -5,13 +5,17 @@ import { updateSession } from "@/lib/supabase/proxy";
 /** Ruta interna de la página "Muy pronto" (nunca se ve en la barra de direcciones). */
 const COMING_SOON_PATH = "/muy-pronto";
 
+/** Ingreso de los administradores (los clientes entran en /mi-cuenta). */
+const ADMIN_LOGIN_PATH = "/admin/login";
+
 /**
  * Proxy (antes llamado "middleware"): corre ANTES de cada página.
  *
  * 1. Renueva la sesión de Supabase (si el token venció, pide uno nuevo).
  * 2. Protege /admin leyendo el token, sin consultar la base:
- *      sin sesión          → /login?next=...
- *      con sesión, sin rol → /sin-acceso
+ *      /admin/login        → siempre (es el ingreso del panel)
+ *      sin sesión          → /admin/login?next=...
+ *      con sesión, sin rol → /sin-acceso  (por ejemplo, una cuenta de cliente)
  * 3. Modo construcción (mientras la tienda no está lanzada):
  *      - rutas de isAlwaysPublic() (src/lib/public-routes.ts) → se ven siempre
  *      - admins → ven la tienda real (con la barra de vista previa)
@@ -28,10 +32,21 @@ export async function proxy(request: NextRequest) {
   const { response, hasSession, role, supabase } = await updateSession(request);
   const { pathname, search } = request.nextUrl;
 
+  // --- Ingreso del panel ---------------------------------------------------
+  // /admin/login es la ÚNICA ruta de /admin que se ve sin sesión. La página
+  // misma decide: admin logueado → al panel; otra cuenta → /sin-acceso.
+  if (pathname === ADMIN_LOGIN_PATH) return response;
+
+  // /login era el ingreso viejo del panel: se mantiene como redirección
+  // (con ?next= y ?error=) por si quedó guardado en favoritos.
+  if (pathname === "/login") {
+    return redirectWithCookies(request, response, ADMIN_LOGIN_PATH, Object.fromEntries(request.nextUrl.searchParams));
+  }
+
   // --- Panel -------------------------------------------------------------
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!hasSession) {
-      return redirectWithCookies(request, response, "/login", { next: pathname + search });
+      return redirectWithCookies(request, response, ADMIN_LOGIN_PATH, { next: pathname + search });
     }
     if (role !== "admin") {
       return redirectWithCookies(request, response, "/sin-acceso");
@@ -46,7 +61,7 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(request, response, "/");
   }
 
-  if (isAlwaysPublic(pathname) || role === "admin") return response;
+  if (isAlwaysPublic(pathname) || role === "admin" || localPreview()) return response;
 
   // Visitante en una ruta de la tienda: ¿está lanzada?
   // Una fila, en el mismo datacenter (São Paulo): unos pocos milisegundos.
@@ -67,6 +82,17 @@ export async function proxy(request: NextRequest) {
     rewrite.headers.set("X-Robots-Tag", "noindex");
   }
   return rewrite;
+}
+
+/**
+ * Llave SOLO PARA PROBAR EN LOCAL: con STORE_PREVIEW_LOCAL=1 en .env.local,
+ * `npm run dev` muestra la tienda real a cualquiera (por ejemplo, a una cuenta
+ * de cliente de prueba) aunque no esté lanzada.
+ * En Vercel (y en `npm run build` / `start`) NODE_ENV es "production", así que
+ * esta llave nunca tiene efecto ahí: el modo construcción sigue igual.
+ */
+function localPreview(): boolean {
+  return process.env.NODE_ENV === "development" && process.env.STORE_PREVIEW_LOCAL === "1";
 }
 
 /** Redirige conservando las cookies de sesión que se acaban de renovar. */

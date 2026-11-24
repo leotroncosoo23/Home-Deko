@@ -36,7 +36,7 @@ async function NoAccessContent() {
   // Acá el rol se lee de la BASE (no del token): es el dato actualizado.
   const user = await getCurrentUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect("/admin/login");
 
   // El token decía "no admin", pero la base dice que sí: token viejo.
   if (user.isAdmin) {
@@ -69,9 +69,14 @@ async function NoAccessContent() {
         </p>
       </div>
       <SignOutButton className="h-10 w-full" />
-      <Link href="/" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-        Ir a la tienda
-      </Link>
+      <div className="flex gap-4 text-sm text-muted-foreground">
+        <Link href="/mi-cuenta" className="underline-offset-4 hover:underline">
+          Ir a Mi cuenta
+        </Link>
+        <Link href="/" className="underline-offset-4 hover:underline">
+          Ir a la tienda
+        </Link>
+      </div>
     </>
   );
 }

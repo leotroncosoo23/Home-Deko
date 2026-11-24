@@ -9,7 +9,7 @@ import { ALL_PRODUCTS_LINK } from "@/lib/store-nav";
 import { useCart } from "../cart/cart-provider";
 import { reconcileCart } from "../cart/cart-sheet";
 import { getCartSnapshot } from "../cart/cart-store";
-import { CheckoutForm, type StoreInfo } from "./checkout-form";
+import { CheckoutForm, type CheckoutAccount, type StoreInfo } from "./checkout-form";
 
 const noop = () => () => {};
 
@@ -20,7 +20,7 @@ const noop = () => () => {};
  * reales (getCartLines) y muestra el formulario. Si algo cambió (sin stock,
  * despublicado), ajusta el carrito y avisa, igual que el panel del carrito.
  */
-export function CheckoutView({ store }: { store: StoreInfo }) {
+export function CheckoutView({ store, account }: { store: StoreInfo; account: CheckoutAccount | null }) {
   const { items } = useCart();
   // false en el servidor y en el primer dibujo: evita mostrar "carrito
   // vacío" un instante antes de leer el carrito del navegador.
@@ -81,6 +81,7 @@ export function CheckoutView({ store }: { store: StoreInfo }) {
         lines={lines}
         shippingCost={data.shippingCost}
         store={store}
+        account={account}
         onCartChanged={() => setReload((n) => n + 1)}
       />
     </div>
@@ -123,7 +124,7 @@ function EmptyCheckout({ notices }: { notices: string[] }) {
   );
 }
 
-function CheckoutSkeleton() {
+export function CheckoutSkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-10" aria-label="Cargando">
       <div className="flex flex-col gap-5">

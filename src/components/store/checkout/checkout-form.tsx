@@ -1,11 +1,12 @@
 "use client";
 
-import { cloneElement, useId, useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlertCircle, Loader2, Lock, ShoppingBag, Store, Truck } from "lucide-react";
+import { AlertCircle, Loader2, Lock, ShoppingBag, Store, Truck, UserRound } from "lucide-react";
 import { startCheckout } from "@/app/(tienda)/finalizar-compra/actions";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { AccountDetails } from "@/lib/account-schema";
 import type { CartLine } from "@/lib/cart";
 import {
   checkoutSchema,
@@ -19,6 +20,7 @@ import {
 import { formatARS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WhatsAppIcon } from "../whatsapp-icon";
+import { ErrorText, Field } from "../form-field";
 import { getCartSnapshot } from "../cart/cart-store";
 import {
   loadLastOrder,
@@ -34,6 +36,46 @@ export type StoreInfo = {
   storeHours: string;
   whatsappHref: string | null;
 };
+
+/** La cuenta del cliente logueado (para completar el formulario solo). */
+export type CheckoutAccount = { email: string; details: AccountDetails };
+
+/**
+ * Valores iniciales: con cuenta, sus datos; lo que la cuenta no tenga, de lo
+ * guardado en este navegador. Sin cuenta, solo lo del navegador.
+ */
+function initialValues(account: CheckoutAccount | null): SavedCustomer {
+  const saved = loadSavedCustomer();
+  if (!account) return saved;
+  const d = account.details;
+  const pick = (fromAccount: string, fromBrowser: string) => fromAccount || fromBrowser;
+  const hasAddress = Boolean(d.address);
+  return {
+    name: pick(d.name, saved.name),
+    email: account.email || saved.email,
+    phone: pick(d.phone, saved.phone),
+    // Con una dirección guardada, se propone el envío (se puede cambiar).
+    delivery: saved.delivery || (hasAddress ? "shipping" : ""),
+    // La dirección va entera de un lado o del otro (no mezclar dos direcciones).
+    ...(hasAddress
+      ? {
+          address: d.address,
+          apartment: d.apartment,
+          city: d.city,
+          province: d.province,
+          postalCode: d.postalCode,
+          notes: d.notes,
+        }
+      : {
+          address: saved.address,
+          apartment: saved.apartment,
+          city: saved.city,
+          province: saved.province,
+          postalCode: saved.postalCode,
+          notes: saved.notes,
+        }),
+  };
+}
 
 const FIELD_ORDER: CheckoutFieldName[] = [
   "name",
@@ -69,16 +111,20 @@ export function CheckoutForm({
   lines,
   shippingCost,
   store,
+  account,
   onCartChanged,
 }: {
   lines: CartLine[];
   shippingCost: number;
   store: StoreInfo;
+  /** null = compra como invitado. */
+  account: CheckoutAccount | null;
   onCartChanged: () => void;
 }) {
-  const [values, setValues] = useState<SavedCustomer>(() => loadSavedCustomer());
+  const [values, setValues] = useState<SavedCustomer>(() => initialValues(account));
   const [lastOrder] = useState(() => loadLastOrder());
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [saveToAccount, setSaveToAccount] = useState(true);
   const [errors, setErrors] = useState<CheckoutFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
@@ -102,7 +148,7 @@ export function CheckoutForm({
     e.preventDefault();
     if (busy) return;
 
-    const payload = { ...values, acceptTerms, items: getCartSnapshot() };
+    const payload = { ...values, acceptTerms, saveToAccount: Boolean(account) && saveToAccount, items: getCartSnapshot() };
     // Primero en el navegador, para avisar rápido. El servidor valida otra vez.
     const parsed = checkoutSchema.safeParse(payload);
     if (!parsed.success) {
@@ -111,7 +157,9 @@ export function CheckoutForm({
     }
     setErrors({});
     setFormError(null);
-    saveCustomer(values);
+    // Con cuenta, los datos viven en la cuenta: no se dejan en este navegador
+    // (por ejemplo, si es una compu compartida).
+    if (!account) saveCustomer(values);
 
     startTransition(async () => {
       const result = await startCheckout(payload).catch(() => null);
@@ -150,6 +198,25 @@ export function CheckoutForm({
         <div className="flex flex-col gap-5">
           {/* ---- Tus datos ---- */}
           <Section title="Tus datos" description="Te mandamos la confirmación de la compra por email.">
+            {account ? (
+              <p className="flex items-start gap-2.5 rounded-xl bg-muted/60 p-3 text-sm">
+                <UserRound aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
+                <span>
+                  Comprás con tu cuenta <span className="font-medium break-all">{account.email}</span>. Completamos tus
+                  datos guardados: revisalos antes de pagar.
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                ¿Tenés cuenta?{" "}
+                <Link
+                  href="/mi-cuenta?volver=/finalizar-compra"
+                  className="font-semibold text-foreground underline underline-offset-4"
+                >
+                  Ingresá y completamos tus datos
+                </Link>
+              </p>
+            )}
             <Field id="co-name" label="Nombre y apellido" error={errors.name}>
               <input
                 value={values.name}
@@ -282,6 +349,21 @@ export function CheckoutForm({
               </div>
             )}
           </Section>
+
+          {account && (
+            <label htmlFor="co-saveToAccount" className="flex cursor-pointer items-start gap-3 px-1 text-sm leading-snug">
+              <Checkbox
+                id="co-saveToAccount"
+                checked={saveToAccount}
+                onCheckedChange={(checked) => setSaveToAccount(checked === true)}
+                className="mt-0.5 size-5 data-checked:border-brand data-checked:bg-brand"
+              />
+              <span>
+                Guardar estos datos en mi cuenta
+                <span className="block text-muted-foreground">Así la próxima compra es más rápida.</span>
+              </span>
+            </label>
+          )}
         </div>
 
         {/* ---- Resumen y pago ---- */}
@@ -390,57 +472,6 @@ function Section({ title, description, children }: { title: string; description:
       </div>
       {children}
     </section>
-  );
-}
-
-const CONTROL =
-  "h-11 w-full min-w-0 rounded-xl border border-input bg-background px-3.5 text-base outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/15";
-
-/** Campo con etiqueta, ayuda y error, conectados para lectores de pantalla. */
-function Field({
-  id,
-  label,
-  hint,
-  error,
-  className,
-  children,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  error?: string;
-  className?: string;
-  children: React.ReactElement<React.InputHTMLAttributes<HTMLElement>>;
-}) {
-  const hintId = hint ? `${id}-hint` : undefined;
-  const errorId = error ? `${id}-error` : undefined;
-  const control = cloneElement(children, {
-    id,
-    "aria-invalid": error ? true : undefined,
-    "aria-describedby": [hintId, errorId].filter(Boolean).join(" ") || undefined,
-    className: CONTROL,
-  });
-  return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </label>
-      {control}
-      {hint && !error && (
-        <p id={hintId} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {error && <ErrorText id={errorId!}>{error}</ErrorText>}
-    </div>
-  );
-}
-
-function ErrorText({ id, children }: { id: string; children: React.ReactNode }) {
-  return (
-    <p id={id} className="text-sm text-destructive">
-      {children}
-    </p>
   );
 }
 

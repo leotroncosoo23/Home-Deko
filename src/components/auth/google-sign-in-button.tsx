@@ -24,6 +24,12 @@ type Props = {
   text?: GoogleButtonText;
   /** Se llama con un mensaje en español si algo falla. */
   onError?: (message: string) => void;
+  /**
+   * Opcional: algo que hacer con la sesión ya iniciada ANTES de navegar
+   * (en la tienda: sumar a la cuenta las compras como invitado). Puede
+   * devolver otra ruta a la que ir en lugar de `redirectTo`.
+   */
+  onSignedIn?: () => Promise<string | void>;
 };
 
 /**
@@ -34,7 +40,7 @@ type Props = {
  * navegación completa a `redirectTo` y el proxy / la página destino deciden
  * (admin → panel, sin permiso → /sin-acceso, cliente → su cuenta, etc.).
  */
-export function GoogleSignInButton({ redirectTo, text = "continue_with", onError }: Props) {
+export function GoogleSignInButton({ redirectTo, text = "continue_with", onError, onSignedIn }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>("loading");
   // Se incrementa para volver a dibujar el botón con un nonce nuevo tras un error
@@ -43,9 +49,11 @@ export function GoogleSignInButton({ redirectTo, text = "continue_with", onError
   // Últimos valores de las props, para no re-inicializar Google en cada render
   const redirectToRef = useRef(redirectTo);
   const onErrorRef = useRef(onError);
+  const onSignedInRef = useRef(onSignedIn);
   useEffect(() => {
     redirectToRef.current = redirectTo;
     onErrorRef.current = onError;
+    onSignedInRef.current = onSignedIn;
   });
 
   useEffect(() => {
@@ -86,8 +94,11 @@ export function GoogleSignInButton({ redirectTo, text = "continue_with", onError
               return;
             }
 
+            // Si falla, se sigue igual: la sesión ya está iniciada.
+            const target = await onSignedInRef.current?.().catch(() => undefined);
+
             // Navegación completa: así el proxy lee las cookies de sesión nuevas
-            window.location.assign(redirectToRef.current);
+            window.location.assign(target || redirectToRef.current);
           },
         });
 

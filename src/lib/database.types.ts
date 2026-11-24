@@ -869,7 +869,14 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          ship_address: string | null
+          ship_apartment: string | null
+          ship_city: string | null
+          ship_notes: string | null
+          ship_postal_code: string | null
+          ship_province: string | null
           updated_at: string
         }
         Insert: {
@@ -877,7 +884,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          ship_address?: string | null
+          ship_apartment?: string | null
+          ship_city?: string | null
+          ship_notes?: string | null
+          ship_postal_code?: string | null
+          ship_province?: string | null
           updated_at?: string
         }
         Update: {
@@ -885,7 +899,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          ship_address?: string | null
+          ship_apartment?: string | null
+          ship_city?: string | null
+          ship_notes?: string | null
+          ship_postal_code?: string | null
+          ship_province?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1457,6 +1478,7 @@ export type Database = {
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_developer: { Args: never; Returns: boolean }
+      link_my_guest_orders: { Args: never; Returns: number }
       log_order_event: {
         Args: {
           p_from?: Database["public"]["Enums"]["fulfillment_status"]

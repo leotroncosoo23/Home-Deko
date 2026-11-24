@@ -58,7 +58,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
  */
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/admin/login?next=/admin");
   if (!user.isAdmin) throw new Error("Tu cuenta no tiene acceso al panel.");
   return user;
 }

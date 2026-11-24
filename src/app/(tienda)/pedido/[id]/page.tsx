@@ -175,7 +175,7 @@ async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[i
 
   return (
     <div className="flex w-full max-w-xl flex-col gap-6">
-      {order.payment_status === "approved" && <ClearCartOnApproved orderId={order.id} />}
+      {order.payment_status === "approved" && <ClearCartOnApproved orderId={order.id} createdAt={order.created_at} />}
 
       <div className="flex flex-col items-center gap-4 text-center" role="status">
         <span

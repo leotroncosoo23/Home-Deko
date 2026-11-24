@@ -97,13 +97,18 @@ Tipografías:
   `enable row level security`, sus `GRANT` y sus policies.
 - `is_admin()` (security definer) en las policies del panel. Las funciones security definer
   validan `is_admin()` en la primera línea y usan `search_path` vacío.
+  Excepción: funciones de CLIENTE (hoy solo `link_my_guest_orders()`) validan `auth.uid()` en la primera línea
+  y solo tocan filas del propio usuario.
 - La tienda pública solo lee productos `active` y sus datos relacionados.
 - `uuid` como clave primaria, `created_at` / `updated_at` con trigger.
 - **Archivar, no borrar**: productos `draft | active | archived`. Solo se eliminan productos sin
   movimientos de stock además del "inicial" (`delete_product`).
 
 ## Usuarios y roles
-- Entrada con **Google** y con email y contraseña. Crear una cuenta no da permisos: la seguridad está en el rol.
+- **Dos puertas, un solo sistema de sesiones**: admins en `/admin/login` (**solo Google**: no hay formulario de
+  contraseña ni "crear cuenta"; las Server Actions de contraseña se borraron) y clientes
+  en `/mi-cuenta` (Google o código de 6 dígitos por email, sin contraseñas). La puerta no da permisos: crear una
+  cuenta (por cualquiera de las dos) nace con rol `customer`; la seguridad está en el rol.
 - Tabla `admin_emails`: un trigger asigna el rol `admin` en `profiles` si el email está en la lista y confirmado.
   Para sumar o sacar un admin, se edita `admin_emails` (nunca el rol a mano en `profiles`).
 - El rol viaja en el token (Custom Access Token Hook) y lo lee `proxy.ts`. Cada consulta del panel pasa
@@ -121,10 +126,11 @@ Tipografías:
     cambie el cuerpo de `can_manage_appearance()` de `is_developer()` a `is_admin()`. No se toca la app:
     menú, páginas, acciones y ayuda aparecen solos. Actualizar también la pregunta frecuente
     "¿Cómo cambio el banner del inicio o los mensajes de la barra de arriba?" de `ayuda.ts`.
-- `/login` es SOLO el ingreso del panel: nunca enlazarlo desde la tienda. "Ingresá" / "Mi cuenta" del encabezado
-  lleva a `/mi-cuenta` (hoy un texto para clientes; en el paso 6, el ingreso de clientes). Con sesión de admin dice "Panel" → `/admin`.
-- Hoy el login de los dueños está en `/login`. En la etapa de la tienda: login de admins en `/admin/login`
-  y login de clientes en la tienda (ver más abajo).
+- `/admin/login` es SOLO el ingreso del panel: nunca enlazarlo desde la tienda. Vive fuera del grupo
+  `src/app/admin/(panel)/` (que tiene el layout con el menú); el proxy lo deja pasar sin sesión y redirige el
+  `/login` viejo hacia ahí (con `?next=`). Cliente que entra a `/admin` → `/sin-acceso`.
+- "Ingresá" / "Mi cuenta" del encabezado lleva a `/mi-cuenta`. Con sesión de cliente muestra su primer nombre
+  (PC) o "Mi cuenta"; con sesión de admin dice "Panel" → `/admin`.
 
 ## Productos (implementado)
 - Producto: nombre, slug, descripción, categoría, precio base, estado, destacado, descuento opcional
@@ -353,6 +359,41 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   (Google en un clic) con "Mis pedidos" y el estado.
 - **Paso 6 (cuenta del cliente): al iniciar sesión, el carrito del navegador NO se pierde.** Se conserva tal
   cual; si la cuenta llegara a guardar un carrito propio, se combinan (sumando cantidades, con el tope del stock).
+  Hoy la cuenta NO guarda carrito: vive solo en `hd_carrito` y entrar/salir no lo toca.
+
+### Cuenta del cliente (paso 6, implementado)
+- `/mi-cuenta` (`src/app/(tienda)/mi-cuenta/`, componentes en `src/components/store/account/`). Sin sesión:
+  ingreso con Google (`GoogleSignInButton` con `onSignedIn`) o con código por email (`sendLoginCode` →
+  `signInWithOtp`, `verifyLoginCode` → `verifyOtp` tipo `email`). Si no existe la cuenta, se crea sola.
+  `?volver=` validado con `safeReturnPath()` (solo rutas de la tienda). Con sesión: Mis pedidos, Mis datos,
+  Cerrar sesión (→ `/`) y Eliminar mi cuenta.
+- **Mails de los códigos**: los manda Supabase Auth por el **SMTP de Resend** (configurado en el panel de
+  Supabase: `smtp.resend.com:465`, usuario `resend`, clave propia "Supabase Auth"). Plantillas "Magic Link" y
+  "Confirm signup" con `{{ .Token }}`. Código de 6 dígitos, vence a los 600 s. El límite de Resend (100/día en el
+  plan gratis) lo comparten con los mails de pedidos.
+- Datos de la cuenta: columnas en `profiles` (`phone`, `ship_address`, `ship_apartment`, `ship_city`,
+  `ship_province`, `ship_postal_code`, `ship_notes`). `authenticated` solo tiene UPDATE por columna de esas +
+  `full_name` (nunca `role`). Validación compartida: `src/lib/account-schema.ts` (reusa las reglas de
+  `checkout-schema.ts`). Lectura: `getMyAccount()` (`src/lib/account.ts`, `cache()`, en `<Suspense>`).
+- **Mis pedidos** (`getMyOrders(userId)`): cliente de sesión + `.eq("customer_id", userId)` (obligatorio: a un admin
+  el RLS le deja ver todo). No muestra intentos de pago vencidos sin pagar. El detalle es la misma
+  `/pedido/{id}?t=…` (el token se deriva del id con `orderToken()`). Estado corto: `customerOrderStatus()`.
+  Cada pedido es una tarjeta: si está **en camino**, empresa + código con "Copiar" + "Seguir mi envío"
+  (`trackingFor()` de `carriers.ts`, igual que la página del pedido); si está **listo para retirar**, la dirección
+  y los horarios guardados en el pedido (`pickup_address` / `pickup_hours`).
+- **Pedidos de invitado**: `link_my_guest_orders()` (security definer) asigna `customer_id` a los pedidos sin dueño
+  con el mismo email, **solo si el email está verificado**. Se llama en cada ingreso (idempotente).
+- **Checkout con sesión**: `startCheckout` guarda `customer_id` = id de la sesión (nunca del formulario).
+  El formulario se completa con la cuenta (lo que falte, de `hd_datos_compra`), no escribe `hd_datos_compra`, y
+  "Guardar estos datos en mi cuenta" actualiza el perfil (la dirección solo si eligió envío).
+- **Eliminar mi cuenta** (Ley 25.326): `deleteMyAccount()` con el id de la sesión → `auth.admin.deleteUser`.
+  `profiles` se borra en cascada; los pedidos quedan con `customer_id` en null (FK `on delete set null`) para la
+  contabilidad. Las cuentas admin no se eliminan desde la tienda. Borra también `hd_datos_compra` del navegador.
+- `/pedido/[id]` vacía el carrito solo si el pedido aprobado es reciente (< 3 h, el regreso de Mercado Pago):
+  abrir un pedido viejo desde Mis pedidos o un mail no borra el carrito actual.
+- **Probar como cliente con la tienda sin lanzar**: `STORE_PREVIEW_LOCAL=1` en `.env.local` + `npm run dev`. Solo
+  funciona con `NODE_ENV=development` (en Vercel nunca): el proxy deja ver la tienda real a cualquier visitante.
+  Para un cliente de prueba, un alias del Gmail de Leo con `+prueba-…` (no está en `admin_emails`).
 
 ### Pedidos en el panel (paso 5, implementado)
 - Estados: Envío: Pagado → Preparando → Enviado (empresa + código) → Entregado. Retiro: Pagado → Preparando → Listo

@@ -16,13 +16,15 @@ const ERRORS: Record<string, string> = {
 };
 
 /**
- * /login
+ * /admin/login — ingreso SOLO del panel (los clientes entran en /mi-cuenta).
+ * Está fuera del grupo (panel), así no lleva el menú del panel. El proxy la
+ * deja pasar sin sesión y redirige el /login viejo hacia acá.
  *
  * La parte fija (fondo, logo, tarjeta) se muestra al instante. Lo que depende
  * de la sesión y de la URL (?next=, ?error=) va dentro de <Suspense>, porque
  * con cacheComponents todo lo que lee cookies o la URL se resuelve en cada pedido.
  */
-export default function LoginPage(props: PageProps<"/login">) {
+export default function LoginPage(props: PageProps<"/admin/login">) {
   return (
     <AuthShell>
       <Card className="gap-6 py-6 shadow-sm [--card-spacing:--spacing(6)]">
@@ -54,7 +56,7 @@ export default function LoginPage(props: PageProps<"/login">) {
   );
 }
 
-async function LoginContent({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
+async function LoginContent({ searchParams }: Pick<PageProps<"/admin/login">, "searchParams">) {
   const params = await searchParams;
   const next = safeNext(typeof params.next === "string" ? params.next : null);
   const errorKey = typeof params.error === "string" ? params.error : undefined;
@@ -72,12 +74,9 @@ async function LoginContent({ searchParams }: Pick<PageProps<"/login">, "searchP
 
 function LoginFormSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-5" aria-hidden>
+    <div className="flex animate-pulse flex-col gap-4" aria-hidden>
       <div className="h-10 rounded-lg bg-muted" />
-      <div className="h-px bg-muted" />
-      <div className="h-10 rounded-lg bg-muted" />
-      <div className="h-10 rounded-lg bg-muted" />
-      <div className="h-10 rounded-lg bg-muted" />
+      <div className="mx-auto h-3 w-3/4 rounded bg-muted" />
     </div>
   );
 }

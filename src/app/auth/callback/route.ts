@@ -27,5 +27,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Sin código, código vencido, o el usuario canceló en Google
-  return NextResponse.redirect(`${origin}/login?error=callback`);
+  return NextResponse.redirect(`${origin}/admin/login?error=callback`);
 }
