@@ -5,11 +5,14 @@
  *   - /privacidad y /terminos: Google las pide públicas para el inicio de
  *     sesión con Google y la verificación de la marca.
  *   - /login, /auth y /sin-acceso: para que los dueños puedan entrar.
+ *   - /api/mercadopago: los avisos de pago (webhook). Mercado Pago no tiene
+ *     sesión; si no estuviera acá, el aviso terminaría en "Muy pronto".
+ *     La seguridad la da la firma del aviso, no el proxy.
  *
  * Las usa src/proxy.ts. Si sumás una página que tenga que verse siempre,
  * agregala acá.
  */
-export const ALWAYS_PUBLIC_PATHS = ["/privacidad", "/terminos", "/login", "/auth", "/sin-acceso"];
+export const ALWAYS_PUBLIC_PATHS = ["/privacidad", "/terminos", "/login", "/auth", "/sin-acceso", "/api/mercadopago"];
 
 /** true si la ruta (o una subruta, ej. /auth/callback) está en la lista. */
 export function isAlwaysPublic(pathname: string) {

@@ -41,7 +41,7 @@ export function whatsappHref(): string | null {
 // Guías por sección
 // ---------------------------------------------------------------------------
 
-export type GuiaId = "productos" | "categorias" | "etiquetas" | "stock" | "apariencia" | "configuracion";
+export type GuiaId = "pedidos" | "productos" | "categorias" | "etiquetas" | "stock" | "apariencia" | "configuracion";
 
 export type Guia = {
   id: GuiaId;
@@ -62,6 +62,40 @@ export type Guia = {
 };
 
 export const GUIAS: Record<GuiaId, Guia> = {
+  pedidos: {
+    id: "pedidos",
+    titulo: "Pedidos",
+    resumen: "Los pedidos de la tienda online, con el estado del pago de Mercado Pago.",
+    pasosRapidos: [
+      "Cuando un cliente paga, el pedido aparece en \"Pagados\" como \"Pago aprobado · Para preparar\".",
+      "El stock se descuenta solo en ese momento (en Stock lo ves como \"Venta web\").",
+      "Si ves \"Pagado sin stock\" en rojo o \"Para revisar\" en amarillo, ese pedido necesita que lo revisen ustedes.",
+      "El número del menú cuenta los pedidos que requieren atención.",
+    ],
+    pasos: [
+      {
+        titulo: "Cómo llega un pedido",
+        texto:
+          "El cliente completa sus datos, elige envío a domicilio o retiro en el local y paga en Mercado Pago. Recién cuando Mercado Pago confirma el pago, el pedido queda \"Pago aprobado\" y se descuenta el stock. Los precios y el costo del envío quedan guardados en el pedido tal como estaban al comprar: si después los cambian, ese pedido no cambia.",
+      },
+      {
+        titulo: "Pagados y Todos",
+        texto:
+          "\"Pagados\" muestra los pedidos cobrados y los que hay que revisar. \"Todos\" suma también los intentos que quedaron sin pagar (por ejemplo, alguien que llegó a Mercado Pago y no terminó). Esos no descuentan stock ni requieren nada.",
+      },
+      {
+        titulo: "Pagado sin stock",
+        texto:
+          "Pasa muy rara vez: dos personas pagan la última unidad casi al mismo tiempo. El segundo pago se cobra, pero ya no hay stock. Escribile al cliente para ofrecerle otro producto o devolverle el dinero desde tu cuenta de Mercado Pago (Actividad → el pago → Devolver).",
+      },
+      {
+        titulo: "Para revisar",
+        texto:
+          "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. Debajo del aviso dice el motivo. En esos casos el stock no se descuenta solo.",
+      },
+    ],
+  },
+
   productos: {
     id: "productos",
     titulo: "Productos",
@@ -313,6 +347,16 @@ export const GUIAS: Record<GuiaId, Guia> = {
 // ---------------------------------------------------------------------------
 
 export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
+  {
+    pregunta: "Un pedido dice \"Pagado sin stock\". ¿Qué hago?",
+    respuesta:
+      "Dos clientes pagaron la última unidad casi al mismo tiempo y para el segundo ya no alcanzó. Escribile (sus datos están en el pedido) y ofrecele otro producto o devolvele el dinero desde tu cuenta de Mercado Pago: Actividad → el pago → Devolver.",
+  },
+  {
+    pregunta: "Un pedido dice \"Para revisar\". ¿Qué significa?",
+    respuesta:
+      "Que hay un detalle a verificar antes de prepararlo; el motivo aparece debajo del aviso (por ejemplo, que el monto cobrado no coincide con el pedido o que el pago se devolvió). El stock no se descuenta solo en esos casos. Si tenés dudas, escribile a Leo.",
+  },
   {
     pregunta: "¿Cómo veo la tienda como la ve un cliente?",
     respuesta:

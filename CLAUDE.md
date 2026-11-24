@@ -37,6 +37,14 @@ y que funcione muy bien en celular y en PC.
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SECRET_KEY` → **solo en el servidor**. Nunca en código de cliente ni con prefijo `NEXT_PUBLIC_`.
+  Se usa solo desde `src/lib/supabase/admin.ts` (`createAdminClient`).
+- `NEXT_PUBLIC_SITE_URL` → URL pública (back_urls y webhook de Mercado Pago, metadata). En local: `http://localhost:3000`.
+  **Producción: `https://www.homedekotrevelin.com` (con www)**: la versión sin www redirige y Mercado Pago puede no
+  seguir el redirect (webhook y regreso del pago).
+- `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` → solo servidor (`src/lib/mercadopago.ts`). Hoy, de PRUEBA.
+- `MERCADOPAGO_NOTIFICATION_URL_BASE` → **opcional, solo para probar en local**: URL del túnel (cloudflared) para que el
+  webhook llegue a la compu mientras se navega en localhost. En producción no se define (y si estuviera, se ignora:
+  `notificationBaseUrl()` en `src/lib/site-url.ts`).
 - Nunca leer, mostrar, copiar ni commitear el contenido de `.env.local`.
 
 ## Diseño e identidad visual
@@ -148,7 +156,7 @@ Tipografías:
 ## Arquitectura del panel
 Menú agrupado por tarea. Cada sección se suma al menú recién cuando está implementada.
 - Inicio
-- VENTAS: Pedidos (contador de pendientes)
+- VENTAS: Pedidos (contador de los que requieren atención; implementado como lista en el paso 4)
 - CATÁLOGO: Productos, Categorías
 - INVENTARIO: Stock (contador de stock bajo), Etiquetas
 - TIENDA ONLINE: Apariencia de la tienda (`/admin/apariencia`: barra de anuncios y Banner) — **solo desarrollador**
@@ -270,11 +278,59 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - `CartProvider` (en `StoreFrame`): un solo panel y un solo aviso para toda la tienda. Al agregar: botón
     "Agregado ✓", la foto vuela al ícono (`data-cart-target`), rebote y el número sube, aviso de 3 s bajo el
     carrito (región `role="status"` para lectores de pantalla). Con `prefers-reduced-motion`: solo el aviso.
-  - "Iniciar compra" lleva a `/finalizar-compra`: **provisoria** (pedido por WhatsApp con los precios del
-    servidor) hasta que el paso 4 la reemplace por el checkout con Mercado Pago.
+  - "Iniciar compra" lleva a `/finalizar-compra` (checkout del paso 4).
 - Carrito y checkout con **Mercado Pago (Checkout Pro)**. El pedido se confirma **solo por el webhook**,
   consultando el pago a la API de Mercado Pago (nunca confiar en la redirección), y el stock se descuenta
   con `adjust_stock` (`venta_web`).
+
+### Checkout y pedidos (paso 4, implementado)
+- `/finalizar-compra` (`src/components/store/checkout/`): datos (nombre, email, teléfono), entrega (envío con
+  dirección/ciudad/provincia/CP o retiro), resumen y aceptar Términos. zod compartido en `src/lib/checkout-schema.ts`.
+  Datos del cliente recordados en `localStorage` (`hd_datos_compra`).
+- Server Action `startCheckout` (`finalizar-compra/actions.ts`): `create_order` → preferencia de MP con lo
+  **guardado en el pedido** → `init_point`. API REST directa (sin SDK) en `src/lib/mercadopago.ts`.
+- Preferencia: `external_reference` = id del pedido · `back_urls` a `/pedido/{id}?t={token}` + `auto_return` **solo con
+  https**: MP rechaza `localhost`/`127.0.0.1` en `back_urls`. En local se omiten y el cliente vuelve con "Ver el estado de
+  mi último pedido" en `/finalizar-compra` (link guardado antes de ir a MP) · `notification_url` = `notificationBaseUrl()`
+  + `/api/mercadopago/webhook`, también solo si es https (si no, vale la URL del panel de Webhooks) · **vence a las 2 h**
+  · **sin efectivo** (ticket/atm excluidos: quedan pendientes días).
+  **Con credenciales de PRUEBA no se manda `payer.email`**: si el email del formulario es de una cuenta real de MP, el
+  pago falla con "Una de las partes con la que intentás hacer el pago es de prueba"; sin email, el comprador de prueba
+  se identifica en MP. En producción sí se manda. Lo decide `isTestCredentials()` (`src/lib/mercadopago.ts`): token
+  `TEST-…`, o cuenta con la marca `test_user` según `/users/me` (las credenciales de un vendedor de prueba empiezan con
+  `APP_USR-` como las reales); se averigua una vez por arranque del servidor y en desarrollo se ve en la consola
+  (`[checkout] Mercado Pago en modo PRUEBA`). El email del cliente se guarda igual en el pedido.
+  Si MP rechaza la preferencia, la consola del
+  servidor muestra `[mercadopago] preferencia rechazada: status … — mensaje | causas` (nunca token ni headers).
+- Tablas `orders` (también es la tabla de VENTAS: `channel`, `payment_method`, `created_by`) y `order_items` (foto de
+  nombre, variante, imagen y precio). Estados: `payment_status` (pending/approved/rejected/cancelled) y
+  `fulfillment_status` (awaiting_payment → paid → preparing → shipped/delivered o ready_for_pickup/picked_up; cancelled).
+  `discount_total` + `coupon_code` ya existen para el paso 7. Número amable `order_number` desde 1001.
+- RLS: admins leen todo, clientes solo lo suyo (`customer_id`, paso 6). **Nadie escribe salvo el servidor** con
+  service_role. `create_order(jsonb)` y `apply_order_payment(...)` son `security invoker`, solo `service_role`.
+- `create_order`: precios de `store_variants` (exige producto `active`: con service_role no hay RLS), envío y datos del
+  local de `store_settings`, verifica stock (errores `sin_stock` / `no_disponible`). No descuenta.
+- Webhook `src/app/api/mercadopago/webhook/route.ts`: firma `x-signature` (HMAC, `timingSafeEqual`) → `getPayment` →
+  `apply_order_payment` → `revalidateTag(STORE_PRODUCTS_TAG, { expire: 0 })` (en Route Handlers no hay `updateTag`).
+  Formato IPN viejo (`topic`/`id`) → 200 sin procesar; en el panel de MP se activa **solo Webhooks**.
+  `/api/mercadopago` está en `ALWAYS_PUBLIC_PATHS` (si no, el modo construcción lo reescribe a "Muy pronto").
+- `apply_order_payment` (idempotente, `for update`): control de monto con `transaction_amount` (sin intereses de
+  cuotas) y `currency_id = ARS`; si no coincide → `needs_review` + `review_reason`, sin aprobar ni descontar. Un aviso
+  viejo de otro intento no baja un pedido aprobado; un reembolso del mismo pago → cancelado + `needs_review` (el stock
+  no se toca solo: devolverlo es el paso 5).
+- **Última unidad (decisión: opción A)**: se revisa el stock al crear el pedido y al aprobarse se descuenta todo o nada
+  (variantes bloqueadas en orden de id). Si ya no alcanza → `stock_issue` = **"Pagado sin stock"** en el panel: los
+  dueños devuelven el dinero desde MP u ofrecen otro producto. Sin reservas ni reembolso automático.
+- `/pedido/[id]?t=token`: link secreto para invitados (32 bytes; en la base solo el sha256 en `access_token_hash`, que
+  ni los admins leen por la API). Token incorrecto → 404. Estados: aprobado (vacía el carrito una vez por pedido),
+  confirmando (se actualiza cada 5 s ~1 min), en revisión, rechazado/cancelado/vencido ("Volver a intentar").
+  `referrer: no-referrer`. El último link queda en `localStorage` (`hd_ultimo_pedido`).
+- Panel `/admin/pedidos` (grupo VENTAS): lista simple, filtros "Pagados" / "Todos"; contador = pagados para preparar +
+  para revisar. El detalle, los cambios de estado y los mails son el paso 5.
+- **Pruebas en local**: navegar en `localhost:3000` (sesión de admin) y solo el webhook por túnel:
+  `cloudflared tunnel --url http://localhost:3000` → su URL en `MERCADOPAGO_NOTIFICATION_URL_BASE` y en el panel de
+  Webhooks de MP (modo prueba). Las pruebas de SQL de pedidos consumen números de `order_number` (no vuelven atrás):
+  antes del lanzamiento, si no hay pedidos reales, se puede reiniciar a 1001.
 - El cliente elige la entrega:
   - **Envío a domicilio: $ 20.000** fijo, a cualquier zona del país, sin conexión con ningún transporte.
     El negocio despacha y carga el código de seguimiento. **Transporte todavía sin definir**: no nombrar
@@ -317,6 +373,14 @@ tiendas online). Los textos en un archivo de contenido (como `ayuda.ts`), fácil
 - Se construye y prueba con `homedeko.vercel.app`. Cuando esté el dominio final, actualizar: Vercel,
   Supabase (Site URL y Redirect URLs), Google (orígenes y marca), Mercado Pago (URL del webhook)
   y el servicio de emails (verificación del dominio).
+- Dominio final: **`https://www.homedekotrevelin.com`** (con www). Ese valor exacto va en `NEXT_PUBLIC_SITE_URL` de
+  producción y en la URL del webhook de MP (`https://www.homedekotrevelin.com/api/mercadopago/webhook`).
+- Lanzamiento con pagos reales: cambiar `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` por las credenciales
+  de producción y configurar el webhook en modo productivo.
+- Lanzamiento, al terminar las pruebas: **reiniciar la numeración de pedidos a #1001** (decidido el 24/11/2026; los
+  pedidos de prueba #1003–#1016 ya se borraron ese día y el contador quedó en #1017). Antes, confirmar que no haya
+  pedidos reales: `select count(*) from public.orders;` → 0. Después:
+  `alter table public.orders alter column order_number restart with 1001;`
 
 ### Ventas: preparado para el futuro Módulo Local
 La tabla de pedidos/ventas tiene desde el inicio:

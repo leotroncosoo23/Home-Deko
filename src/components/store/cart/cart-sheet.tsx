@@ -48,7 +48,7 @@ export function CartSheet({
     startLoading(async () => {
       try {
         const result = await getCartLines(getCartSnapshot());
-        const fixes = reconcile(result.lines);
+        const fixes = reconcileCart(result.lines);
         startLoading(() => {
           setData(result);
           setFailed(false);
@@ -167,9 +167,9 @@ export function CartSheet({
 
 /**
  * Ajusta lo guardado en el navegador con lo que dijo el servidor y
- * devuelve los avisos para el cliente.
+ * devuelve los avisos para el cliente. (También la usa el checkout.)
  */
-function reconcile(lines: CartLine[]): string[] {
+export function reconcileCart(lines: CartLine[]): string[] {
   const notices: string[] = [];
   const current = getCartSnapshot();
   const byId = new Map(lines.map((l) => [l.variantId, l]));
