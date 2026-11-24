@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { CheckoutSoon } from "@/components/store/cart/checkout-soon";
+import { CheckoutView } from "@/components/store/checkout/checkout-view";
 import { STORE_CONTAINER } from "@/lib/store-layout";
-import { getStoreSettings } from "@/lib/store-settings";
+import { getStoreSettings, whatsappLink } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -10,17 +10,25 @@ export const metadata: Metadata = {
 };
 
 /**
- * /finalizar-compra — a donde lleva "Iniciar compra" del carrito.
+ * /finalizar-compra — checkout con Mercado Pago (Checkout Pro).
  *
- * Nota para Leo: es PROVISORIA. En el paso 4 se reemplaza por el checkout
- * con Mercado Pago. Mientras tanto, ofrece terminar la compra por WhatsApp
- * con el pedido ya escrito (el carrito no se borra).
+ * El servidor solo aporta los datos de Configuración (envío, local,
+ * WhatsApp). El carrito vive en el navegador, así que el formulario es un
+ * componente de cliente (CheckoutView). El pedido y el pago se arman en la
+ * Server Action startCheckout (./actions.ts).
  */
 export default async function CheckoutPage() {
   const settings = await getStoreSettings();
   return (
-    <main className={cn(STORE_CONTAINER, "flex flex-1 flex-col items-center py-14 md:py-20")}>
-      <CheckoutSoon whatsapp={settings.whatsapp} />
+    <main className={cn(STORE_CONTAINER, "flex flex-1 flex-col gap-6 py-8 md:py-12")}>
+      <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight md:text-4xl">Finalizar compra</h1>
+      <CheckoutView
+        store={{
+          storeAddress: settings.storeAddress,
+          storeHours: settings.storeHours,
+          whatsappHref: whatsappLink(settings, "Hola Home Deko, tengo una consulta sobre mi compra."),
+        }}
+      />
     </main>
   );
 }

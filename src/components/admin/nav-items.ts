@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Package,
   Settings,
+  ShoppingBag,
   Tag,
   type LucideIcon,
 } from "lucide-react";
@@ -49,6 +50,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/admin",
     icon: House,
     description: "Resumen del negocio: ventas recientes y productos con poco stock.",
+  },
+  {
+    title: "Pedidos",
+    href: "/admin/pedidos",
+    icon: ShoppingBag,
+    group: "Ventas",
+    description: "Los pedidos de la tienda online, con el estado del pago.",
+    badgeLabel: (n) => (n === 1 ? "1 pedido requiere atención" : `${n} pedidos requieren atención`),
   },
   {
     title: "Productos",

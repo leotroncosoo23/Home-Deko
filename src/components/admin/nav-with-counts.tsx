@@ -1,4 +1,5 @@
 import { getLabelQueueCount } from "@/app/admin/etiquetas/data";
+import { getOrdersAttentionCount } from "@/app/admin/pedidos/data";
 import { getRestockCount } from "@/app/admin/stock/data";
 import { getPanelAccess } from "@/lib/auth";
 import { MobileNav } from "./mobile-nav";
@@ -7,8 +8,9 @@ import { SidebarNav } from "./sidebar-nav";
 
 /**
  * La barra lateral y el menú del celular, con:
- *   - los contadores de cada sección: variantes para reponer en "Stock" y
- *     etiquetas en la cola en "Etiquetas";
+ *   - los contadores de cada sección: pedidos que requieren atención en
+ *     "Pedidos", variantes para reponer en "Stock" y etiquetas en la cola en
+ *     "Etiquetas";
  *   - los permisos de las secciones reservadas (hoy: Apariencia de la tienda, solo para el
  *     desarrollador). Ocultarlas del menú es solo comodidad: la seguridad
  *     está en requireAppearanceAccess() y en el RLS.
@@ -19,13 +21,14 @@ import { SidebarNav } from "./sidebar-nav";
  * (las acciones usan refresh()).
  */
 async function getNavData(): Promise<{ badges: Record<string, number>; access: NavAccess }> {
-  const [restock, labels, access] = await Promise.all([
+  const [orders, restock, labels, access] = await Promise.all([
+    getOrdersAttentionCount(),
     getRestockCount(),
     getLabelQueueCount(),
     getPanelAccess(),
   ]);
   return {
-    badges: { "/admin/stock": restock, "/admin/etiquetas": labels },
+    badges: { "/admin/pedidos": orders, "/admin/stock": restock, "/admin/etiquetas": labels },
     access,
   };
 }

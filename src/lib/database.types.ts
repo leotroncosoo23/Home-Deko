@@ -174,6 +174,232 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          image_path: string | null
+          line_total: number
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price: number
+          unit_price_before: number | null
+          variant_id: string | null
+          variant_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          line_total: number
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          unit_price: number
+          unit_price_before?: number | null
+          variant_id?: string | null
+          variant_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          line_total?: number
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price?: number
+          unit_price_before?: number | null
+          variant_id?: string | null
+          variant_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "store_variants"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          access_token_hash: string | null
+          channel: Database["public"]["Enums"]["order_channel"]
+          coupon_code: string | null
+          created_at: string
+          created_by: string | null
+          customer_email: string
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"]
+          discount_total: number
+          fulfillment_status: Database["public"]["Enums"]["fulfillment_status"]
+          id: string
+          mp_expires_at: string | null
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          mp_status: string | null
+          mp_status_detail: string | null
+          needs_review: boolean
+          order_number: number
+          paid_at: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string | null
+          pickup_hours: string | null
+          review_reason: string | null
+          ship_address: string | null
+          ship_city: string | null
+          ship_postal_code: string | null
+          ship_province: string | null
+          shipping_cost: number
+          stock_applied_at: string | null
+          stock_issue: boolean
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          access_token_hash?: string | null
+          channel?: Database["public"]["Enums"]["order_channel"]
+          coupon_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_email: string
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"]
+          discount_total?: number
+          fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
+          id?: string
+          mp_expires_at?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          mp_status?: string | null
+          mp_status_detail?: string | null
+          needs_review?: boolean
+          order_number?: never
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address?: string | null
+          pickup_hours?: string | null
+          review_reason?: string | null
+          ship_address?: string | null
+          ship_city?: string | null
+          ship_postal_code?: string | null
+          ship_province?: string | null
+          shipping_cost?: number
+          stock_applied_at?: string | null
+          stock_issue?: boolean
+          subtotal: number
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          access_token_hash?: string | null
+          channel?: Database["public"]["Enums"]["order_channel"]
+          coupon_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_email?: string
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"]
+          discount_total?: number
+          fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
+          id?: string
+          mp_expires_at?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          mp_status?: string | null
+          mp_status_detail?: string | null
+          needs_review?: boolean
+          order_number?: never
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address?: string | null
+          pickup_hours?: string | null
+          review_reason?: string | null
+          ship_address?: string | null
+          ship_city?: string | null
+          ship_postal_code?: string | null
+          ship_province?: string | null
+          shipping_cost?: number
+          stock_applied_at?: string | null
+          stock_issue?: boolean
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_costs: {
         Row: {
           cost_price: number
@@ -614,6 +840,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_variant_id_fkey"
             columns: ["variant_id"]
             isOneToOne: false
@@ -936,6 +1169,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_variant_id_fkey"
             columns: ["variant_id"]
             isOneToOne: false
@@ -1073,6 +1313,20 @@ export type Database = {
         }
         Returns: number
       }
+      apply_order_payment: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_order_id: string
+          p_payment_id: string
+          p_status: string
+          p_status_detail: string
+        }
+        Returns: {
+          result: string
+          stock_changed: boolean
+        }[]
+      }
       can_manage_appearance: { Args: never; Returns: boolean }
       compute_role: {
         Args: { p_confirmed_at: string; p_email: string }
@@ -1081,6 +1335,14 @@ export type Database = {
       count_stock: {
         Args: { p_counted: number; p_note?: string; p_variant_id: string }
         Returns: Json
+      }
+      create_order: {
+        Args: { p: Json }
+        Returns: {
+          order_id: string
+          order_number: number
+          total: number
+        }[]
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_product: { Args: { p_id: string }; Returns: Json }
@@ -1095,7 +1357,25 @@ export type Database = {
       }
     }
     Enums: {
+      delivery_method: "shipping" | "pickup"
       discount_type: "percent" | "fixed"
+      fulfillment_status:
+        | "awaiting_payment"
+        | "paid"
+        | "preparing"
+        | "shipped"
+        | "delivered"
+        | "ready_for_pickup"
+        | "picked_up"
+        | "cancelled"
+      order_channel: "web" | "local"
+      payment_method:
+        | "mercadopago"
+        | "debito"
+        | "credito"
+        | "efectivo"
+        | "transferencia"
+      payment_status: "pending" | "approved" | "rejected" | "cancelled"
       product_status: "draft" | "active" | "archived"
       stock_reason:
         | "inicial"
@@ -1233,7 +1513,27 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      delivery_method: ["shipping", "pickup"],
       discount_type: ["percent", "fixed"],
+      fulfillment_status: [
+        "awaiting_payment",
+        "paid",
+        "preparing",
+        "shipped",
+        "delivered",
+        "ready_for_pickup",
+        "picked_up",
+        "cancelled",
+      ],
+      order_channel: ["web", "local"],
+      payment_method: [
+        "mercadopago",
+        "debito",
+        "credito",
+        "efectivo",
+        "transferencia",
+      ],
+      payment_status: ["pending", "approved", "rejected", "cancelled"],
       product_status: ["draft", "active", "archived"],
       stock_reason: [
         "inicial",
