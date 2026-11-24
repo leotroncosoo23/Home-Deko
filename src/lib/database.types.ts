@@ -174,6 +174,50 @@ export type Database = {
           },
         ]
       }
+      order_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["fulfillment_status"] | null
+          id: string
+          kind: Database["public"]["Enums"]["order_event_kind"]
+          note: string | null
+          order_id: string
+          to_status: Database["public"]["Enums"]["fulfillment_status"] | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["fulfillment_status"] | null
+          id?: string
+          kind: Database["public"]["Enums"]["order_event_kind"]
+          note?: string | null
+          order_id: string
+          to_status?: Database["public"]["Enums"]["fulfillment_status"] | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["fulfillment_status"] | null
+          id?: string
+          kind?: Database["public"]["Enums"]["order_event_kind"]
+          note?: string | null
+          order_id?: string
+          to_status?: Database["public"]["Enums"]["fulfillment_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -286,6 +330,10 @@ export type Database = {
       orders: {
         Row: {
           access_token_hash: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          carrier: Database["public"]["Enums"]["shipping_carrier"] | null
+          carrier_name: string | null
           channel: Database["public"]["Enums"]["order_channel"]
           coupon_code: string | null
           created_at: string
@@ -294,6 +342,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           customer_phone: string
+          delivered_at: string | null
           delivery_method: Database["public"]["Enums"]["delivery_method"]
           discount_total: number
           fulfillment_status: Database["public"]["Enums"]["fulfillment_status"]
@@ -308,22 +357,35 @@ export type Database = {
           paid_at: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
+          picked_up_at: string | null
           pickup_address: string | null
           pickup_hours: string | null
+          preparing_at: string | null
+          ready_at: string | null
           review_reason: string | null
           ship_address: string | null
+          ship_apartment: string | null
           ship_city: string | null
+          ship_notes: string | null
           ship_postal_code: string | null
           ship_province: string | null
+          shipped_at: string | null
           shipping_cost: number
           stock_applied_at: string | null
           stock_issue: boolean
+          stock_returned_at: string | null
           subtotal: number
           total: number
+          tracking_code: string | null
+          tracking_url: string | null
           updated_at: string
         }
         Insert: {
           access_token_hash?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          carrier?: Database["public"]["Enums"]["shipping_carrier"] | null
+          carrier_name?: string | null
           channel?: Database["public"]["Enums"]["order_channel"]
           coupon_code?: string | null
           created_at?: string
@@ -332,6 +394,7 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           customer_phone: string
+          delivered_at?: string | null
           delivery_method: Database["public"]["Enums"]["delivery_method"]
           discount_total?: number
           fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
@@ -346,22 +409,35 @@ export type Database = {
           paid_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          picked_up_at?: string | null
           pickup_address?: string | null
           pickup_hours?: string | null
+          preparing_at?: string | null
+          ready_at?: string | null
           review_reason?: string | null
           ship_address?: string | null
+          ship_apartment?: string | null
           ship_city?: string | null
+          ship_notes?: string | null
           ship_postal_code?: string | null
           ship_province?: string | null
+          shipped_at?: string | null
           shipping_cost?: number
           stock_applied_at?: string | null
           stock_issue?: boolean
+          stock_returned_at?: string | null
           subtotal: number
           total: number
+          tracking_code?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Update: {
           access_token_hash?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          carrier?: Database["public"]["Enums"]["shipping_carrier"] | null
+          carrier_name?: string | null
           channel?: Database["public"]["Enums"]["order_channel"]
           coupon_code?: string | null
           created_at?: string
@@ -370,6 +446,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string
+          delivered_at?: string | null
           delivery_method?: Database["public"]["Enums"]["delivery_method"]
           discount_total?: number
           fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
@@ -384,18 +461,27 @@ export type Database = {
           paid_at?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          picked_up_at?: string | null
           pickup_address?: string | null
           pickup_hours?: string | null
+          preparing_at?: string | null
+          ready_at?: string | null
           review_reason?: string | null
           ship_address?: string | null
+          ship_apartment?: string | null
           ship_city?: string | null
+          ship_notes?: string | null
           ship_postal_code?: string | null
           ship_province?: string | null
+          shipped_at?: string | null
           shipping_cost?: number
           stock_applied_at?: string | null
           stock_issue?: boolean
+          stock_returned_at?: string | null
           subtotal?: number
           total?: number
+          tracking_code?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1313,6 +1399,19 @@ export type Database = {
         }
         Returns: number
       }
+      admin_order_counts: {
+        Args: never
+        Returns: {
+          all_orders: number
+          done: number
+          needs_review: number
+          preparing: number
+          shipped: number
+          stock_issue: number
+          to_pickup: number
+          to_prepare: number
+        }[]
+      }
       apply_order_payment: {
         Args: {
           p_amount: number
@@ -1327,7 +1426,12 @@ export type Database = {
           stock_changed: boolean
         }[]
       }
+      apply_order_stock: { Args: { p_order_id: string }; Returns: boolean }
       can_manage_appearance: { Args: never; Returns: boolean }
+      cancel_order: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: number
+      }
       compute_role: {
         Args: { p_confirmed_at: string; p_email: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1346,14 +1450,59 @@ export type Database = {
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_product: { Args: { p_id: string }; Returns: Json }
+      fulfillment_label: {
+        Args: { p: Database["public"]["Enums"]["fulfillment_status"] }
+        Returns: string
+      }
       generate_ean13: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_developer: { Args: never; Returns: boolean }
+      log_order_event: {
+        Args: {
+          p_from?: Database["public"]["Enums"]["fulfillment_status"]
+          p_kind: Database["public"]["Enums"]["order_event_kind"]
+          p_note?: string
+          p_order_id: string
+          p_to?: Database["public"]["Enums"]["fulfillment_status"]
+        }
+        Returns: undefined
+      }
+      mark_orders_preparing: {
+        Args: { p_ids: string[] }
+        Returns: {
+          ok: boolean
+          order_id: string
+          order_number: number
+          reason: string
+        }[]
+      }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }
+      resolve_review: {
+        Args: { p_mode: string; p_note?: string; p_order_id: string }
+        Returns: {
+          approved: boolean
+          stock_changed: boolean
+        }[]
+      }
+      resolve_stock_issue: {
+        Args: { p_mode: string; p_note?: string; p_order_id: string }
+        Returns: boolean
+      }
       save_product: { Args: { p: Json }; Returns: Json }
       save_store_announcements: {
         Args: { p_texts: string[] }
         Returns: undefined
+      }
+      set_order_status: {
+        Args: {
+          p_carrier?: Database["public"]["Enums"]["shipping_carrier"]
+          p_carrier_name?: string
+          p_order_id: string
+          p_to: Database["public"]["Enums"]["fulfillment_status"]
+          p_tracking_code?: string
+          p_tracking_url?: string
+        }
+        Returns: Database["public"]["Enums"]["fulfillment_status"]
       }
     }
     Enums: {
@@ -1369,6 +1518,17 @@ export type Database = {
         | "picked_up"
         | "cancelled"
       order_channel: "web" | "local"
+      order_event_kind:
+        | "created"
+        | "payment_approved"
+        | "needs_review"
+        | "status"
+        | "tracking_updated"
+        | "cancelled"
+        | "stock_returned"
+        | "issue_resolved"
+        | "email_sent"
+        | "email_failed"
       payment_method:
         | "mercadopago"
         | "debito"
@@ -1377,6 +1537,7 @@ export type Database = {
         | "transferencia"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       product_status: "draft" | "active" | "archived"
+      shipping_carrier: "correo_argentino" | "andreani" | "oca" | "otra"
       stock_reason:
         | "inicial"
         | "ingreso"
@@ -1385,6 +1546,7 @@ export type Database = {
         | "ajuste"
         | "rotura"
         | "devolucion"
+        | "cancelacion"
       user_role: "admin" | "customer"
     }
     CompositeTypes: {
@@ -1526,6 +1688,18 @@ export const Constants = {
         "cancelled",
       ],
       order_channel: ["web", "local"],
+      order_event_kind: [
+        "created",
+        "payment_approved",
+        "needs_review",
+        "status",
+        "tracking_updated",
+        "cancelled",
+        "stock_returned",
+        "issue_resolved",
+        "email_sent",
+        "email_failed",
+      ],
       payment_method: [
         "mercadopago",
         "debito",
@@ -1535,6 +1709,7 @@ export const Constants = {
       ],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       product_status: ["draft", "active", "archived"],
+      shipping_carrier: ["correo_argentino", "andreani", "oca", "otra"],
       stock_reason: [
         "inicial",
         "ingreso",
@@ -1543,6 +1718,7 @@ export const Constants = {
         "ajuste",
         "rotura",
         "devolucion",
+        "cancelacion",
       ],
       user_role: ["admin", "customer"],
     },

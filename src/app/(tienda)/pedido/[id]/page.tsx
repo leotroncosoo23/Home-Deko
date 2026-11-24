@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Clock, ShoppingBag, XCircle } from "lucide-react";
-import { AutoRefresh, ClearCartOnApproved } from "@/components/store/checkout/order-client";
+import { Check, CheckCircle2, Clock, ExternalLink, ShoppingBag, Truck, XCircle } from "lucide-react";
+import { AutoRefresh, ClearCartOnApproved, CopyCode } from "@/components/store/checkout/order-client";
+import { trackingFor, type Tracking } from "@/lib/carriers";
 import { WhatsAppIcon } from "@/components/store/whatsapp-icon";
-import { formatARS } from "@/lib/format";
+import { formatARS, titleCase } from "@/lib/format";
 import { publicImageUrl } from "@/lib/storage";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, CHECKOUT_PATH } from "@/lib/store-nav";
@@ -49,6 +50,15 @@ type View = {
 function viewFor(order: GuestOrder): View {
   const pickup = order.delivery_method === "pickup";
 
+  // Cancelado por la tienda (después de pagar o al revisar un pago)
+  if (order.fulfillment_status === "cancelled") {
+    return {
+      tone: "bad",
+      title: "Tu pedido fue cancelado",
+      text: "Si ya lo habías pagado, la devolución del dinero la ves en tu cuenta de Mercado Pago o en el resumen de tu tarjeta (según el medio de pago, puede demorar unos días). Cualquier duda, escribinos.",
+    };
+  }
+
   if (order.payment_status === "approved") {
     if (order.stock_issue) {
       return {
@@ -56,6 +66,40 @@ function viewFor(order: GuestOrder): View {
         title: "¡Recibimos tu pago!",
         text: "Hubo un inconveniente con la disponibilidad de un producto. Vamos a comunicarnos con vos muy pronto para resolverlo, ya sea con otro producto o devolviéndote el dinero.",
       };
+    }
+    switch (order.fulfillment_status) {
+      case "preparing":
+        return {
+          tone: "ok",
+          title: "Estamos preparando tu pedido",
+          text: pickup
+            ? "Te avisamos por mail apenas esté listo para retirar."
+            : "Te avisamos por mail cuando lo despachemos, con el código de seguimiento.",
+        };
+      case "shipped":
+        return {
+          tone: "ok",
+          title: "¡Tu pedido está en camino!",
+          text: "Ya lo despachamos. Con el código de seguimiento podés ver por dónde va.",
+        };
+      case "delivered":
+        return {
+          tone: "ok",
+          title: "Tu pedido fue entregado",
+          text: "¡Esperamos que lo disfrutes! Si algo no llegó bien, escribinos.",
+        };
+      case "ready_for_pickup":
+        return {
+          tone: "ok",
+          title: "¡Tu pedido está listo para retirar!",
+          text: "Ya podés pasar a buscarlo por el local. Al retirarlo, decinos tu nombre o el número de pedido.",
+        };
+      case "picked_up":
+        return {
+          tone: "ok",
+          title: "¡Gracias por tu compra!",
+          text: "Ya retiraste tu pedido. ¡Esperamos que lo disfrutes!",
+        };
     }
     return {
       tone: "ok",
@@ -125,6 +169,7 @@ async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[i
   if (!order) notFound();
 
   const view = viewFor(order);
+  const tracking = trackingFor(order);
   const wa = whatsappLink(settings, `Hola Home Deko, te escribo por mi pedido #${order.order_number}.`);
   const Icon = view.tone === "ok" ? CheckCircle2 : view.tone === "wait" ? Clock : XCircle;
 
@@ -150,6 +195,11 @@ async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[i
         <p className="text-[15px] leading-7 text-muted-foreground md:text-base">{view.text}</p>
         {view.poll && <AutoRefresh />}
       </div>
+
+      {order.payment_status === "approved" && !order.stock_issue && order.fulfillment_status !== "cancelled" && (
+        <OrderProgress order={order} />
+      )}
+      {tracking && order.fulfillment_status === "shipped" && <TrackingCard tracking={tracking} />}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
         {view.retry && (
@@ -184,6 +234,98 @@ async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[i
 
       <OrderSummary order={order} />
     </div>
+  );
+}
+
+/** Pasos: Pago confirmado → Preparando → En camino → Entregado (o retiro). */
+const CUSTOMER_STEPS = {
+  shipping: [
+    { status: "paid", label: "Pago confirmado" },
+    { status: "preparing", label: "Preparando" },
+    { status: "shipped", label: "En camino" },
+    { status: "delivered", label: "Entregado" },
+  ],
+  pickup: [
+    { status: "paid", label: "Pago confirmado" },
+    { status: "preparing", label: "Preparando" },
+    { status: "ready_for_pickup", label: "Listo para retirar" },
+    { status: "picked_up", label: "Retirado" },
+  ],
+} as const;
+
+function OrderProgress({ order }: { order: GuestOrder }) {
+  const steps = CUSTOMER_STEPS[order.delivery_method];
+  const current = steps.findIndex((s) => s.status === order.fulfillment_status);
+  return (
+    <ol className="grid grid-cols-4 gap-2" aria-label="Estado de tu pedido">
+      {steps.map((step, i) => {
+        const done = i <= current;
+        return (
+          <li key={step.status} className="flex flex-col items-center gap-2 text-center">
+            <span className="flex w-full items-center">
+              <span className={cn("h-0.5 flex-1", i === 0 ? "bg-transparent" : i <= current ? "bg-brand" : "bg-border")} />
+              <span
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                  done ? "bg-brand text-white" : "border-2 border-border bg-background text-muted-foreground",
+                )}
+                aria-hidden
+              >
+                {done ? <Check className="size-4" /> : i + 1}
+              </span>
+              <span
+                className={cn("h-0.5 flex-1", i === steps.length - 1 ? "bg-transparent" : i < current ? "bg-brand" : "bg-border")}
+              />
+            </span>
+            <span
+              className={cn("text-xs leading-tight sm:text-sm", done ? "font-semibold" : "text-muted-foreground")}
+              aria-current={i === current ? "step" : undefined}
+            >
+              {step.label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function TrackingCard({ tracking }: { tracking: Tracking }) {
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl border p-5" aria-labelledby="tracking-title">
+      <h2 id="tracking-title" className="flex items-center gap-2 font-display text-xl font-semibold">
+        <Truck aria-hidden className="size-5 text-brand" />
+        Seguimiento del envío
+      </h2>
+      <p className="text-[15px] text-muted-foreground">
+        Lo enviamos por <strong className="font-semibold text-foreground">{tracking.carrierLabel}</strong>.
+      </p>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3">
+        <span className="flex flex-col">
+          <span className="text-xs text-muted-foreground">Código de seguimiento</span>
+          <span className="font-mono text-lg font-semibold tracking-wide">{tracking.code}</span>
+        </span>
+        <span className="ml-auto">
+          <CopyCode code={tracking.code} />
+        </span>
+      </div>
+      {tracking.url && (
+        <>
+          <a
+            href={tracking.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-6 font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none"
+          >
+            Seguir mi envío <ExternalLink aria-hidden className="size-4" />
+            <span className="sr-only"> (se abre en otra pestaña)</span>
+          </a>
+          {!tracking.urlHasCode && (
+            <p className="text-sm text-muted-foreground">En la página de seguimiento, pegá el código.</p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -247,12 +389,17 @@ function OrderSummary({ order }: { order: GuestOrder }) {
             {order.pickup_hours && <p className="text-muted-foreground">{order.pickup_hours}</p>}
           </>
         ) : (
-          <p>
-            {order.ship_address}, {order.ship_city}, {order.ship_province} ({order.ship_postal_code})
-          </p>
+          <>
+            <p>
+              {order.ship_address}
+              {order.ship_apartment && `, ${order.ship_apartment}`}, {titleCase(order.ship_city)},{" "}
+              {titleCase(order.ship_province)} ({order.ship_postal_code})
+            </p>
+            {order.ship_notes && <p className="text-muted-foreground">Indicaciones: {order.ship_notes}</p>}
+          </>
         )}
         <p className="mt-2 text-muted-foreground">
-          A nombre de {order.customer_name} · {order.customer_email}
+          A nombre de {titleCase(order.customer_name)} · {order.customer_email}
         </p>
       </div>
     </section>

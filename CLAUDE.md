@@ -42,6 +42,11 @@ y que funcione muy bien en celular y en PC.
   **Producción: `https://www.homedekotrevelin.com` (con www)**: la versión sin www redirige y Mercado Pago puede no
   seguir el redirect (webhook y regreso del pago).
 - `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_WEBHOOK_SECRET` → solo servidor (`src/lib/mercadopago.ts`). Hoy, de PRUEBA.
+- `ORDER_LINK_SECRET` → solo servidor (`src/lib/order-token.ts`). Clave para derivar el link secreto de cada pedido
+  (`/pedido/{id}?t=…`). **Obligatoria para el checkout** (sin ella, "No pudimos iniciar el pago" y la consola dice cuál
+  falta). Generarla una vez (`openssl rand -base64 32`) y **no cambiarla nunca**: invalidaría los links de todos los pedidos.
+- `RESEND_API_KEY` y `EMAIL_FROM` (`Home Deko <pedidos@homedekotrevelin.com>`) → solo servidor (`src/lib/email/send.ts`).
+  Opcionales: si faltan, la tienda funciona igual, no se manda ningún mail y la consola avisa (`[email] … sin configurar`).
 - `MERCADOPAGO_NOTIFICATION_URL_BASE` → **opcional, solo para probar en local**: URL del túnel (cloudflared) para que el
   webhook llegue a la compu mientras se navega en localhost. En producción no se define (y si estuviera, se ignora:
   `notificationBaseUrl()` en `src/lib/site-url.ts`).
@@ -140,7 +145,8 @@ Tipografías:
 
 ## Stock (implementado)
 - El stock **nunca se edita a mano**: todo pasa por `adjust_stock` (atómica, nunca negativo, registra el movimiento).
-- `stock_movements`: motivos `inicial`, `ingreso`, `venta_web`, `venta_local`, `ajuste`, `rotura`, `devolucion`.
+- `stock_movements`: motivos `inicial`, `ingreso`, `venta_web`, `venta_local`, `ajuste`, `rotura`, `devolucion`,
+  `cancelacion` (pedido cancelado en el panel; no se elige a mano).
 - Corrección por conteo con `count_stock` (calcula la diferencia sobre el stock real del momento).
 - Vistas `admin_products`, `admin_variant_stock`, `admin_stock_movements`, `admin_label_queue`.
 - "Para reponer" y contador de stock bajo en el menú.
@@ -156,7 +162,7 @@ Tipografías:
 ## Arquitectura del panel
 Menú agrupado por tarea. Cada sección se suma al menú recién cuando está implementada.
 - Inicio
-- VENTAS: Pedidos (contador de los que requieren atención; implementado como lista en el paso 4)
+- VENTAS: Pedidos (contador de los que requieren atención; gestión completa en el paso 5)
 - CATÁLOGO: Productos, Categorías
 - INVENTARIO: Stock (contador de stock bajo), Etiquetas
 - TIENDA ONLINE: Apariencia de la tienda (`/admin/apariencia`: barra de anuncios y Banner) — **solo desarrollador**
@@ -285,7 +291,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 
 ### Checkout y pedidos (paso 4, implementado)
 - `/finalizar-compra` (`src/components/store/checkout/`): datos (nombre, email, teléfono), entrega (envío con
-  dirección/ciudad/provincia/CP o retiro), resumen y aceptar Términos. zod compartido en `src/lib/checkout-schema.ts`.
+  calle y número, piso/depto opcional (`ship_apartment`, 40), ciudad/provincia/CP e indicaciones opcionales
+  (`ship_notes`, 150; se ven en el rótulo, el detalle, los mails y la lista de preparación) o retiro), resumen y aceptar Términos. zod compartido en `src/lib/checkout-schema.ts`.
   Datos del cliente recordados en `localStorage` (`hd_datos_compra`).
 - Server Action `startCheckout` (`finalizar-compra/actions.ts`): `create_order` → preferencia de MP con lo
   **guardado en el pedido** → `init_point`. API REST directa (sin SDK) en `src/lib/mercadopago.ts`.
@@ -321,12 +328,14 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - **Última unidad (decisión: opción A)**: se revisa el stock al crear el pedido y al aprobarse se descuenta todo o nada
   (variantes bloqueadas en orden de id). Si ya no alcanza → `stock_issue` = **"Pagado sin stock"** en el panel: los
   dueños devuelven el dinero desde MP u ofrecen otro producto. Sin reservas ni reembolso automático.
-- `/pedido/[id]?t=token`: link secreto para invitados (32 bytes; en la base solo el sha256 en `access_token_hash`, que
-  ni los admins leen por la API). Token incorrecto → 404. Estados: aprobado (vacía el carrito una vez por pedido),
+- `/pedido/[id]?t=token`: link secreto para invitados. Desde el paso 5 el token se **deriva** del id
+  (HMAC-SHA256 con `ORDER_LINK_SECRET`, 43 caracteres): el servidor lo puede rearmar para los mails y el WhatsApp
+  (`customerOrderUrl()`). El id lo genera `startCheckout` y viaja en `create_order` (`p ->> 'id'`). En la base solo el
+  sha256 en `access_token_hash`, que ni los admins leen por la API. Token incorrecto → 404. Estados: aprobado (vacía el carrito una vez por pedido),
   confirmando (se actualiza cada 5 s ~1 min), en revisión, rechazado/cancelado/vencido ("Volver a intentar").
   `referrer: no-referrer`. El último link queda en `localStorage` (`hd_ultimo_pedido`).
-- Panel `/admin/pedidos` (grupo VENTAS): lista simple, filtros "Pagados" / "Todos"; contador = pagados para preparar +
-  para revisar. El detalle, los cambios de estado y los mails son el paso 5.
+- Panel `/admin/pedidos` (grupo VENTAS): ver "Pedidos en el panel (paso 5, implementado)". Contador del menú =
+  pagados para preparar + para revisar.
 - **Pruebas en local**: navegar en `localhost:3000` (sesión de admin) y solo el webhook por túnel:
   `cloudflared tunnel --url http://localhost:3000` → su URL en `MERCADOPAGO_NOTIFICATION_URL_BASE` y en el panel de
   Webhooks de MP (modo prueba). Las pruebas de SQL de pedidos consumen números de `order_number` (no vuelven atrás):
@@ -345,14 +354,55 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - **Paso 6 (cuenta del cliente): al iniciar sesión, el carrito del navegador NO se pierde.** Se conserva tal
   cual; si la cuenta llegara a guardar un carrito propio, se combinan (sumando cantidades, con el tope del stock).
 
-### Pedidos en el panel
-- Envío: Pagado → Preparando → Enviado (con código de seguimiento) → Entregado.
-- Retiro: Pagado → Preparando → Listo para retirar → Retirado.
-- Cancelado en ambos casos (devuelve el stock con `adjust_stock`, motivo `devolucion`).
-- Detalle de la compra, datos del cliente y tipo de entrega.
-- Emails al cliente: confirmación de compra, "Enviado" con el seguimiento y "Listo para retirar".
-  Con un servicio de email propio (por ejemplo Resend) y el dominio verificado: el SMTP gratis de
-  Supabase no alcanza.
+### Pedidos en el panel (paso 5, implementado)
+- Estados: Envío: Pagado → Preparando → Enviado (empresa + código) → Entregado. Retiro: Pagado → Preparando → Listo
+  para retirar → Retirado. "Preparando" se puede saltear. **Nunca hacia atrás.** Cancelado solo desde Pagado, Preparando
+  o Listo para retirar.
+- **Todo cambio pasa por funciones de la base** (`20261128000002_gestion_pedidos.sql`), `security definer` con
+  `is_admin()` primero y errores `HD4xx` con el texto para mostrar: `set_order_status` (tabla de transiciones; de
+  `shipped` a `shipped` = corregir el seguimiento), `mark_orders_preparing` (en bloque, saltea los que no pueden),
+  `cancel_order` (devuelve el stock con `adjust_stock(…, 'cancelacion')` una sola vez: `stock_returned_at`),
+  `resolve_stock_issue` (`apply_stock` / `manual` con nota), `resolve_review` (`dismiss` con nota / `approve` solo si
+  MP aprobó y el monto no coincidía), `admin_order_counts` (invoker, contadores de pestañas). Con "Pagado sin stock" o
+  "Para revisar" no se puede avanzar el estado hasta resolverlos. `apply_order_stock` (todo o nada) es el único
+  descuento de stock de un pedido (webhook y resoluciones).
+- **Línea de tiempo**: tabla `order_events` (solo admins leen; escriben las funciones y el servidor). `actor_name` se
+  copia al crear el evento (profiles solo deja leer el propio). Los mails también quedan (`email_sent` / `email_failed`).
+- Empresas: `shipping_carrier` = `correo_argentino | andreani | oca | otra` (+ nombre y link opcional). Links en
+  `src/lib/carriers.ts`: Correo Argentino y OCA solo tienen formulario (link a su página + código para copiar);
+  Andreani `/envio/{código}` (**confirmar con el primer envío real**). Nombrar la empresa en la página del pedido del
+  cliente está bien (es la que se usó); la regla de no nombrar transportes sigue para el resto de la tienda y los legales.
+- Lista (`/admin/pedidos`): pestañas con contador (Para preparar · Preparando · Enviados · Para retirar · Entregados y
+  retirados · Todos; `?estado=atencion` desde los avisos), búsqueda (n.º, nombre, email), filtro envío/retiro, filtros
+  en la URL (`list-params.ts`). Para preparar / Preparando / Para retirar: del más viejo al más nuevo. Avisos arriba:
+  "Pagado sin stock" (rojo), "Para revisar" (ámbar) y "cargá el email del negocio" si falta.
+- Selección múltiple: **rótulos de envío** (A4 2 × 2, `src/lib/print/shipping-labels.ts`, "empezar en la posición",
+  remitente de `senderForLabel()`: "Home Deko" + razón social/dirección/WhatsApp si están) y **lista de preparación**
+  (`src/lib/print/picking-list.ts`: resumen "Para juntar" + por pedido, con casillas). Mismo patrón que las etiquetas:
+  armado en mm → SVG (`DocPageSvg`) y PDF (`createDocPdf`) iguales, diálogo compartido `PdfPreviewDialog`
+  (`src/components/admin/`), que también usa Etiquetas.
+- Detalle (`/admin/pedidos/[id]`): tarjeta **"Próximo paso"** arriba (un botón principal según el estado, con
+  confirmación), cliente, entrega (copiar datos, seguimiento), pago (n.º de operación de MP), productos, historial y
+  "Cancelar pedido" (aclara que el dinero se devuelve desde MP). WhatsApp con mensaje según el estado
+  (`src/lib/order-messages.ts`; teléfono → `549…`).
+- Nombres, ciudades y provincias se MUESTRAN con mayúscula inicial (`titleCase()` en `src/lib/format.ts`: "de", "del",
+  "la"… en minúscula salvo al principio; respeta "McDonald" y siglas cortas). Lo guardado en la base no se toca.
+- Cliente (`/pedido/[id]`): pasos (Pago confirmado → Preparando → En camino → Entregado, o retiro), seguimiento con
+  "Copiar código" y "Seguir mi envío", y texto de cancelado.
+
+### Mails (paso 5, implementado)
+- **Resend** por API REST (`src/lib/email/send.ts`, sin SDK), plantillas HTML con tablas + texto plano
+  (`templates.ts`), armado y registro en el historial (`order-emails.ts`, `sendOrderEmails(id, evento)`).
+- Disparadores (siempre con `after()`, nunca demoran la respuesta ni tiran error): webhook `approved` → cliente
+  "Pago confirmado" + dueños "Pedido nuevo"; webhook `review` → dueños "Para revisar"; "Enviado" (y corrección del
+  código) → cliente; "Listo para retirar" → cliente; "Confirmar el pago igual" → como `approved`.
+  `Idempotency-Key` por pedido y tipo: un reintento no duplica.
+- Email de los dueños = email del negocio de Configuración (`ownersEmail()`); si está vacío, el aviso no se manda
+  (consola + historial) y Pedidos muestra el recordatorio. Reply-to de los mails al cliente: ese mismo email (si hay).
+- Logo por URL absoluta (`NEXT_PUBLIC_SITE_URL` + `/brand/logo-horizontal-sin-frase-negro.png`); en local no se ve
+  (el mail muestra "Home ♥ Deko" como texto alternativo).
+- Dominio: `homedekotrevelin.com` verificado en Resend (registros DNS en Vercel: MX + TXT SPF del subdominio `send`,
+  TXT DKIM `resend._domainkey`, DMARC recomendado).
 
 ### Cupones
 - Creados desde el panel: código, porcentaje o monto fijo, fechas, usos máximos y monto mínimo opcional.

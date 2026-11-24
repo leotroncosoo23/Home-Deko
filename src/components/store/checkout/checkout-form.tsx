@@ -10,6 +10,8 @@ import type { CartLine } from "@/lib/cart";
 import {
   checkoutSchema,
   fieldErrorsFrom,
+  APARTMENT_MAX,
+  NOTES_MAX,
   PROVINCIAS,
   type CheckoutFieldErrors,
   type CheckoutFieldName,
@@ -39,9 +41,11 @@ const FIELD_ORDER: CheckoutFieldName[] = [
   "phone",
   "delivery",
   "address",
+  "apartment",
   "city",
   "province",
   "postalCode",
+  "notes",
   "acceptTerms",
 ];
 
@@ -215,14 +219,25 @@ export function CheckoutForm({
 
             {values.delivery === "shipping" && (
               <div className="flex flex-col gap-4 border-t pt-4">
-                <Field id="co-address" label="Dirección" hint="Calle, número y, si hay, piso o depto." error={errors.address}>
-                  <input
-                    value={values.address}
-                    onChange={(e) => set("address", e.target.value)}
-                    autoComplete="street-address"
-                    maxLength={200}
-                  />
-                </Field>
+                <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                  <Field id="co-address" label="Calle y número" error={errors.address}>
+                    <input
+                      value={values.address}
+                      onChange={(e) => set("address", e.target.value)}
+                      autoComplete="address-line1"
+                      maxLength={200}
+                    />
+                  </Field>
+                  <Field id="co-apartment" label="Piso / Depto (opcional)" error={errors.apartment}>
+                    <input
+                      value={values.apartment}
+                      onChange={(e) => set("apartment", e.target.value)}
+                      autoComplete="address-line2"
+                      maxLength={APARTMENT_MAX}
+                      placeholder="Ej.: 2° B"
+                    />
+                  </Field>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field id="co-city" label="Ciudad o localidad" error={errors.city}>
                     <input
@@ -249,6 +264,19 @@ export function CheckoutForm({
                     onChange={(e) => set("postalCode", e.target.value)}
                     autoComplete="postal-code"
                     maxLength={8}
+                  />
+                </Field>
+                <Field
+                  id="co-notes"
+                  label="Indicaciones para la entrega (opcional)"
+                  hint={`Ej.: entre calles, timbre, color de la casa. Hasta ${NOTES_MAX} caracteres.`}
+                  error={errors.notes}
+                >
+                  <input
+                    value={values.notes}
+                    onChange={(e) => set("notes", e.target.value)}
+                    autoComplete="off"
+                    maxLength={NOTES_MAX}
                   />
                 </Field>
               </div>

@@ -1,5 +1,6 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
+import { sendOrderEmails } from "@/lib/email/order-emails";
 import { getPayment, MercadoPagoError, verifyWebhookSignature } from "@/lib/mercadopago";
 import { STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -13,6 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *   3. apply_order_payment (en la base) actualiza el pedido y, si se aprobó,
  *      descuenta stock UNA sola vez (si el aviso llega dos veces, no pasa nada).
  *   4. Si cambió el stock, refresca la caché del catálogo.
+ *   5. Manda los mails (pago confirmado / pedido nuevo / para revisar).
  *
  * Respuestas: 200 = recibido (MP no reintenta) · 401 = firma inválida ·
  * 500 = error pasajero (MP reintenta más tarde).
@@ -101,6 +103,11 @@ export async function POST(request: NextRequest) {
     // sin stock). En un Route Handler no existe updateTag: esto es su
     // equivalente (vence la caché en el acto).
     if (result?.stock_changed) revalidateTag(STORE_PRODUCTS_TAG, { expire: 0 });
+
+    // Mails, DESPUÉS de responder (Mercado Pago no espera). apply_order_payment
+    // devuelve "approved" una sola vez por pedido: no hay mails repetidos.
+    if (result?.result === "approved") after(() => sendOrderEmails(orderId, "approved"));
+    if (result?.result === "review") after(() => sendOrderEmails(orderId, "review"));
 
     return new Response(null, { status: 200 });
   } catch (e) {

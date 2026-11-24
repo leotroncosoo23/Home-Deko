@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { NOMBRE_COMERCIO, SITIO, type DatosComercio } from "@/content/legales";
-import { formatARS, formatCuit } from "@/lib/format";
+import { formatARS, formatCuit, formatWhatsApp } from "@/lib/format";
 import { createPublicClient } from "@/lib/supabase/public";
 
 /**
@@ -136,6 +136,27 @@ export const WHATSAPP_MENSAJE = "Hola Home Deko, quería hacer una consulta.";
 export function whatsappLink(s: StoreSettings, mensaje: string = WHATSAPP_MENSAJE): string | null {
   if (!s.whatsapp) return null;
   return `https://wa.me/${s.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Pedidos: datos que pueden faltar (razón social, CUIT y email se cargan
+// antes del lanzamiento). Nada de pedidos falla si están vacíos.
+// ---------------------------------------------------------------------------
+
+/** Email de los dueños para los avisos de pedidos nuevos, o null si no está cargado. */
+export function ownersEmail(s: StoreSettings): string | null {
+  return s.contactEmail.trim() || null;
+}
+
+/** Remitente del rótulo de envío. Lo que no está cargado, simplemente no aparece. */
+export type LabelSender = { name: string; lines: string[] };
+
+export function senderForLabel(s: StoreSettings): LabelSender {
+  const lines: string[] = [];
+  if (s.businessName.trim() && s.businessName.trim() !== NOMBRE_COMERCIO) lines.push(s.businessName.trim());
+  if (s.storeAddress.trim()) lines.push(s.storeAddress.trim());
+  if (s.whatsapp) lines.push(`WhatsApp: ${formatWhatsApp(s.whatsapp)}`);
+  return { name: NOMBRE_COMERCIO, lines };
 }
 
 /** Links a las redes cargadas (las vacías no aparecen). */

@@ -57,6 +57,60 @@ export function formatCuit(digits: string): string {
   return /^\d{11}$/.test(digits) ? `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}` : digits;
 }
 
+// ---------------------------------------------------------------------------
+// Nombres y lugares para MOSTRAR (lo guardado en la base no cambia)
+// ---------------------------------------------------------------------------
+
+/** Palabras que van en minúscula en medio de un nombre ("María de los Ángeles", "Santiago del Estero"). */
+const LOWER_WORDS = new Set(["de", "del", "la", "las", "los", "y", "e", "da", "das", "do", "dos", "di", "van", "von"]);
+/** Siglas que se dejan en mayúscula aunque el cliente haya escrito todo en mayúsculas. */
+const KEEP_UPPER = new Set(["CABA", "CP", "SRL", "SA"]);
+
+/**
+ * Mayúscula inicial en cada palabra, para nombres, ciudades y provincias:
+ *   "leonardo troncoso"          → "Leonardo Troncoso"
+ *   "MARIA DE LOS ANGELES"       → "Maria de los Angeles"
+ *   "jose-luis o'connor"         → "Jose-Luis O'Connor"
+ *   "san carlos de bariloche"    → "San Carlos de Bariloche"
+ * Lo que ya viene con mayúsculas y minúsculas mezcladas ("McDonald") se respeta.
+ * La primera palabra siempre va con mayúscula ("La Pampa", "De la Fuente").
+ */
+export function titleCase(text: string | null | undefined): string {
+  const clean = (text ?? "").trim().replace(/\s+/g, " ");
+  if (!clean) return "";
+  const allUpper = clean === clean.toLocaleUpperCase("es-AR");
+  return clean
+    .split(" ")
+    .map((word, i) => {
+      const lower = word.toLocaleLowerCase("es-AR");
+      const upper = word.toLocaleUpperCase("es-AR");
+      if (KEEP_UPPER.has(upper) && word === upper) return upper;
+      // Mezcla de mayúsculas y minúsculas: la escribió así a propósito
+      if (word !== lower && word !== upper) return word;
+      // Una sigla corta en mayúsculas dentro de un texto normal ("Barrio YPF"): se deja
+      if (word === upper && word !== lower && !allUpper && word.length <= 4) return word;
+      if (i > 0 && LOWER_WORDS.has(lower)) return lower;
+      // Mayúscula al principio y después de guion o apóstrofo
+      return lower.replace(/(^|[-'’])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toLocaleUpperCase("es-AR"));
+    })
+    .join(" ");
+}
+
+/** Primer nombre, con mayúscula ("leonardo troncoso" → "Leonardo"). */
+export function firstNameOf(name: string): string {
+  return titleCase(name).split(" ")[0] ?? "";
+}
+
+/**
+ * WhatsApp guardado (solo dígitos) → "+54 9 2945123456" para mostrar.
+ * (La característica puede tener 2, 3 o 4 dígitos: no se adivina dónde cortar.)
+ */
+export function formatWhatsApp(digits: string): string {
+  const d = digits.replace(/\D/g, "");
+  if (d.startsWith("549") && d.length >= 12) return `+54 9 ${d.slice(3)}`;
+  return d ? `+${d}` : "";
+}
+
 /** Lee un entero no negativo ("" → null, "12" → 12, "1.200" → 1200). */
 export function parseInteger(text: string): number | null {
   const s = text.replace(/[\s.]/g, "");

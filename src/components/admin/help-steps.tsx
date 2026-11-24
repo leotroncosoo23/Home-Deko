@@ -28,7 +28,8 @@ export function HelpSteps({
           ) : (
             <div className="flex flex-col gap-1 pt-0.5">
               <p className="text-sm font-semibold">{step.titulo}</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">{step.texto}</p>
+              {/* whitespace-pre-line: un "\n" en el texto de ayuda.ts es un renglón nuevo */}
+              <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">{step.texto}</p>
             </div>
           )}
         </li>

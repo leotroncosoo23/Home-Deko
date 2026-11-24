@@ -56,7 +56,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/admin/pedidos",
     icon: ShoppingBag,
     group: "Ventas",
-    description: "Los pedidos de la tienda online, con el estado del pago.",
+    description: "Prepará, despachá y seguí los pedidos de la tienda online.",
     badgeLabel: (n) => (n === 1 ? "1 pedido requiere atención" : `${n} pedidos requieren atención`),
   },
   {
