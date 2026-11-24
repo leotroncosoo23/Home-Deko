@@ -124,7 +124,7 @@ export function isTestCredentials(): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 export type PreferenceInput = {
-  items: { id: string; title: string; quantity: number; unit_price: number }[];
+  items: { id: string; title: string; description?: string; quantity: number; unit_price: number }[];
   /** Sin email con credenciales de prueba (ver startCheckout). */
   payer: { name: string; email?: string; phone?: { area_code: string; number: string } };
   external_reference: string;

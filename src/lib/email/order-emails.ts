@@ -39,7 +39,7 @@ export async function sendOrderEmails(orderId: string, event: OrderEmailEvent): 
       supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_email, customer_phone, delivery_method, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, total, stock_issue, review_reason, carrier, carrier_name, tracking_code, tracking_url",
+          "id, order_number, customer_name, customer_email, customer_phone, delivery_method, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, stock_issue, review_reason, carrier, carrier_name, tracking_code, tracking_url",
         )
         .eq("id", orderId)
         .maybeSingle(),
@@ -80,6 +80,7 @@ export async function sendOrderEmails(orderId: string, event: OrderEmailEvent): 
       subtotal: Number(row.subtotal),
       shippingCost: Number(row.shipping_cost),
       discount: Number(row.discount_total),
+      couponCode: row.coupon_code,
       total: Number(row.total),
       stockIssue: row.stock_issue,
       reviewReason: row.review_reason,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CART_MAX_ITEMS, CART_MAX_QTY } from "@/lib/cart";
+import { COUPON_CODE_RE, normalizeCouponCode } from "@/lib/coupons";
 
 /**
  * Datos del formulario de /finalizar-compra. Se validan en el navegador
@@ -65,6 +66,19 @@ export const phoneSchema = z
 export const POSTAL_CODE_RE = /^[A-Za-z]?\d{4}[A-Za-z]{0,3}$/;
 export const POSTAL_CODE_ERROR = "Revisá el código postal (por ejemplo, 9203 o U9203ABC).";
 
+/** Lo único que el navegador dice del carrito: qué variantes y cuántas. */
+export const itemsSchema = z
+  .array(z.object({ variantId: z.uuid(), qty: z.number().int().min(1).max(CART_MAX_QTY) }))
+  .min(1, "Tu carrito está vacío.")
+  .max(CART_MAX_ITEMS);
+
+/** Código de cupón: mayúsculas y sin espacios ("" = sin cupón). */
+export const couponCodeSchema = z
+  .string()
+  .max(60)
+  .transform(normalizeCouponCode)
+  .pipe(z.union([z.literal(""), z.string().regex(COUPON_CODE_RE, "Revisá el código del cupón.")]));
+
 export const checkoutSchema = z
   .object({
     name: nameSchema,
@@ -82,10 +96,9 @@ export const checkoutSchema = z
     acceptTerms: z.literal(true, "Para seguir, aceptá los Términos y condiciones."),
     /** Con sesión: guardar nombre, teléfono y dirección en "Mis datos". Sin sesión se ignora. */
     saveToAccount: z.boolean().optional(),
-    items: z
-      .array(z.object({ variantId: z.uuid(), qty: z.number().int().min(1).max(CART_MAX_QTY) }))
-      .min(1, "Tu carrito está vacío.")
-      .max(CART_MAX_ITEMS),
+    /** Cupón aplicado (opcional). Solo el código: el descuento lo calcula la base. */
+    couponCode: couponCodeSchema.optional(),
+    items: itemsSchema,
   })
   .superRefine((data, ctx) => {
     if (data.delivery !== "shipping") return;
@@ -126,4 +139,11 @@ export type CheckoutResult =
       fieldErrors?: CheckoutFieldErrors;
       /** El carrito cambió (stock o productos): hay que volver a cargarlo. */
       cartChanged?: boolean;
+      /** El cupón ya no vale (venció, se agotó…): se quita y se muestra este mensaje junto al campo. */
+      couponError?: string;
     };
+
+/** Resultado de "Aplicar" cupón en el checkout. */
+export type CouponCheckResult =
+  | { ok: true; code: string; kind: "percent" | "fixed" | "free_shipping"; discount: number }
+  | { ok: false; error: string };

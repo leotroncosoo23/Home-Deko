@@ -1,8 +1,17 @@
 "use server";
 
-import type { z } from "zod";
+import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { checkoutSchema, fieldErrorsFrom, type CheckoutResult } from "@/lib/checkout-schema";
+import {
+  checkoutSchema,
+  couponCodeSchema,
+  fieldErrorsFrom,
+  itemsSchema,
+  type CheckoutResult,
+  type CouponCheckResult,
+} from "@/lib/checkout-schema";
+import { allowCouponAttempt } from "@/lib/coupon-rate-limit";
+import { COUPON_RATE_LIMIT_MESSAGE, couponErrorMessage, type CouponQuote, type CouponQuoteError } from "@/lib/coupons";
 import { createPreference, isTestCredentials, mpDate, type PreferenceInput } from "@/lib/mercadopago";
 import { createOrderToken, orderPath } from "@/lib/order-token";
 import { notificationBaseUrl, siteUrl } from "@/lib/site-url";
@@ -56,6 +65,13 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
     return { ok: false, error: GENERIC_ERROR };
   }
   const supabase = createAdminClient();
+  const couponCode = data.couponCode || null;
+
+  // Con cupón, el pago también cuenta como intento: si no, se podrían
+  // probar códigos al azar directo desde "Pagar".
+  if (couponCode && !(await allowCouponAttempt(supabase))) {
+    return { ok: false, error: COUPON_RATE_LIMIT_MESSAGE, couponError: COUPON_RATE_LIMIT_MESSAGE };
+  }
 
   // ---- 1. Pedido en la base -------------------------------------------
   const { data: created, error } = await supabase.rpc("create_order", {
@@ -77,10 +93,18 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       ship_province: data.province ?? null,
       ship_postal_code: data.postalCode ?? null,
       items: data.items.map((i) => ({ variant_id: i.variantId, qty: i.qty })),
+      // Solo el código: la base vuelve a validar el cupón y calcula el descuento.
+      coupon_code: couponCode,
     },
   });
 
   if (error || !created?.[0]) {
+    if (error?.message === "cupon") {
+      // El cupón dejó de valer entre "Aplicar" y "Pagar" (venció, se agotó…).
+      // No se cobra un precio distinto del que vio el cliente: se le avisa.
+      const message = couponErrorMessage(parseQuoteError(error.details));
+      return { ok: false, error: message, couponError: message };
+    }
     if (error?.message === "sin_stock" || error?.message === "no_disponible") {
       return {
         ok: false,
@@ -104,7 +128,7 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
 
   // ---- 2. Lo guardado en el pedido (precios y envío "congelados") -----
   const [{ data: order }, { data: items }] = await Promise.all([
-    supabase.from("orders").select("shipping_cost, total").eq("id", orderId).single(),
+    supabase.from("orders").select("shipping_cost, discount_total, coupon_code, total").eq("id", orderId).single(),
     supabase
       .from("order_items")
       .select("id, product_name, variant_label, unit_price, quantity")
@@ -144,18 +168,36 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + PREFERENCE_TTL_MS);
 
+  // Con cupón: Mercado Pago no acepta precios negativos (no hay un ítem
+  // "descuento"), así que va UN solo ítem por el total del pedido. Así lo
+  // cobrado coincide exacto con orders.total, que es lo que controla el
+  // webhook (apply_order_payment). Sin cupón, un ítem por producto + envío.
+  const discount = Number(order.discount_total);
+  const preferenceItems: PreferenceInput["items"] =
+    discount > 0
+      ? [
+          {
+            id: "pedido",
+            title: `Compra en Home Deko · Pedido #${orderNumber}`,
+            description: `Incluye el cupón ${order.coupon_code ?? ""}`.trim(),
+            quantity: 1,
+            unit_price: Number(order.total),
+          },
+        ]
+      : [
+          ...items.map((i) => ({
+            id: i.id,
+            title: (i.variant_label ? `${i.product_name} (${i.variant_label})` : i.product_name).slice(0, 250),
+            quantity: i.quantity,
+            unit_price: Number(i.unit_price),
+          })),
+          ...(Number(order.shipping_cost) > 0
+            ? [{ id: "envio", title: "Envío a domicilio", quantity: 1, unit_price: Number(order.shipping_cost) }]
+            : []),
+        ];
+
   const preference: PreferenceInput = {
-    items: [
-      ...items.map((i) => ({
-        id: i.id,
-        title: (i.variant_label ? `${i.product_name} (${i.variant_label})` : i.product_name).slice(0, 250),
-        quantity: i.quantity,
-        unit_price: Number(i.unit_price),
-      })),
-      ...(Number(order.shipping_cost) > 0
-        ? [{ id: "envio", title: "Envío a domicilio", quantity: 1, unit_price: Number(order.shipping_cost) }]
-        : []),
-    ],
+    items: preferenceItems,
     // Con credenciales de PRUEBA no se manda el email: si es el de una cuenta
     // real de MP, el pago falla con "Una de las partes con la que intentás
     // hacer el pago es de prueba". Sin email, el comprador de prueba se
@@ -193,6 +235,72 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
     console.error("[checkout] preferencia", e);
     return { ok: false, error: GENERIC_ERROR };
   }
+}
+
+// ---------------------------------------------------------------------------
+// "¿Tenés un cupón?" → Aplicar
+// ---------------------------------------------------------------------------
+
+const couponCheckSchema = z.object({
+  code: couponCodeSchema,
+  items: itemsSchema,
+  delivery: z.enum(["shipping", "pickup"]).optional(),
+  // Opcional: si todavía no lo escribió, "un uso por cliente" se controla al pagar.
+  email: z.string().trim().max(254).optional(),
+});
+
+/**
+ * Vista previa del cupón para el resumen del checkout. Usa la MISMA cuenta
+ * que create_order (coupon_quote en la base): lo que se ve acá es lo que se
+ * cobra. No guarda nada. Cada llamada cuenta para el límite de intentos.
+ */
+export async function checkCoupon(input: unknown): Promise<CouponCheckResult> {
+  const parsed = couponCheckSchema.safeParse(input);
+  if (!parsed.success || !parsed.data.code) {
+    return { ok: false, error: "Revisá el código del cupón." };
+  }
+  const { code, items, delivery, email } = parsed.data;
+  const supabase = createAdminClient();
+
+  if (!(await allowCouponAttempt(supabase))) {
+    return { ok: false, error: COUPON_RATE_LIMIT_MESSAGE };
+  }
+
+  const validEmail = email && z.email().safeParse(email).success ? email : null;
+  const { data, error } = await supabase.rpc("coupon_quote", {
+    p: {
+      coupon_code: code,
+      customer_email: validEmail,
+      // Sin entrega elegida, se calcula como retiro (envío $ 0)
+      delivery_method: delivery ?? "pickup",
+      items: items.map((i) => ({ variant_id: i.variantId, qty: i.qty })),
+    },
+  });
+  if (error || !data) {
+    console.error("[cupones] coupon_quote", error?.message);
+    return { ok: false, error: "No pudimos revisar el cupón. Probá de nuevo en unos minutos." };
+  }
+
+  const quote = data as CouponQuote;
+  if (!quote.ok) {
+    // Envío gratis sin la entrega elegida todavía: se acepta y se aplica al elegir envío.
+    if (quote.error === "solo_envio" && !delivery) {
+      return { ok: true, code, kind: "free_shipping", discount: 0 };
+    }
+    return { ok: false, error: couponErrorMessage(quote) };
+  }
+  return { ok: true, code: quote.code, kind: quote.kind, discount: Number(quote.discount) };
+}
+
+/** El detalle del error 'cupon' de create_order es el jsonb de coupon_quote. */
+function parseQuoteError(details: string | null | undefined): CouponQuoteError {
+  try {
+    const q = JSON.parse(details ?? "") as CouponQuote;
+    if (q && q.ok === false) return q;
+  } catch {
+    // sigue abajo
+  }
+  return { ok: false, error: "no_existe" };
 }
 
 /**

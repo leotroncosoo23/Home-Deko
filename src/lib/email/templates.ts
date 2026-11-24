@@ -30,6 +30,8 @@ export type EmailOrder = {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  /** Código del cupón (si se usó uno). */
+  couponCode: string | null;
   total: number;
   stockIssue: boolean;
   reviewReason: string | null;
@@ -88,6 +90,11 @@ function line(html: string, muted = false): string {
   return `<p style="margin:0 0 4px;${FONT}font-size:14px;line-height:21px;color:${muted ? MUTED : INK};">${html}</p>`;
 }
 
+/** "Cupón BIENVENIDA" (o "Descuento" si no hay código). */
+function discountLabel(o: EmailOrder): string {
+  return o.couponCode ? `Cupón ${o.couponCode}` : "Descuento";
+}
+
 function itemsTable(o: EmailOrder): string {
   const rows = o.items
     .map(
@@ -107,7 +114,7 @@ ${esc(i.name)}${i.variant ? `<br><span style="color:${MUTED};">${esc(i.variant)}
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
 ${rows}
 ${total("Subtotal", formatARS(o.subtotal))}
-${o.discount > 0 ? total("Descuento", `− ${formatARS(o.discount)}`) : ""}
+${o.discount > 0 ? total(discountLabel(o), `− ${formatARS(o.discount)}`) : ""}
 ${total(o.pickup ? "Retiro en el local" : "Envío a domicilio", o.pickup ? "Gratis" : formatARS(o.shippingCost))}
 ${total("Total", formatARS(o.total), true)}
 </table>`;
@@ -170,6 +177,7 @@ function heading(text: string): string {
 function textItems(o: EmailOrder): string {
   return [
     ...o.items.map((i) => `- ${i.name}${i.variant ? ` (${i.variant})` : ""} × ${i.quantity}: ${formatARS(i.lineTotal)}`),
+    ...(o.discount > 0 ? [`${discountLabel(o)}: − ${formatARS(o.discount)}`] : []),
     `Total: ${formatARS(o.total)}`,
   ].join("\n");
 }
