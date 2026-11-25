@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { NOMBRE_COMERCIO, SITIO, type DatosComercio } from "@/content/legales";
 import { formatARS, formatCuit, formatWhatsApp } from "@/lib/format";
+import { paymentCopy } from "@/lib/payments/config";
 import { createPublicClient } from "@/lib/supabase/public";
 
 /**
@@ -122,6 +123,8 @@ export function datosComercio(s: StoreSettings): DatosComercio {
     envioDomicilio: formatARS(s.shippingCost).replace(/,00$/, ""),
     // Opcional (no es un dato legal obligatorio): vacío = la frase no aparece.
     despacho: s.dispatchTime.trim(),
+    // Medio de pago activo (PAYMENT_PROVIDER): "Getnet" o "Mercado Pago".
+    procesador: paymentCopy().name,
   };
 }
 
@@ -143,6 +146,10 @@ export type DatosTienda = {
   whatsapp: { numero: string; href: string } | null;
   instagram: { usuario: string; href: string } | null;
   tiktok: { usuario: string; href: string } | null;
+  /** Medio de pago activo: "Getnet" o "Mercado Pago". */
+  procesador: string;
+  /** Frase sobre las cuotas (paymentCopy().installments). */
+  cuotas: string;
 };
 
 export function datosTienda(s: StoreSettings, mensajeWhatsApp?: string): DatosTienda {
@@ -153,6 +160,8 @@ export function datosTienda(s: StoreSettings, mensajeWhatsApp?: string): DatosTi
     direccion: s.storeAddress.trim() || null,
     horarios: s.storeHours.trim() || null,
     cambiosDias: s.exchangeDays,
+    procesador: paymentCopy().name,
+    cuotas: paymentCopy().installments,
     email: s.contactEmail.trim() || null,
     whatsapp: whatsapp ? { numero: formatWhatsApp(s.whatsapp), href: whatsapp } : null,
     instagram: s.instagram

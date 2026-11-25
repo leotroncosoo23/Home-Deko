@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BellRing,
   CircleCheck,
+  CreditCard,
   PackageOpen,
   PackageX,
   Settings,
@@ -49,6 +50,22 @@ export function AttentionCard({ attention: a }: { attention: Attention }) {
       tone: "amber",
       text: <strong className="font-semibold">{plural(a.needsReview, "1 pedido para revisar", "# pedidos para revisar")}</strong>,
       href: "/admin/pedidos?estado=atencion",
+      action: "Revisar",
+    });
+  if (a.getnetPending > 0)
+    items.push({
+      key: "getnet",
+      icon: CreditCard,
+      tone: "amber",
+      text: (
+        <>
+          <strong className="font-semibold">
+            {plural(a.getnetPending, "Revisar pago en Getnet (1 pedido)", "Revisar pago en Getnet (# pedidos)")}
+          </strong>
+          <span className="text-muted-foreground"> — el cliente empezó a pagar hace más de 2 horas y Getnet no avisó.</span>
+        </>
+      ),
+      href: "/admin/pedidos?estado=getnet",
       action: "Revisar",
     });
   if (a.pendingWithdrawals > 0)

@@ -137,6 +137,7 @@ export type DeleteAccountResult = { ok: true } | { ok: false; error: string };
  *   Su perfil (nombre, teléfono, dirección guardada) se borra en cascada.
  * - Los pedidos NO se borran: quedan sin cuenta (customer_id → null) porque
  *   son la constancia de una venta y la ley contable obliga a guardarlos.
+ *   Sí se borran su DNI y su dirección de facturación (forget_order_personal_data).
  * - Las cuentas de administrador no se eliminan desde la tienda.
  */
 export async function deleteMyAccount(): Promise<DeleteAccountResult> {
@@ -146,7 +147,17 @@ export async function deleteMyAccount(): Promise<DeleteAccountResult> {
     return { ok: false, error: "Esta es una cuenta del panel de Home Deko: no se puede eliminar desde la tienda." };
   }
 
-  const { error } = await createAdminClient().auth.admin.deleteUser(account.id);
+  const admin = createAdminClient();
+  // ANTES de borrar el usuario (después, customer_id queda en null y ya no
+  // se sabe qué pedidos eran suyos): DNI y dirección de facturación fuera.
+  // Si falla, no se borra la cuenta (que no queden datos sin borrar).
+  const { error: forgetError } = await admin.rpc("forget_order_personal_data", { p_user: account.id });
+  if (forgetError) {
+    console.error("[mi-cuenta] forget_order_personal_data:", forgetError.code, forgetError.message);
+    return { ok: false, error: "No pudimos eliminar tu cuenta. Probá de nuevo en un momento o escribinos." };
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(account.id);
   if (error) {
     console.error("[mi-cuenta] deleteUser:", error.code, error.message);
     return { ok: false, error: "No pudimos eliminar tu cuenta. Probá de nuevo en un momento o escribinos." };

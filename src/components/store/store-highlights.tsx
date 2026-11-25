@@ -27,8 +27,8 @@ export function StoreHighlights({
         Somos un local de artículos del hogar, bazar y blanquería en {highlightMissing(comercio.direccion)}.
         En este sitio {upcoming ? "vas a poder ver" : "podés ver"} nuestro catálogo y comprar desde tu casa.
       </Feature>
-      <Feature icon={CreditCard} title="Compra online con Mercado Pago">
-        Pagás de forma segura con Mercado Pago: tarjeta de crédito, débito o dinero en cuenta.
+      <Feature icon={CreditCard} title="Pago seguro con tarjeta">
+        Pagá con tarjeta de crédito o débito. Las cuotas disponibles se ven al momento de pagar.
       </Feature>
       <Feature icon={Truck} title="Envío a domicilio o retiro en el local">
         Te lo enviamos a cualquier lugar del país ({comercio.envioDomicilio}, precio fijo) o lo retirás

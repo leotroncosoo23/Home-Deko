@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatARS } from "@/lib/format";
 import { customerMessage, whatsappToCustomer } from "@/lib/order-messages";
 import { customerOrderUrl } from "@/lib/order-token";
+import { paymentCopy } from "@/lib/payments/config";
 import { publicImageUrl } from "@/lib/storage";
 import { getOrderDetail, type OrderDetail, type OrderEvent } from "../data";
 import {
@@ -40,6 +41,7 @@ import { CancelOrderButton } from "./_components/cancel-order";
 import { CopyButton } from "./_components/copy-button";
 import { NextStep, type NextStepOrder } from "./_components/next-step";
 import { PrintButtons } from "./_components/print-buttons";
+import { VerifyPaymentButton } from "./_components/verify-payment";
 import { WhatsAppButton } from "./_components/whatsapp-button";
 
 export const metadata: Metadata = { title: "Pedido" };
@@ -64,6 +66,11 @@ async function OrderDetailContent({ id }: { id: string }) {
 
   const pickup = order.delivery_method === "pickup";
   const approved = order.payment_status === "approved";
+  // Proveedor con el que se INICIÓ este pago (no el activo hoy).
+  const getnet = order.payment_provider === "getnet";
+  const copy = paymentCopy(getnet ? "getnet" : "mercadopago");
+  const providerStatus = order.provider_status ?? order.mp_status;
+  const paymentId = order.payment_id ?? order.mp_payment_id;
   const orderUrl = customerOrderUrl(order.id);
   const whatsappUrl = whatsappToCustomer(
     order.customer_phone,
@@ -87,7 +94,9 @@ async function OrderDetailContent({ id }: { id: string }) {
     stockIssue: order.stock_issue,
     needsReview: order.needs_review,
     reviewReason: order.review_reason,
-    canApproveManually: order.mp_status === "approved" && !approved && order.fulfillment_status === "awaiting_payment",
+    canApproveManually: providerStatus === "approved" && !approved && order.fulfillment_status === "awaiting_payment",
+    providerName: copy.name,
+    refundHow: copy.refundHow,
     canCancel: ["paid", "preparing", "ready_for_pickup"].includes(order.fulfillment_status),
     cancelReason: order.cancel_reason,
     cancelledAt: order.cancelled_at,
@@ -171,6 +180,21 @@ async function OrderDetailContent({ id }: { id: string }) {
               </a>
               <CopyButton text={order.customer_phone} label="Copiar el teléfono" />
             </p>
+            {order.billing?.customer_dni && (
+              <p className="flex items-center justify-between gap-2">
+                <span className="tabular-nums">
+                  <span className="text-muted-foreground">DNI </span>
+                  {order.billing.customer_dni}
+                </span>
+                <CopyButton text={order.billing.customer_dni} label="Copiar el DNI" />
+              </p>
+            )}
+            {order.billing?.billing_street && (
+              <p className="text-muted-foreground">
+                Facturación: {order.billing.billing_street} {order.billing.billing_number}, CP{" "}
+                {order.billing.billing_postal_code}
+              </p>
+            )}
             {whatsappUrl && (
               <div className="pt-1">
                 <WhatsAppButton href={whatsappUrl} label="Escribir por WhatsApp" />
@@ -258,7 +282,7 @@ async function OrderDetailContent({ id }: { id: string }) {
             </p>
             <p className="flex justify-between gap-2">
               <span className="text-muted-foreground">Medio</span>
-              <span>Mercado Pago</span>
+              <span>{copy.name}</span>
             </p>
             {order.paid_at && (
               <p className="flex justify-between gap-2">
@@ -266,22 +290,38 @@ async function OrderDetailContent({ id }: { id: string }) {
                 <span className="tabular-nums">{formatOrderDate(order.paid_at)}</span>
               </p>
             )}
-            {order.mp_payment_id && (
+            {paymentId && (
               <p className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground">N.º de operación</span>
                 <span className="flex items-center gap-1 tabular-nums">
-                  {order.mp_payment_id}
-                  <CopyButton text={order.mp_payment_id} label="Copiar el número de operación de Mercado Pago" />
+                  {paymentId}
+                  <CopyButton text={paymentId} label={`Copiar el número de operación de ${copy.name}`} />
                 </span>
+              </p>
+            )}
+            {getnet && order.payment_intent_id && (
+              <p className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Código del pago</span>
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate font-mono text-xs">{order.payment_intent_id}</span>
+                  <CopyButton text={order.payment_intent_id} label="Copiar el código del pago de Getnet" />
+                </span>
+              </p>
+            )}
+            {order.payment_status_detail && !approved && (
+              <p className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Detalle</span>
+                <span className="text-right">{order.payment_status_detail}</span>
               </p>
             )}
             <p className="flex justify-between gap-2 border-t pt-2 font-semibold">
               <span>Total cobrado</span>
               <span className="tabular-nums">{formatARS(Number(order.total))}</span>
             </p>
-            <p className="text-xs text-muted-foreground">
-              Para devolver dinero: en Mercado Pago, Actividad → buscá el n.º de operación → Devolver dinero.
-            </p>
+            <p className="text-xs text-muted-foreground">Para devolver dinero: hacé la devolución {copy.refundHow}.</p>
+            {getnet && order.payment_intent_id && !approved && (
+              <VerifyPaymentButton intentId={order.payment_intent_id} paymentId={paymentId} />
+            )}
           </SectionCard>
 
           {showCancel && (
@@ -289,7 +329,12 @@ async function OrderDetailContent({ id }: { id: string }) {
               <p className="text-muted-foreground">
                 ¿El cliente se arrepintió o no se puede entregar? Cancelá el pedido: el stock vuelve solo.
               </p>
-              <CancelOrderButton orderId={order.id} number={order.order_number} stockReturns={Boolean(order.stock_applied_at)} />
+              <CancelOrderButton
+                orderId={order.id}
+                number={order.order_number}
+                stockReturns={Boolean(order.stock_applied_at)}
+                refundHow={copy.refundHow}
+              />
             </div>
           )}
         </div>

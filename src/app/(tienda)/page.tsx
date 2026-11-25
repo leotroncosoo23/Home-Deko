@@ -14,7 +14,7 @@ import { datosComercio, getStoreSettings } from "@/lib/store-settings";
 import { getFeaturedProductsForViewer, getStoreViewer } from "@/lib/store-viewer";
 
 const DESCRIPTION =
-  "Tienda online de Home Deko: artículos del hogar, bazar y blanquería en Trevelin, Chubut. Comprá con Mercado Pago, con envío a todo el país o retiro en el local.";
+  "Tienda online de Home Deko: artículos del hogar, bazar y blanquería en Trevelin, Chubut. Pago seguro con tarjeta, con envío a todo el país o retiro en el local.";
 
 export const metadata: Metadata = {
   // "absolute" (sin "· Home Deko"): Google verifica que el título del

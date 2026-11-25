@@ -37,7 +37,7 @@ export default function WithdrawalDetailPage({ params }: PageProps<"/admin/arrep
 const NEXT_STEP: Record<WithdrawalDetail["status"], string> = {
   new: "El cliente ya recibió su código por mail. Escribile para coordinar la devolución del producto y marcala «En gestión».",
   in_progress:
-    "Cuando el producto vuelva, devolvé el dinero desde Mercado Pago (Actividad → el pago → Devolver dinero) y marcala «Resuelta».",
+    "Cuando el producto vuelva, devolvé el dinero desde el portal del medio de pago con el que se cobró (Getnet o Mercado Pago) y marcala «Resuelta».",
   resolved: "Listo: la solicitud está resuelta.",
   rejected: "La solicitud quedó cerrada como «No corresponde».",
 };

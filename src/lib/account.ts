@@ -82,7 +82,7 @@ export async function getMyOrders(userId: string): Promise<MyOrder[]> {
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_number, created_at, total, payment_status, fulfillment_status, delivery_method, mp_status, mp_expires_at, needs_review, stock_issue, carrier, carrier_name, tracking_code, tracking_url, pickup_address, pickup_hours",
+      "id, order_number, created_at, total, payment_status, fulfillment_status, delivery_method, mp_status, mp_expires_at, provider_status, payment_expires_at, needs_review, stock_issue, carrier, carrier_name, tracking_code, tracking_url, pickup_address, pickup_hours",
     )
     .eq("customer_id", userId)
     .order("created_at", { ascending: false })
@@ -93,9 +93,15 @@ export async function getMyOrders(userId: string): Promise<MyOrder[]> {
   return (data ?? [])
     .filter((o) => {
       if (o.payment_status === "approved" || o.needs_review) return true;
-      if (o.payment_status === "pending" && (o.mp_status === "pending" || o.mp_status === "in_process")) return true;
-      // Sin pagar: solo mientras el link de pago siga vigente.
-      return o.payment_status === "pending" && !!o.mp_expires_at && new Date(o.mp_expires_at).getTime() > now;
+      const providerStatus = o.provider_status ?? o.mp_status;
+      if (o.payment_status === "pending" && (providerStatus === "pending" || providerStatus === "in_process")) return true;
+      // Sin pagar (o rechazado, con Getnet se puede reintentar): solo mientras el link de pago siga vigente.
+      const expiresAt = o.payment_expires_at ?? o.mp_expires_at;
+      return (
+        (o.payment_status === "pending" || o.payment_status === "rejected") &&
+        !!expiresAt &&
+        new Date(expiresAt).getTime() > now
+      );
     })
     .map((o) => ({
       id: o.id,

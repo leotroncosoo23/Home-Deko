@@ -21,18 +21,21 @@ import { cancelOrder } from "../../actions";
 
 /**
  * "Cancelar pedido": botón con borde + confirmación. El stock vuelve solo
- * (la base lo devuelve una sola vez); el DINERO no: se devuelve desde
- * Mercado Pago, y el diálogo lo aclara.
+ * (la base lo devuelve una sola vez); el DINERO no: se devuelve desde el
+ * portal del medio de pago (Getnet o Mercado Pago), y el diálogo lo aclara.
  */
 export function CancelOrderButton({
   orderId,
   number,
   stockReturns,
+  refundHow,
 }: {
   orderId: string;
   number: number;
   /** false = el stock nunca se descontó (ej.: pagado sin stock). */
   stockReturns: boolean;
+  /** "desde el portal de Getnet (…)" — sale de paymentCopy() en el servidor. */
+  refundHow: string;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -69,8 +72,7 @@ export function CancelOrderButton({
             <AlertDialogDescription>
               {stockReturns ? "Los productos vuelven al stock solos. " : ""}
               <strong className="font-medium text-foreground">El dinero no se devuelve solo:</strong> si el cliente pagó,
-              hacé la devolución desde tu cuenta de Mercado Pago (Actividad → el pago → Devolver dinero). Esto no se
-              puede deshacer.
+              hacé la devolución {refundHow}. Esto no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-1.5">

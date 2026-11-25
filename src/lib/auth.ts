@@ -91,6 +91,19 @@ export const getPanelAccess = cache(async (): Promise<PanelAccess> => {
 });
 
 /**
+ * ¿Es el desarrollador? Lo decide la base: is_developer() (migración
+ * rol_desarrollador). Para herramientas técnicas del panel, como la tarjeta
+ * "Estado de Getnet" en Configuración. Lee la sesión → dentro de <Suspense>.
+ */
+export const isDeveloper = cache(async (): Promise<boolean> => {
+  const user = await getCurrentUser();
+  if (!user?.isAdmin) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_developer");
+  return !error && data === true;
+});
+
+/**
  * Para "Apariencia de la tienda" (páginas y datos). Si el usuario no puede
  * usarla, para él la sección "no existe": notFound().
  */

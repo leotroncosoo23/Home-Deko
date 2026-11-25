@@ -9,10 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { AccountDetails } from "@/lib/account-schema";
 import type { CartLine } from "@/lib/cart";
 import {
-  checkoutSchema,
+  checkoutSchemaFor,
   fieldErrorsFrom,
   APARTMENT_MAX,
   NOTES_MAX,
+  PAYMENTS_UNAVAILABLE_MESSAGE,
   PROVINCIAS,
   type CheckoutFieldErrors,
   type CheckoutFieldName,
@@ -37,6 +38,19 @@ export type StoreInfo = {
   storeAddress: string;
   storeHours: string;
   whatsappHref: string | null;
+  /** Medio de pago activo (lo decide el servidor con PAYMENT_PROVIDER). */
+  payment: CheckoutPayment;
+};
+
+/** Lo que el formulario necesita saber del medio de pago. */
+export type CheckoutPayment = {
+  /** false = faltan credenciales: no se puede pagar online (se ofrece WhatsApp). */
+  available: boolean;
+  /** Getnet: pide DNI y dirección de facturación. */
+  requiresBilling: boolean;
+  payButton: string;
+  redirecting: string;
+  secureNote: string;
 };
 
 /** La cuenta del cliente logueado (para completar el formulario solo). */
@@ -50,6 +64,12 @@ function initialValues(account: CheckoutAccount | null): SavedCustomer {
   const saved = loadSavedCustomer();
   if (!account) return saved;
   const d = account.details;
+  const billing = {
+    dni: saved.dni,
+    billingStreet: saved.billingStreet,
+    billingNumber: saved.billingNumber,
+    billingPostalCode: saved.billingPostalCode,
+  };
   const pick = (fromAccount: string, fromBrowser: string) => fromAccount || fromBrowser;
   const hasAddress = Boolean(d.address);
   return {
@@ -58,6 +78,7 @@ function initialValues(account: CheckoutAccount | null): SavedCustomer {
     phone: pick(d.phone, saved.phone),
     // Con una dirección guardada, se propone el envío (se puede cambiar).
     delivery: saved.delivery || (hasAddress ? "shipping" : ""),
+    ...billing,
     // La dirección va entera de un lado o del otro (no mezclar dos direcciones).
     ...(hasAddress
       ? {
@@ -83,6 +104,7 @@ const FIELD_ORDER: CheckoutFieldName[] = [
   "name",
   "email",
   "phone",
+  "dni",
   "delivery",
   "address",
   "apartment",
@@ -90,6 +112,9 @@ const FIELD_ORDER: CheckoutFieldName[] = [
   "province",
   "postalCode",
   "notes",
+  "billingStreet",
+  "billingNumber",
+  "billingPostalCode",
   "acceptTerms",
 ];
 
@@ -130,6 +155,10 @@ export function CheckoutForm({
   const [errors, setErrors] = useState<CheckoutFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  // El servidor puede avisar que los pagos no están disponibles aunque la
+  // página se haya cargado antes con el pago activo.
+  const [unavailable, setUnavailable] = useState(!store.payment.available);
+  const payment = store.payment;
   const [pending, startTransition] = useTransition();
   const busy = pending || redirecting;
   // Cupón: el descuento lo calcula SIEMPRE el servidor (checkCoupon). Acá
@@ -191,7 +220,7 @@ export function CheckoutForm({
       items: getCartSnapshot(),
     };
     // Primero en el navegador, para avisar rápido. El servidor valida otra vez.
-    const parsed = checkoutSchema.safeParse(payload);
+    const parsed = checkoutSchemaFor(payment.requiresBilling).safeParse(payload);
     if (!parsed.success) {
       showErrors(fieldErrorsFrom(parsed.error), "Revisá los datos marcados.");
       return;
@@ -209,10 +238,15 @@ export function CheckoutForm({
         return;
       }
       if (result.ok) {
-        // Por si vuelve de Mercado Pago con "atrás": queda el link al pedido.
+        // Por si vuelve de la página de pago con "atrás": queda el link al pedido.
         saveLastOrder(result.orderUrl);
         setRedirecting(true);
         window.location.assign(result.redirectUrl);
+        return;
+      }
+      if (result.paymentsUnavailable) {
+        setUnavailable(true);
+        setFormError(null);
         return;
       }
       if (result.couponError) {
@@ -306,6 +340,24 @@ export function CheckoutForm({
                 />
               </Field>
             </div>
+            {payment.requiresBilling && (
+              <Field
+                id="co-dni"
+                label="DNI"
+                hint="Lo pide el procesador de pagos para validar la tarjeta."
+                className="sm:max-w-[calc(50%-0.5rem)]"
+                error={errors.dni}
+              >
+                <input
+                  inputMode="numeric"
+                  value={values.dni}
+                  onChange={(e) => set("dni", e.target.value)}
+                  autoComplete="off"
+                  maxLength={12}
+                  placeholder="Sin puntos"
+                />
+              </Field>
+            )}
           </Section>
 
           {/* ---- Entrega ---- */}
@@ -407,6 +459,48 @@ export function CheckoutForm({
               </div>
             )}
           </Section>
+
+          {/* ---- Facturación (Getnet la pide) ---- */}
+          {payment.requiresBilling && values.delivery === "shipping" && (
+            <p className="px-1 text-sm text-muted-foreground">
+              Para el pago usamos tu dirección de envío como dirección de facturación.
+            </p>
+          )}
+          {payment.requiresBilling && values.delivery === "pickup" && (
+            <Section title="Dirección de facturación" description="La de tu tarjeta o tu domicilio. La pide el procesador de pagos.">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                <Field id="co-billingStreet" label="Calle" error={errors.billingStreet}>
+                  <input
+                    value={values.billingStreet}
+                    onChange={(e) => set("billingStreet", e.target.value)}
+                    autoComplete="billing address-line1"
+                    maxLength={200}
+                  />
+                </Field>
+                <Field id="co-billingNumber" label="Número" hint="Si no tiene, poné S/N." error={errors.billingNumber}>
+                  <input
+                    value={values.billingNumber}
+                    onChange={(e) => set("billingNumber", e.target.value)}
+                    autoComplete="off"
+                    maxLength={20}
+                  />
+                </Field>
+              </div>
+              <Field
+                id="co-billingPostalCode"
+                label="Código postal"
+                className="sm:max-w-[calc(50%-0.5rem)]"
+                error={errors.billingPostalCode}
+              >
+                <input
+                  value={values.billingPostalCode}
+                  onChange={(e) => set("billingPostalCode", e.target.value)}
+                  autoComplete="billing postal-code"
+                  maxLength={8}
+                />
+              </Field>
+            </Section>
+          )}
 
           {account && (
             <label htmlFor="co-saveToAccount" className="flex cursor-pointer items-start gap-3 px-1 text-sm leading-snug">
@@ -521,20 +615,43 @@ export function CheckoutForm({
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={busy || lines.length === 0}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none disabled:opacity-70"
-          >
-            {busy && <Loader2 aria-hidden className="size-4 animate-spin" />}
-            {redirecting ? "Te llevamos a Mercado Pago…" : pending ? "Preparando tu pago…" : "Pagar con Mercado Pago"}
-          </button>
-          <p className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
-            <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-            Pagás de forma segura en Mercado Pago, con tarjeta de crédito, débito o dinero en tu cuenta.
-          </p>
+          {unavailable ? (
+            <div role="status" className="flex flex-col gap-3 rounded-xl bg-muted/60 p-4 text-sm">
+              <p className="flex gap-2">
+                <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
+                {PAYMENTS_UNAVAILABLE_MESSAGE}
+              </p>
+              {store.whatsappHref && (
+                <a
+                  href={store.whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-semibold text-white"
+                >
+                  <WhatsAppIcon className="size-4" />
+                  Escribinos por WhatsApp
+                  <span className="sr-only"> (se abre en otra pestaña)</span>
+                </a>
+              )}
+            </div>
+          ) : (
+            <>
+              <button
+                type="submit"
+                disabled={busy || lines.length === 0}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-6 text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none disabled:opacity-70"
+              >
+                {busy && <Loader2 aria-hidden className="size-4 animate-spin" />}
+                {redirecting ? payment.redirecting : pending ? "Preparando tu pago…" : payment.payButton}
+              </button>
+              <p className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                {payment.secureNote}
+              </p>
+            </>
+          )}
 
-          {store.whatsappHref && (
+          {store.whatsappHref && !unavailable && (
             <a
               href={store.whatsappHref}
               target="_blank"

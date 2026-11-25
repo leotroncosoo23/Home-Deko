@@ -46,8 +46,12 @@ export type NextStepOrder = {
   stockIssue: boolean;
   needsReview: boolean;
   reviewReason: string | null;
-  /** Mercado Pago aprobó, pero el monto no coincidía (se puede confirmar a mano). */
+  /** El medio de pago aprobó, pero algo no coincidía (se puede confirmar a mano). */
   canApproveManually: boolean;
+  /** "Getnet" | "Mercado Pago" (con el que se inició el pago). */
+  providerName: string;
+  /** Cómo devolver el dinero (paymentCopy().refundHow). */
+  refundHow: string;
   canCancel: boolean;
   cancelReason: string | null;
   cancelledAt: string | null;
@@ -107,8 +111,8 @@ export function NextStep({ order }: { order: NextStepOrder }) {
       <StepCard tone="muted" icon={XCircle} title="Pedido cancelado">
         <p>
           {order.stockReturned ? "El stock de los productos ya volvió al inventario. " : ""}
-          Si el cliente había pagado, <strong className="font-medium text-foreground">la devolución del dinero se hace desde Mercado Pago</strong>{" "}
-          (Actividad → el pago → Devolver dinero).
+          Si el cliente había pagado, <strong className="font-medium text-foreground">la devolución del dinero se hace</strong>{" "}
+          {order.refundHow}.
         </p>
         {order.cancelReason && <p>Motivo: {order.cancelReason}</p>}
         {order.whatsappUrl && <WhatsAppButton href={order.whatsappUrl} label="Avisarle al cliente por WhatsApp" />}
@@ -127,8 +131,8 @@ export function NextStep({ order }: { order: NextStepOrder }) {
         {order.whatsappUrl && <WhatsAppButton href={order.whatsappUrl} label="Escribirle al cliente por WhatsApp" />}
         <ResolveStockIssue orderId={order.id} pending={pending} run={run} />
         <div className="flex flex-col gap-1.5 border-t pt-3">
-          <p className="text-xs">¿No se puede resolver? Cancelá el pedido y devolvé el dinero desde Mercado Pago.</p>
-          <CancelOrderButton orderId={order.id} number={order.number} stockReturns={false} />
+          <p className="text-xs">¿No se puede resolver? Cancelá el pedido y devolvé el dinero {order.refundHow}.</p>
+          <CancelOrderButton orderId={order.id} number={order.number} stockReturns={false} refundHow={order.refundHow} />
         </div>
       </StepCard>
     );
@@ -139,11 +143,17 @@ export function NextStep({ order }: { order: NextStepOrder }) {
     return (
       <StepCard tone="amber" icon={AlertTriangle} title="Para revisar">
         <p>{order.reviewReason ?? "Hay algo de este pedido que conviene revisar antes de prepararlo."}</p>
-        <ResolveReview orderId={order.id} canApprove={order.canApproveManually} pending={pending} run={run} />
+        <ResolveReview
+          orderId={order.id}
+          canApprove={order.canApproveManually}
+          providerName={order.providerName}
+          pending={pending}
+          run={run}
+        />
         {order.canCancel && (
           <div className="flex flex-col gap-1.5 border-t pt-3">
             <p className="text-xs">Si el pago se devolvió, cancelá el pedido: el stock vuelve solo.</p>
-            <CancelOrderButton orderId={order.id} number={order.number} stockReturns />
+            <CancelOrderButton orderId={order.id} number={order.number} stockReturns refundHow={order.refundHow} />
           </div>
         )}
       </StepCard>
@@ -550,11 +560,13 @@ function ResolveStockIssue({
 function ResolveReview({
   orderId,
   canApprove,
+  providerName,
   pending,
   run,
 }: {
   orderId: string;
   canApprove: boolean;
+  providerName: string;
   pending: boolean;
   run: (action: () => Promise<ActionResult>) => void;
 }) {
@@ -567,7 +579,7 @@ function ResolveReview({
         <p className="text-sm font-medium">{mode === "approve" ? "Confirmar el pago igual" : "Marcar como revisado"}</p>
         <p className="text-xs text-muted-foreground">
           {mode === "approve"
-            ? "Hacelo solo si en tu cuenta de Mercado Pago ves el pago acreditado y estás de acuerdo con el monto. Se descuenta el stock y el pedido pasa a «Para preparar»."
+            ? `Hacelo solo si en el portal de ${providerName} ves el pago acreditado y estás de acuerdo con el monto. Se descuenta el stock y el pedido pasa a «Para preparar».`
             : "Contá brevemente qué revisaron. El pedido queda como estaba, sin el aviso."}
         </p>
         <Textarea
@@ -575,7 +587,7 @@ function ResolveReview({
           onChange={(e) => setNote(e.target.value)}
           maxLength={300}
           rows={2}
-          placeholder={mode === "approve" ? "Ej.: Lo vimos acreditado en Mercado Pago." : "Ej.: Hablamos con el cliente, todo bien."}
+          placeholder={mode === "approve" ? `Ej.: Lo vimos acreditado en ${providerName}.` : "Ej.: Hablamos con el cliente, todo bien."}
           aria-label="Nota"
           className="bg-background"
         />

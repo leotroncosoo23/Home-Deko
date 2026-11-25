@@ -77,7 +77,7 @@ export function customerMessage(o: MessageOrder): string {
     case "picked_up":
       return `${hi}\n\n¡Gracias por retirar tu pedido! Esperamos que lo disfrutes.`;
     case "cancelled":
-      return `${hi}\n\nTe contamos que tu pedido quedó cancelado. Si ya lo habías pagado, la devolución del dinero la ves en tu cuenta de Mercado Pago o en el resumen de tu tarjeta.`;
+      return `${hi}\n\nTe contamos que tu pedido quedó cancelado. Si ya lo habías pagado, la devolución del dinero la ves en el resumen de tu tarjeta.`;
     default:
       return hi;
   }

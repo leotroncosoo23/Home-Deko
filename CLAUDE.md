@@ -25,7 +25,8 @@ y que funcione muy bien en celular y en PC.
 - **Tailwind CSS** + **shadcn/ui** para todos los componentes de interfaz.
 - **Supabase**: Postgres, Auth, Storage (imágenes) y RLS. Proyecto en **São Paulo (sa-east-1)**.
 - **Vercel**: funciones en **gru1 (São Paulo)** vía `vercel.json`. Push a `main` = producción; otras ramas = preview.
-- **Mercado Pago**: Checkout Pro + webhooks (etapa de la tienda).
+- **Pagos**: **Getnet Web Checkout** (por defecto) o **Mercado Pago** Checkout Pro, según `PAYMENT_PROVIDER`.
+  Ver "Pagos con Getnet" más abajo.
 
 ## Estructura general
 - Un solo proyecto Next.js:
@@ -50,7 +51,27 @@ y que funcione muy bien en celular y en PC.
 - `MERCADOPAGO_NOTIFICATION_URL_BASE` → **opcional, solo para probar en local**: URL del túnel (cloudflared) para que el
   webhook llegue a la compu mientras se navega en localhost. En producción no se define (y si estuviera, se ignora:
   `notificationBaseUrl()` en `src/lib/site-url.ts`).
+- `PAYMENT_PROVIDER` → `getnet` (por defecto, si no está) | `mercadopago`. Elige el medio de pago del checkout.
+- `GETNET_CLIENT_ID`, `GETNET_CLIENT_SECRET`, `GETNET_ENV` (`sandbox` | `production`), `GETNET_WEBHOOK_USER`,
+  `GETNET_WEBHOOK_PASSWORD` → solo servidor (`src/lib/payments/`). Si falta alguna, el checkout muestra "Los pagos
+  online no están disponibles…" con WhatsApp y no crea pedidos.
+- Plantilla sin valores: `.env.example` (sí se versiona).
 - Nunca leer, mostrar, copiar ni commitear el contenido de `.env.local`.
+
+## Pagos con Getnet (implementado, falta cargar credenciales)
+- Config en UN lugar: `src/lib/payments/config.ts` (hosts por ambiente, paths, textos por proveedor). Cliente:
+  `src/lib/payments/getnet.ts` (token OAuth cacheado en memoria, payment intent en modo redirect, Basic auth del
+  webhook en tiempo constante). Lo dudoso de la doc oficial está marcado **"A CONFIRMAR"** en el código.
+- Flujo: `create_order` (con `payment_provider`, DNI y facturación) → intent (monto en centavos, `order_id` =
+  `HD-<número>`, vence a las 2 h) → página segura de Getnet → vuelve a `/pedido/[id]`.
+- Webhook `/api/getnet/webhook` → `apply_order_payment(..., p_provider => 'getnet', p_mismatch)`: controla
+  referencia, monto y moneda; un rechazo no es final (si después llega aprobado, se aprueba); idempotente.
+- Red de seguridad: "Revisar pago en Getnet" en el inicio (intent de 2 h a 72 h sin aviso), botón "Verificar pago"
+  en el pedido (muestra el intent_id: la doc no publica consulta de estado) y tarjeta "Estado de Getnet" en
+  Configuración (solo desarrollador, "Probar conexión" solo pide un token).
+- DNI y `billing_*`: sin grant para `authenticated`, fuera de logs y mails; se borran al eliminar la cuenta
+  (`forget_order_personal_data`). Mercado Pago sigue entero (`src/lib/mercadopago.ts`), apagado.
+- Tests: `npm test` (Vitest, respuestas de Getnet simuladas). En Git Bash, entrar a la carpeta como `/C/...`.
 
 ## Diseño e identidad visual
 Marca: "Home Deko — Artículos del hogar". Logo en serif display de alto contraste, con un corazón rojo.
@@ -606,7 +627,7 @@ Los reportes del Inicio se calculan sobre esta tabla, así después suman las ve
 - Ramas: `git checkout -b nombre-funcion` desde `main` actualizado; nunca trabajar directo en `main`.
 - Cierre de cada rama (lo hace Leo): push → Pull Request y **Merge en GitHub** → `git checkout main` → `git pull`.
 - Antes de crear algo grande, proponer el plan y los archivos a tocar.
-- Correr `npx tsc --noEmit`, `npm run lint` y `npm run build` antes de cada commit.
+- Correr `npm test`, `npx tsc --noEmit`, `npm run lint` y `npm run build` antes de cada commit.
 - Todo texto visible en la tienda o en el panel es para los dueños o los clientes:
   nunca notas de desarrollo ('lo armamos en el próximo paso', 'TODO', 'placeholder').
   Si algo todavía no existe, usar un texto final y amable pensado para ellos.

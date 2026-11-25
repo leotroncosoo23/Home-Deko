@@ -4,8 +4,12 @@ import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
 import { getNavItem } from "@/components/admin/nav-items";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isDeveloper } from "@/lib/auth";
+import { missingGetnetVars, paymentCopy } from "@/lib/payments/config";
+import { siteUrl } from "@/lib/site-url";
 import { getSettingsForAdmin } from "./data";
 import { missingForLaunch } from "./schema";
+import { GetnetStatusCard, type GetnetStatus } from "./_components/getnet-status-card";
 import { LaunchCard } from "./_components/launch-card";
 import { SettingsForm } from "./_components/settings-form";
 
@@ -39,12 +43,28 @@ async function Settings() {
   // key: después de guardar, el formulario arranca de nuevo con lo guardado
   // (sin el interruptor, que se guarda por su cuenta).
   const { isLaunched, ...formSettings } = settings;
+  const developer = await isDeveloper();
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <LaunchCard isLaunched={isLaunched} missing={missingForLaunch(settings)} />
       <SettingsForm key={JSON.stringify(formSettings)} settings={settings} />
+      {developer && <GetnetStatusCard status={getnetStatus()} />}
     </div>
   );
+}
+
+/** Para la tarjeta del desarrollador: solo sí/no y nombres de variables, nunca valores. */
+function getnetStatus(): GetnetStatus {
+  const missing = missingGetnetVars();
+  const env = process.env.GETNET_ENV?.trim();
+  const base = siteUrl();
+  return {
+    activeProvider: paymentCopy().name,
+    credentialsLoaded: missing.length === 0,
+    missing,
+    env: env === "sandbox" ? "Sandbox (homologación)" : env === "production" ? "Producción" : null,
+    webhookUrl: base ? `${base}/api/getnet/webhook` : null,
+  };
 }
 
 function SettingsSkeleton() {

@@ -3,10 +3,12 @@
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import {
-  checkoutSchema,
+  billingFrom,
+  checkoutSchemaFor,
   couponCodeSchema,
   fieldErrorsFrom,
   itemsSchema,
+  PAYMENTS_UNAVAILABLE_MESSAGE,
   type CheckoutResult,
   type CouponCheckResult,
 } from "@/lib/checkout-schema";
@@ -14,6 +16,14 @@ import { allowCouponAttempt } from "@/lib/coupon-rate-limit";
 import { COUPON_RATE_LIMIT_MESSAGE, couponErrorMessage, type CouponQuote, type CouponQuoteError } from "@/lib/coupons";
 import { createPreference, isTestCredentials, mpDate, type PreferenceInput } from "@/lib/mercadopago";
 import { createOrderToken, orderPath } from "@/lib/order-token";
+import {
+  GETNET_INTENT_EXPIRES,
+  GETNET_INTENT_TTL_MS,
+  onlinePaymentsAvailable,
+  paymentCopy,
+  paymentProvider,
+} from "@/lib/payments/config";
+import { createPaymentIntent, getnetOrderReference } from "@/lib/payments/getnet";
 import { notificationBaseUrl, siteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -22,26 +32,41 @@ const PREFERENCE_TTL_MS = 2 * 60 * 60 * 1000;
 
 const GENERIC_ERROR = "No pudimos iniciar el pago. Probá de nuevo en unos minutos o escribinos por WhatsApp.";
 
-type CheckoutData = z.output<typeof checkoutSchema>;
+type CheckoutData = z.output<ReturnType<typeof checkoutSchemaFor>>;
+type AdminClient = ReturnType<typeof createAdminClient>;
 
 /**
- * "Pagar con Mercado Pago".
+ * "Ir a pagar".
  *
- * 1. Valida los datos (zod).
+ * 1. Valida los datos (zod). Con Getnet, también DNI y facturación.
  * 2. create_order (en la base): precios de store_variants, envío de
  *    Configuración, verifica stock. El total lo calcula la base.
- * 3. Arma la preferencia de Mercado Pago con lo GUARDADO en el pedido.
+ * 3. Crea el pago en el proveedor activo (PAYMENT_PROVIDER) con lo GUARDADO
+ *    en el pedido: payment intent de Getnet o preferencia de Mercado Pago.
  * 4. Devuelve el link de pago; el navegador redirige.
  *
- * El pago NO se confirma acá ni al volver de Mercado Pago: solo el webhook
- * (src/app/api/mercadopago/webhook/route.ts) lo confirma y descuenta stock.
+ * El pago NO se confirma acá ni al volver: solo el webhook del proveedor
+ * (src/app/api/getnet/webhook o src/app/api/mercadopago/webhook) lo
+ * confirma y descuenta stock.
  */
 export async function startCheckout(input: unknown): Promise<CheckoutResult> {
-  const parsed = checkoutSchema.safeParse(input);
+  const provider = paymentProvider();
+  // Sin credenciales: no se crea ningún pedido; se ofrece WhatsApp.
+  if (!onlinePaymentsAvailable()) {
+    console.warn(`[checkout] pagos online no disponibles: faltan credenciales de ${provider}`);
+    return { ok: false, error: PAYMENTS_UNAVAILABLE_MESSAGE, paymentsUnavailable: true };
+  }
+
+  const requireBilling = paymentCopy(provider).requiresBilling;
+  const parsed = checkoutSchemaFor(requireBilling).safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Revisá los datos marcados.", fieldErrors: fieldErrorsFrom(parsed.error) };
   }
   const data = parsed.data;
+  const billing = requireBilling ? billingFrom(data) : null;
+  if (requireBilling && !billing) {
+    return { ok: false, error: "Revisá los datos marcados.", fieldErrors: { dni: "Revisá tu DNI y la dirección." } };
+  }
 
   const base = siteUrl();
   const notifyBase = notificationBaseUrl();
@@ -95,6 +120,11 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       items: data.items.map((i) => ({ variant_id: i.variantId, qty: i.qty })),
       // Solo el código: la base vuelve a validar el cupón y calcula el descuento.
       coupon_code: couponCode,
+      payment_provider: provider,
+      customer_dni: billing?.dni ?? null,
+      billing_street: billing?.street ?? null,
+      billing_number: billing?.number ?? null,
+      billing_postal_code: billing?.postalCode ?? null,
     },
   });
 
@@ -116,7 +146,11 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       };
     }
     if (error?.message === "carrito_vacio") return { ok: false, cartChanged: true, error: "Tu carrito está vacío." };
-    console.error("[checkout] create_order", error);
+    if (error?.message === "datos_pago") {
+      return { ok: false, error: "Revisá los datos marcados.", fieldErrors: { dni: "Revisá tu DNI y la dirección." } };
+    }
+    // Sin datos del cliente en el log (solo código y mensaje de la base).
+    console.error("[checkout] create_order", error?.code, error?.message);
     return { ok: false, error: GENERIC_ERROR };
   }
 
@@ -126,7 +160,96 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
   // Si falla, la compra sigue igual (no es parte del pago).
   if (user && data.saveToAccount) await saveCheckoutToAccount(supabase, user.id, data);
 
-  // ---- 2. Lo guardado en el pedido (precios y envío "congelados") -----
+  const returnUrl = `${base}${orderPath(orderId, token)}`;
+  const orderUrl = orderPath(orderId, token);
+
+  if (provider === "getnet") {
+    return startGetnetPayment({ supabase, orderId, orderNumber, orderUrl, returnUrl, data, billing: billing! });
+  }
+  return startMercadoPagoPayment({ supabase, orderId, orderNumber, orderUrl, returnUrl, notifyBase, data });
+}
+
+type PaymentStart = {
+  supabase: AdminClient;
+  orderId: string;
+  orderNumber: number;
+  /** /pedido/{id}?t=… (relativo, para el navegador). */
+  orderUrl: string;
+  /** Lo mismo, con el dominio (para el proveedor). */
+  returnUrl: string;
+  data: CheckoutData;
+};
+
+// ---------------------------------------------------------------------------
+// Getnet (Web Checkout, modo redirect)
+// ---------------------------------------------------------------------------
+
+async function startGetnetPayment({
+  supabase,
+  orderId,
+  orderNumber,
+  orderUrl,
+  returnUrl,
+  data,
+  billing,
+}: PaymentStart & { billing: NonNullable<ReturnType<typeof billingFrom>> }): Promise<CheckoutResult> {
+  // El total que se cobra es el GUARDADO en el pedido (lo calculó la base).
+  const { data: order } = await supabase.from("orders").select("total").eq("id", orderId).single();
+  if (!order) {
+    console.error("[checkout] no se pudo releer el pedido", orderId);
+    return { ok: false, error: GENERIC_ERROR };
+  }
+
+  // Sin https (local), no se mandan las URLs de regreso: Getnet usa las de
+  // su configuración técnica. A CONFIRMAR si acepta URLs locales.
+  const canReturn = returnUrl.startsWith("https://");
+  const expiresAt = new Date(Date.now() + GETNET_INTENT_TTL_MS);
+
+  try {
+    const intent = await createPaymentIntent({
+      orderReference: getnetOrderReference(orderNumber),
+      total: Number(order.total),
+      customer: { name: data.name, email: data.email, dni: billing.dni, phone: data.phone },
+      billing: { street: billing.street, number: billing.number, postalCode: billing.postalCode },
+      ...(canReturn ? { successUrl: returnUrl, errorUrl: returnUrl } : {}),
+      expiresIn: GETNET_INTENT_EXPIRES,
+    });
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        payment_intent_id: intent.paymentIntentId,
+        payment_redirect_url: intent.redirectUrl,
+        payment_expires_at: expiresAt.toISOString(),
+      })
+      .eq("id", orderId);
+    if (error) {
+      // Sin el intent guardado, el webhook no encontraría el pedido: mejor
+      // no mandar a pagar.
+      console.error("[checkout] no se pudo guardar el intent", orderId, error.code);
+      return { ok: false, error: GENERIC_ERROR };
+    }
+    return { ok: true, redirectUrl: intent.redirectUrl, orderUrl };
+  } catch (e) {
+    console.error("[checkout] getnet", e instanceof Error ? e.message : "error");
+    return { ok: false, error: GENERIC_ERROR };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mercado Pago (Checkout Pro) — apagado con PAYMENT_PROVIDER=getnet
+// ---------------------------------------------------------------------------
+
+async function startMercadoPagoPayment({
+  supabase,
+  orderId,
+  orderNumber,
+  orderUrl,
+  returnUrl,
+  notifyBase,
+  data,
+}: PaymentStart & { notifyBase: string }): Promise<CheckoutResult> {
+  // ---- Lo guardado en el pedido (precios y envío "congelados") -----
   const [{ data: order }, { data: items }] = await Promise.all([
     supabase.from("orders").select("shipping_cost, discount_total, coupon_code, total").eq("id", orderId).single(),
     supabase
@@ -140,8 +263,6 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  // ---- 3. Preferencia de Mercado Pago ---------------------------------
-  const returnUrl = `${base}${orderPath(orderId, token)}`;
   const notificationUrl = `${notifyBase}/api/mercadopago/webhook`;
   // MP rechaza URLs locales (localhost, 127.0.0.1) en back_urls. Solo se
   // mandan con https (producción, vista previa). En local (plan B), el
@@ -230,7 +351,7 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       .from("orders")
       .update({ mp_preference_id: pref.id, mp_expires_at: expiresAt.toISOString() })
       .eq("id", orderId);
-    return { ok: true, redirectUrl: pref.init_point, orderUrl: orderPath(orderId, token) };
+    return { ok: true, redirectUrl: pref.init_point, orderUrl };
   } catch (e) {
     console.error("[checkout] preferencia", e);
     return { ok: false, error: GENERIC_ERROR };
@@ -306,13 +427,10 @@ function parseQuoteError(details: string | null | undefined): CouponQuoteError {
 /**
  * Guarda en el perfil los datos usados en la compra. La dirección, solo si
  * eligió envío (un retiro en el local no borra la dirección guardada).
+ * El DNI y la facturación NO se guardan en el perfil.
  * Va con la clave secreta pero SIEMPRE filtrado por el id de la sesión.
  */
-async function saveCheckoutToAccount(
-  supabase: ReturnType<typeof createAdminClient>,
-  userId: string,
-  data: CheckoutData,
-) {
+async function saveCheckoutToAccount(supabase: AdminClient, userId: string, data: CheckoutData) {
   const shipping =
     data.delivery === "shipping"
       ? {
