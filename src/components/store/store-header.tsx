@@ -22,7 +22,7 @@ import { StoreMenu } from "./store-menu";
  *   Escritorio (desde 1024 px), estilo de las tiendas que toman de referencia:
  *     Home ♥ Deko   [ 🔍 ¿Qué estás buscando? ]   👤 Ingresá   🛍 Carrito (0)
  *     ─────────────────────────────────────────────────────────────────────
- *     Todos los productos  Cocina  Baño  Deco  …        Todas las categorías ▾
+ *     Todos los productos  Cocina  Baño  …  Todas las categorías ▾   Ayuda ▾  ↶ Botón de arrepentimiento
  *
  * Estático (categorías y redes llegan de la caché), salvo "Ingresá / Mi
  * cuenta / Panel", que lee la sesión en su propio <Suspense>.
@@ -72,8 +72,9 @@ export async function StoreHeader() {
             <CartButton withText />
           </div>
         </div>
-        {/* Solo las categorías con al menos un producto publicado */}
-        {withProducts.length > 0 && <CategoryBar categories={withProducts} />}
+        {/* Solo las categorías con al menos un producto publicado. La barra va
+            siempre: a la derecha tiene "Ayuda" y el Botón de arrepentimiento. */}
+        <CategoryBar categories={withProducts} />
       </div>
     </header>
   );

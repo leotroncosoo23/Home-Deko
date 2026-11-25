@@ -24,6 +24,8 @@ export type Attention = {
   needsReview: number;
   lowStock: number;
   outOfStock: number;
+  /** Solicitudes nuevas del Botón de arrepentimiento. */
+  pendingWithdrawals: number;
   /** Datos del comercio que faltan en Configuración, en el orden en que se nombran. */
   missingSettings: string[];
 };
@@ -46,6 +48,7 @@ export async function getAttention(): Promise<Attention> {
     needsReview: Number(data.needs_review),
     lowStock: Number(data.low_stock),
     outOfStock: Number(data.out_of_stock),
+    pendingWithdrawals: Number(data.pending_withdrawals),
     missingSettings: missing,
   };
 }

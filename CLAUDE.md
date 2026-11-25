@@ -168,7 +168,8 @@ Tipografías:
 ## Arquitectura del panel
 Menú agrupado por tarea. Cada sección se suma al menú recién cuando está implementada.
 - Inicio
-- VENTAS: Pedidos (contador de los que requieren atención; gestión completa en el paso 5), Cupones (paso 7)
+- VENTAS: Pedidos (contador de los que requieren atención; gestión completa en el paso 5), Cupones (paso 7),
+  Arrepentimientos (paso 9, contador de solicitudes nuevas)
 - CATÁLOGO: Productos, Categorías
 - INVENTARIO: Stock (contador de stock bajo), Etiquetas
 - TIENDA ONLINE: Apariencia de la tienda (`/admin/apariencia`: barra de anuncios y Banner) — **solo desarrollador**
@@ -249,6 +250,7 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   Se edita en el panel: **Configuración** (`/admin/configuracion`).
 - Lectura pública por columna (grant por columna + policy `using (true)`); solo admins editan; nadie
   inserta ni borra. **Nunca guardar secretos ahí** (tokens de Mercado Pago, etc.): todo es legible.
+- También `dispatch_time` (plazo de despacho, paso 9).
 - Las páginas públicas la leen con `getStoreSettings()` (`src/lib/store-settings.ts`, `"use cache"` +
   `cacheTag("store-settings")`); las Server Actions llaman a `updateTag` al guardar.
 - Los datos del comercio ya **no** van en `legales.ts`: `datosComercio()` los arma desde la config
@@ -282,7 +284,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 6. Cuenta del cliente y seguimiento
 7. Cupones de descuento
 8. Inicio del panel (ventas y visitas) — implementado (ver "Inicio del panel (paso 8, implementado)")
-9. Páginas de información, legales y revisión final (muestra del 27/11)
+9. Páginas de información, legales y revisión final (muestra del 27/11) — páginas y Botón de arrepentimiento
+   implementados (ver "Páginas de información + Botón de arrepentimiento")
 
 ### Inicio de la tienda
 - **Banner principal** como plantilla de marca editable desde el panel (Apariencia de la tienda, hoy solo el desarrollador): título, texto, botón con link,
@@ -524,6 +527,36 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 Cómo comprar, Envíos y retiros, Cambios y devoluciones, Preguntas frecuentes, Contacto, Sobre nosotros,
 Términos y condiciones, Política de privacidad y **Botón de arrepentimiento** (obligatorio en Argentina para
 tiendas online). Los textos en un archivo de contenido (como `ayuda.ts`), fáciles de editar.
+
+### Páginas de información + Botón de arrepentimiento (paso 9, implementado)
+- Migración `20261203000001_paginas_info_arrepentimiento.sql`. "Sobre nosotros" quedó para más adelante (necesita
+  la historia real del negocio).
+- `store_settings.dispatch_time` ("Plazo de despacho", texto ≤ 60, opcional): Configuración → páginas, Términos y
+  mail "Pago confirmado" ("Despachamos tu pedido en {plazo}"). Vacío = la frase no aparece.
+- Páginas en `(tienda)`: `/como-comprar`, `/envios`, `/cambios-y-devoluciones`, `/preguntas-frecuentes` (acordeón con
+  `hiddenUntilFound`), `/contacto` (mapa de Google sin clave que se carga recién al tocar "Ver el mapa") y
+  `/arrepentimiento`. Textos en `src/content/informacion.ts` con `datosTienda()` (store-settings): lo que falta llega
+  null y se omite; **nunca `[COMPLETAR]` en estas páginas ni en el pie** (queda solo en Términos y Privacidad).
+  Links en el texto con `[texto](/ruta)` (`RichText`). Componentes en `src/components/store/info/`.
+- Navegación (`src/lib/store-nav.ts`): `HELP_LINKS`, `LEGAL_LINKS`, `WITHDRAWAL_LINK`, `CONSUMER_DEFENSE_URL`.
+  Pie: Ayuda · Legales (+ botón destacado en rojo) · El local, y "Defensa de las y los Consumidores. Para reclamos
+  ingresá aquí". Sin lanzar, el pie muestra solo links de `ALWAYS_PUBLIC_PATHS`. Menú hamburguesa: grupos Ayuda (con
+  el botón destacado) y Legales. PC: "Ayuda ▾" y el botón a la derecha de la barra de categorías (va siempre).
+- **Botón de arrepentimiento (Disp. 954/2025, deroga la Res. 424/2020)**: link "a simple vista, en lugar destacado y
+  en el primer acceso", **sin registración ni trámites** (nombre + email; n.º de pedido y motivo opcionales) y
+  **código de identificación dentro de las 24 h por el mismo medio** (se muestra al instante y va por mail). No
+  quitar el link del pie, el menú ni el encabezado. La Res. 274/2021 (link a la Ventanilla Federal) figura abrogada
+  por la Disp. 890/2025; el link a Defensa del Consumidor se deja igual.
+  - Tabla `withdrawal_requests` (código `ARR-XXXXXX`, estados `new | in_progress | resolved | rejected`, `order_id`
+    solo si número + email coinciden, `*_email_sent_at`) y `withdrawal_attempts`. Solo admins leen; nadie escribe directo.
+  - `create_withdrawal_request(p, key)` (invoker, solo service_role): límite 3 cada 10 min y 10 por día por visitante
+    (`visitorKey("arrepentimiento")` en `src/lib/rate-limit.ts`, el mismo HMAC de IP que los cupones) y 3 por día por
+    email → `HD429`. Server Action `submitWithdrawal` con honeypot (`website`) → `after(sendWithdrawalEmails)`
+    (`src/lib/email/withdrawal-emails.ts`: cliente con el código + dueños con el link al panel).
+  - Panel `/admin/arrepentimientos` (pestañas Nuevas · En gestión · Cerradas · Todas) y detalle con "Próximo paso":
+    `set_withdrawal_status` (definer, `is_admin()`; no vuelve a `new`; "No corresponde" exige nota). Aviso si el mail
+    del código no salió. `admin_home_attention()` suma `pending_withdrawals` (ítem en "Requiere atención").
+  - Ayuda: guía `arrepentimientos` + 2 preguntas frecuentes.
 
 ### Dominio
 - Se construye y prueba con `homedeko.vercel.app`. Cuando esté el dominio final, actualizar: Vercel,

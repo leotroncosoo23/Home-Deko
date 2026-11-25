@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Undo2 } from "lucide-react";
 import { cn } from "cn";
 import {
   DropdownMenu,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { StoreCategory } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
-import { ALL_PRODUCTS_LINK, categoryHref } from "@/lib/store-nav";
+import { ALL_PRODUCTS_LINK, categoryHref, HELP_LINKS, WITHDRAWAL_LINK } from "@/lib/store-nav";
 
 /** Espacio entre links (px). Igual que la clase gap-1 de abajo. */
 const GAP = 4;
@@ -139,6 +139,32 @@ function Bar({ categories, pathname }: { categories: StoreCategory[]; pathname: 
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      {/* A la derecha: Ayuda ▾ y el Botón de arrepentimiento (Disp. 954/2025:
+          a simple vista desde el primer acceso). Fuera del contenedor medido. */}
+      <div className="ml-4 flex shrink-0 items-center gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none">
+            Ayuda
+            <ChevronDown aria-hidden className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 p-1.5">
+            {HELP_LINKS.map((l) => (
+              <DropdownMenuItem key={l.href} render={<Link href={l.href} />} className="h-9">
+                {l.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Link
+          href={WITHDRAWAL_LINK.href}
+          aria-current={pathname === WITHDRAWAL_LINK.href ? "page" : undefined}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-brand transition-colors hover:bg-brand-soft focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none"
+        >
+          <Undo2 aria-hidden className="size-4" />
+          {WITHDRAWAL_LINK.label}
+        </Link>
       </div>
       </div>
     </nav>

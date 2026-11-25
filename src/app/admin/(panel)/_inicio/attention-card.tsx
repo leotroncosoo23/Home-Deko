@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { AlertTriangle, BellRing, CircleCheck, PackageOpen, PackageX, Settings, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  BellRing,
+  CircleCheck,
+  PackageOpen,
+  PackageX,
+  Settings,
+  TrendingDown,
+  Undo2,
+} from "lucide-react";
 import { cn } from "cn";
 import { SectionCard } from "@/components/admin/section-card";
 import { buttonVariants } from "@/components/ui/button";
@@ -41,6 +50,22 @@ export function AttentionCard({ attention: a }: { attention: Attention }) {
       text: <strong className="font-semibold">{plural(a.needsReview, "1 pedido para revisar", "# pedidos para revisar")}</strong>,
       href: "/admin/pedidos?estado=atencion",
       action: "Revisar",
+    });
+  if (a.pendingWithdrawals > 0)
+    items.push({
+      key: "withdrawals",
+      icon: Undo2,
+      tone: "amber",
+      text: (
+        <>
+          <strong className="font-semibold">
+            {plural(a.pendingWithdrawals, "1 solicitud de arrepentimiento", "# solicitudes de arrepentimiento")}
+          </strong>
+          <span className="text-muted-foreground"> — contactá al cliente para coordinar la devolución.</span>
+        </>
+      ),
+      href: "/admin/arrepentimientos",
+      action: "Ver",
     });
   if (a.toPrepare > 0)
     items.push({
@@ -94,7 +119,8 @@ export function AttentionCard({ attention: a }: { attention: Attention }) {
       <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
         <CircleCheck className="size-5 shrink-0" aria-hidden />
         <p>
-          <strong className="font-semibold">Todo al día.</strong> No hay pedidos ni stock que necesiten atención.
+          <strong className="font-semibold">Todo al día.</strong> No hay pedidos, solicitudes ni stock que necesiten
+          atención.
         </p>
       </div>
     );

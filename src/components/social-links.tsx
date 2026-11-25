@@ -31,8 +31,9 @@ export function SocialLinks({ redes, className }: { redes: RedSocial[]; classNam
   );
 }
 
-function SocialIcon({ red }: { red: RedSocial["red"] }) {
-  if (red === "whatsapp") return <MessageCircle aria-hidden className="size-4" />;
+/** Ícono de cada red (también lo usa la página de Contacto). */
+export function SocialIcon({ red, className = "size-4" }: { red: RedSocial["red"]; className?: string }) {
+  if (red === "whatsapp") return <MessageCircle aria-hidden className={className} />;
   return (
     <svg
       aria-hidden
@@ -42,7 +43,7 @@ function SocialIcon({ red }: { red: RedSocial["red"] }) {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="size-4"
+      className={className}
     >
       {red === "instagram" ? (
         <>

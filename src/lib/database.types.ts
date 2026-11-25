@@ -1199,6 +1199,7 @@ export type Database = {
           contact_email: string
           created_at: string
           cuit: string
+          dispatch_time: string
           exchange_days: number
           id: string
           instagram: string
@@ -1216,6 +1217,7 @@ export type Database = {
           contact_email?: string
           created_at?: string
           cuit?: string
+          dispatch_time?: string
           exchange_days?: number
           id?: string
           instagram?: string
@@ -1233,6 +1235,7 @@ export type Database = {
           contact_email?: string
           created_at?: string
           cuit?: string
+          dispatch_time?: string
           exchange_days?: number
           id?: string
           instagram?: string
@@ -1351,6 +1354,89 @@ export type Database = {
           visits?: number
         }
         Relationships: []
+      }
+      withdrawal_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          key_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          key_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          key_hash?: string
+        }
+        Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          admin_note: string | null
+          code: string
+          created_at: string
+          customer_email_sent_at: string | null
+          email: string
+          full_name: string
+          handled_at: string | null
+          handled_by: string | null
+          handled_by_name: string | null
+          id: string
+          order_id: string | null
+          order_number: number | null
+          owners_email_sent_at: string | null
+          reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          code: string
+          created_at?: string
+          customer_email_sent_at?: string | null
+          email: string
+          full_name: string
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_by_name?: string | null
+          id?: string
+          order_id?: string | null
+          order_number?: number | null
+          owners_email_sent_at?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          code?: string
+          created_at?: string
+          customer_email_sent_at?: string | null
+          email?: string
+          full_name?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          handled_by_name?: string | null
+          id?: string
+          order_id?: string | null
+          order_number?: number | null
+          owners_email_sent_at?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1673,6 +1759,7 @@ export type Database = {
           missing_whatsapp: boolean
           needs_review: number
           out_of_stock: number
+          pending_withdrawals: number
           stock_issue: number
           to_prepare: number
         }[]
@@ -1727,6 +1814,10 @@ export type Database = {
           order_number: number
           total: number
         }[]
+      }
+      create_withdrawal_request: {
+        Args: { p: Json; p_key: string }
+        Returns: Json
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_coupon: { Args: { p_id: string }; Returns: undefined }
@@ -1792,6 +1883,10 @@ export type Database = {
           p_tracking_url?: string
         }
         Returns: Database["public"]["Enums"]["fulfillment_status"]
+      }
+      set_withdrawal_status: {
+        Args: { p_id: string; p_note?: string; p_status: string }
+        Returns: undefined
       }
       track_product_view: { Args: { p_product_id: string }; Returns: undefined }
       track_visit: { Args: { p_source: string }; Returns: undefined }

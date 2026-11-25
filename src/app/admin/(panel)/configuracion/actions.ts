@@ -97,6 +97,7 @@ export async function saveStoreSettings(formData: FormData): Promise<ActionResul
     instagram: v.instagram,
     tiktok: v.tiktok,
     shipping_cost: v.shippingCost,
+    dispatch_time: v.dispatchTime,
     store_address: v.storeAddress,
     store_hours: v.storeHours,
     exchange_days: v.exchangeDays,

@@ -85,6 +85,7 @@ export async function sendOrderEmails(orderId: string, event: OrderEmailEvent): 
       stockIssue: row.stock_issue,
       reviewReason: row.review_reason,
       tracking: trackingFor(row),
+      dispatchTime: settings.dispatchTime.trim() || null,
     };
 
     const base = siteUrl();

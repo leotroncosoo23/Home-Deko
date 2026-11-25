@@ -42,6 +42,20 @@ export function exclusiveEndToArgentinaDay(iso: string | null): string {
   return isoToArgentinaDay(new Date(new Date(iso).getTime() - 1000).toISOString());
 }
 
+const dateTimeFormat = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "America/Argentina/Buenos_Aires",
+});
+
+/** Un instante → "24/11/2026 15:30" (hora de Argentina). */
+export function formatArgentinaDateTime(iso: string): string {
+  return dateTimeFormat.format(new Date(iso)).replace(",", "");
+}
+
 /** "2026-12-01" → "1 dic. 2026" (para mostrar). */
 export function formatArgentinaDay(day: string): string {
   if (!day) return "";
