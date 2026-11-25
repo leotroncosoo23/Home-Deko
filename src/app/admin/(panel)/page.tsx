@@ -1,83 +1,120 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ChartNoAxesColumn, ExternalLink } from "lucide-react";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { ExternalLink } from "lucide-react";
+import { HelpSheet } from "@/components/admin/help-sheet";
 import { PageHeader } from "@/components/admin/page-header";
-import { getNavItem, NAV_ITEMS, type NavItem } from "@/components/admin/nav-items";
-
-const section = getNavItem("/admin");
+import { buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getCurrentUser } from "@/lib/auth";
+import { parsePeriod, todayInArgentina } from "@/lib/dashboard-period";
+import { firstNameOf } from "@/lib/format";
+import { AttentionCard } from "./_inicio/attention-card";
+import { getAttention, getDashboard, getLatestOrders } from "./_inicio/data";
+import { LatestOrders, TopProducts } from "./_inicio/lists";
+import { PeriodPicker } from "./_inicio/period-picker";
+import { SalesChart } from "./_inicio/sales-chart";
+import { StatCards } from "./_inicio/stat-cards";
+import { VisitsCard } from "./_inicio/visits-card";
 
 export const metadata: Metadata = { title: "Inicio" };
 
 /**
- * /admin — Inicio del panel.
+ * /admin — Inicio del panel: cómo viene la TIENDA ONLINE (las ventas del
+ * local son el futuro Módulo Local).
  *
- * Por ahora: accesos directos a cada sección y el lugar de las ventas, con
- * un estado vacío claro (el Inicio con ventas y visitas es el paso 8).
- * Es 100 % estático, así que la navegación hacia acá es instantánea.
- * Cuando lea datos, ponerlos dentro de <Suspense> y usar requireAdmin().
+ *   1. Requiere atención (su propio <Suspense>: aparece primero)
+ *   2. Período (en la URL) → tarjetas, gráfico, más vendidos, últimos pedidos y visitas
+ *
+ * Todo se calcula en la base (admin_home_attention / admin_dashboard): rápido
+ * aunque haya miles de pedidos. El encabezado es estático y se ve al instante.
  */
-export default function AdminHomePage() {
-  // Sin las secciones reservadas (ej.: Banner, solo desarrollador): esta
-  // página es estática y no sabe quién la mira. Están en el menú.
-  const shortcuts = NAV_ITEMS.filter((item) => item.href !== "/admin" && !item.feature);
-
+export default function AdminHomePage({ searchParams }: PageProps<"/admin">) {
   return (
     <>
-      <PageHeader eyebrow={section.group} title="¡Hola!" description="¿Qué quieren hacer hoy?" />
+      <PageHeader
+        // El nombre lee la sesión: en su propio <Suspense> (mientras tanto, "¡Hola!")
+        title={
+          <Suspense fallback="¡Hola!">
+            <Greeting />
+          </Suspense>
+        }
+        description="Así viene la tienda online."
+        actions={
+          <>
+            <HelpSheet guia="inicio" />
+            <Link href="/" target="_blank" className={buttonVariants({ variant: "outline" })}>
+              <ExternalLink aria-hidden />
+              Ver tienda
+              <span className="sr-only"> (se abre en otra pestaña)</span>
+            </Link>
+          </>
+        }
+      />
 
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {shortcuts.map((item) => (
-          <li key={item.href}>
-            <Shortcut item={item} />
-          </li>
+      <Suspense fallback={<Skeleton className="h-16 w-full rounded-xl" />}>
+        <AttentionSection />
+      </Suspense>
+
+      <Suspense fallback={<DashboardSkeleton />}>
+        {searchParams.then((raw) => (
+          <DashboardSection raw={raw} />
         ))}
-        <li>
-          <Link
-            href="/"
-            target="_blank"
-            className="group flex h-full items-start gap-3 surface-card p-4 transition-shadow outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/20"
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
-              <ExternalLink className="size-4.5" aria-hidden />
-            </span>
-            <span className="flex flex-col gap-0.5">
-              <span className="font-medium">Ver tienda</span>
-              <span className="text-sm text-muted-foreground">Mirá cómo la ven los clientes (se abre en otra pestaña).</span>
-            </span>
-          </Link>
-        </li>
-      </ul>
-
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-background px-6 py-12 text-center">
-        <div className="flex size-11 items-center justify-center rounded-full bg-brand-soft">
-          <ChartNoAxesColumn className="size-5 text-brand" aria-hidden />
-        </div>
-        <p className="font-medium">Ventas de la tienda</p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Acá vas a ver las ventas cuando se lance la tienda.
-        </p>
-      </div>
+      </Suspense>
     </>
   );
 }
 
-function Shortcut({ item }: { item: NavItem }) {
-  const Icon = item.icon;
+/** "¡Hola, Natasha!" con el primer nombre del perfil; sin nombre, "¡Hola!". */
+async function Greeting() {
+  const user = await getCurrentUser();
+  const name = user?.fullName ? firstNameOf(user.fullName) : "";
+  return name ? `¡Hola, ${name}!` : "¡Hola!";
+}
+
+async function AttentionSection() {
+  return <AttentionCard attention={await getAttention()} />;
+}
+
+async function DashboardSection({ raw }: { raw: Record<string, string | string[] | undefined> }) {
+  // connection(): esto depende del momento del pedido. Sin esto, Next intenta
+  // pre-armar la sección (con los searchParams ya conocidos, en la precarga de
+  // la navegación) y se queja de "new Date()". Con esto, "hoy" se calcula
+  // siempre en cada pedido (nunca queda guardado de otro día).
+  await connection();
+  const today = todayInArgentina();
+  const period = parsePeriod(raw, today);
+  const [data, latest] = await Promise.all([getDashboard(period), getLatestOrders()]);
+
   return (
-    <Link
-      href={item.href}
-      className="group flex h-full items-start gap-3 surface-card p-4 transition-shadow outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/20"
-    >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
-        <Icon className="size-4.5" aria-hidden />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex items-center gap-1 font-medium">
-          {item.title}
-          <ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-        </span>
-        <span className="text-sm text-muted-foreground">{item.description}</span>
-      </span>
-    </Link>
+    <div className="flex flex-col gap-4">
+      <PeriodPicker period={period} today={today} />
+      <StatCards data={data} period={period} />
+      <SalesChart data={data} period={period} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TopProducts data={data} />
+        <LatestOrders orders={latest} />
+      </div>
+      <VisitsCard data={data} period={period} />
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4" aria-busy aria-label="Cargando las ventas">
+      <div className="flex gap-1.5">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-28 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-72 rounded-xl" />
+    </div>
   );
 }

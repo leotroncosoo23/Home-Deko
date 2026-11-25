@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { StoreFrame } from "@/components/store/store-frame";
+import { VisitTracker } from "@/components/store/visit-tracker";
 import { getStoreSettings } from "@/lib/store-settings";
 
 /**
@@ -18,5 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function TiendaLayout({ children }: LayoutProps<"/">) {
-  return <StoreFrame>{children}</StoreFrame>;
+  return (
+    <StoreFrame>
+      {children}
+      {/* Contador anónimo de visitas (sin cookies): ver visit-tracker.tsx */}
+      <VisitTracker />
+    </StoreFrame>
+  );
 }

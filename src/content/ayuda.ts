@@ -42,6 +42,7 @@ export function whatsappHref(): string | null {
 // ---------------------------------------------------------------------------
 
 export type GuiaId =
+  | "inicio"
   | "pedidos"
   | "cupones"
   | "productos"
@@ -70,6 +71,50 @@ export type Guia = {
 };
 
 export const GUIAS: Record<GuiaId, Guia> = {
+  inicio: {
+    id: "inicio",
+    titulo: "Inicio: ventas y visitas",
+    resumen: "Cómo viene la tienda online: lo que hay que resolver, las ventas, lo más vendido y cuánta gente entra.",
+    pasosRapidos: [
+      "Arriba de todo, \"Requiere atención\" junta lo que hay que resolver (pedidos para preparar, stock, datos que faltan). Cada aviso tiene su botón. Si no hay nada, dice \"Todo al día\".",
+      "Elegí el período (Hoy, 7 días, 30 días, Este mes…). Cada número muestra si subió o bajó contra el período anterior.",
+      "En el gráfico, pasá el mouse o tocá una barra para ver la fecha, el monto y los pedidos.",
+      "Abajo están las visitas: cuánta gente entra, de dónde viene y qué productos miran más.",
+    ],
+    pasos: [
+      {
+        titulo: "Qué cuenta como venta",
+        texto:
+          "Solo los pedidos de la tienda online con el pago aprobado por Mercado Pago. Los cancelados no cuentan (si cancelan un pedido, sale solo de los números), y tampoco los que quedaron sin pagar o \"Para revisar\". Cada venta cuenta el día en que se aprobó el pago, en hora de Argentina. El monto es el total cobrado, con el envío incluido (la tarjeta dice cuánto fue de envíos).",
+      },
+      {
+        titulo: "Los períodos y la comparación",
+        texto:
+          "\"Hoy\" se compara con ayer; \"7 días\" y \"30 días\", con los 7 o 30 días anteriores; \"Este mes\", con los mismos días del mes pasado (por ejemplo, del 1 al 24 contra el 1 al 24); \"Mes anterior\", con el mes de antes; \"Este año\", con el mismo tramo del año pasado. En \"Personalizado\" elegís las fechas y se compara con la misma cantidad de días justo antes. \"Nuevo\" quiere decir que antes había cero.",
+      },
+      {
+        titulo: "El gráfico",
+        texto:
+          "Se agrupa solo según el período: por día, por semana o por mes. Arriba a la derecha podés cambiarlo. Arriba dice el total y el mejor día (o semana, o mes). Para un solo día no hay gráfico: elegí 7 días o más.",
+      },
+      {
+        titulo: "Las visitas",
+        texto:
+          "La tienda cuenta las visitas por su cuenta, de forma anónima: sin cookies y sin guardar nada de quien entra (ni IP, ni nombre, ni el dispositivo). Solo se suma uno al contador del día. No se cuentan ustedes (con la sesión del panel iniciada) ni los robots de Google y otros buscadores. Una visita es una persona que entra a la tienda; si mira varias páginas, sigue siendo una visita.",
+      },
+      {
+        titulo: "Conversión y \"Mucho interés, pocas ventas\"",
+        texto:
+          "La conversión es cuántas visitas terminan en una compra: pedidos ÷ visitas. En una tienda online lo normal es entre 1 % y 3 %. En \"Productos más vistos\", la marca \"Mucho interés, pocas ventas\" aparece en los que muchos abren pero pocos compran: puede valer la pena revisar el precio, las fotos o la descripción.",
+      },
+      {
+        titulo: "De dónde vienen las visitas",
+        texto:
+          "Se reconoce si la persona llegó desde Instagram, TikTok, Facebook, Google o WhatsApp. \"Directo\" es quien escribió la dirección, usó un favorito o vino desde una app que no avisa de dónde viene (WhatsApp casi nunca avisa). Para que un link se cuente bien, agregale al final ?utm_source= y el nombre de la red. Por ejemplo, en la bio de Instagram: www.homedekotrevelin.com/?utm_source=instagram (y en WhatsApp: ?utm_source=whatsapp).",
+      },
+    ],
+  },
+
   pedidos: {
     id: "pedidos",
     titulo: "Pedidos",
@@ -429,6 +474,21 @@ export const GUIAS: Record<GuiaId, Guia> = {
 // ---------------------------------------------------------------------------
 
 export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
+  {
+    pregunta: "¿Cómo se cuentan las visitas? ¿Se guardan datos de los clientes?",
+    respuesta:
+      "No. La tienda suma uno a un contador por día y por origen (Instagram, Google, directo…), sin cookies y sin guardar nada de la persona: ni IP, ni nombre, ni dispositivo. No se cuentan ustedes (con la sesión del panel iniciada) ni los robots de los buscadores. Por eso los números son aproximados, como en cualquier estadística de visitas.",
+  },
+  {
+    pregunta: "¿Cómo hago para que las visitas de Instagram o WhatsApp se cuenten bien?",
+    respuesta:
+      "Agregá al final del link ?utm_source= y el nombre de la red. Por ejemplo, en la bio de Instagram: www.homedekotrevelin.com/?utm_source=instagram; en un mensaje de WhatsApp: www.homedekotrevelin.com/?utm_source=whatsapp. WhatsApp casi nunca avisa de dónde viene la persona, así que sin eso esas visitas aparecen como \"Directo\".",
+  },
+  {
+    pregunta: "¿Por qué las ventas del Inicio no coinciden con lo que veo en Mercado Pago?",
+    respuesta:
+      "El Inicio cuenta cada venta el día en que se aprobó el pago, en hora de Argentina, con el envío incluido y sin los pedidos cancelados. Mercado Pago muestra todo lo que cobró, también lo que después se devolvió, y le descuenta sus comisiones.",
+  },
   {
     pregunta: "Un pedido dice \"Pagado sin stock\". ¿Qué hago?",
     respuesta:

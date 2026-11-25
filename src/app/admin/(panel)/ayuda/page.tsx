@@ -117,7 +117,8 @@ function GuideCard({ guia: g }: { guia: Guia }) {
     // scroll-mt: que al saltar con #id no quede tapado por la barra superior
     <section id={g.id} className="scroll-mt-20">
       <SectionCard
-        icon={getNavItem(`/admin/${g.id}`).icon}
+        // Cada guía usa el ícono de su sección ("inicio" es /admin, el resto /admin/<id>)
+        icon={getNavItem(g.id === "inicio" ? "/admin" : `/admin/${g.id}`).icon}
         title={g.titulo}
         description={g.resumen}
         className="h-full"
