@@ -290,7 +290,18 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 ### Inicio de la tienda
 - **Banner principal** como plantilla de marca editable desde el panel (Apariencia de la tienda, hoy solo el desarrollador): título, texto, botón con link,
   foto de producto, fondo (rojo o blanco) y fechas de inicio y fin (se activa y se apaga solo).
-  Opción de subir una imagen completa diseñada aparte.
+  Opción de subir una imagen completa diseñada aparte (PC 1920 × 800, celular 1080 × 1350 opcional).
+- **Carrusel (implementado)**: hasta **3 banners** (`banners.position` 1..3, única `deferrable initially deferred`;
+  migración `20261204000001_banner_carrusel.sql`). La posición la pone SIEMPRE la base (trigger
+  `banners_assign_position`: siguiente lugar; con 3 → `HD409` con el texto para mostrar); al borrar, los demás se
+  corren (trigger por sentencia); subir/bajar con `move_banner(id, -1|1)` (definer, `can_manage_appearance()`
+  primero, solo `authenticated`). Las tres toman el mismo `pg_advisory_xact_lock`.
+  - Tienda: `getActiveBanners()` (vigentes por `position`) → `HeroBanners`: 0 = el de Home Deko, 1 = fijo como
+    siempre, 2–3 = `HeroCarousel` (`src/components/store/hero-carousel.tsx`, CSS scroll-snap sin librerías): pasa
+    cada 6 s, flechas en PC, swipe, puntitos, botón de pausa; se pausa con mouse, toque y foco de teclado; con
+    `prefers-reduced-motion` no pasa solo. Alto fijo por CSS (12:5 en PC; 4:5 en celular salvo que ninguna
+    diapositiva tenga formato de celular). Solo la 1ª imagen con prioridad. Las que no se ven son `inert`.
+  - Panel: lista en el orden del carrusel con ↑ ↓; "Nuevo banner" desaparece con 3.
 - Productos destacados, botón "Ver todos los productos" y categorías.
 - Menú hamburguesa con categorías e información (envíos, cómo comprar, contacto…).
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "cn";
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
 /**
  * Barra de anuncios (la franja roja fina de arriba de la tienda).
@@ -118,21 +119,5 @@ function Rotation({ messages }: { messages: string[] }) {
         </p>
       ))}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-
-/** ¿La persona pidió "reducir movimiento" en su sistema? (se actualiza en vivo) */
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-      query.addEventListener("change", onChange);
-      return () => query.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    // En el servidor no se sabe: se arma la cinta (y el CSS la frena si hace falta).
-    () => false,
   );
 }

@@ -12,7 +12,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { BannerView } from "@/lib/banners";
+import { BANNER_IMAGE_SIZES, type BannerView } from "@/lib/banners";
 import { Field } from "../../productos/_components/field";
 import { useUnsavedWarning } from "../../productos/_components/use-unsaved-warning";
 import { saveBanner } from "../actions";
@@ -240,7 +240,7 @@ export function BannerForm({ banner }: { banner: AdminBanner | null }) {
                 error={errors.image}
                 disabled={pending}
                 maxSize={BANNER_IMAGE_MAX}
-                hint="Apaisada, de 1920 × 800 px. Va de borde a borde de la pantalla."
+                hint={`Apaisada, de ${size(BANNER_IMAGE_SIZES.desktop)} px. Va de borde a borde de la pantalla.`}
                 previewClassName="h-20 w-44"
               />
             </Field>
@@ -252,7 +252,7 @@ export function BannerForm({ banner }: { banner: AdminBanner | null }) {
                 error={errors.imageMobile}
                 disabled={pending}
                 maxSize={BANNER_IMAGE_MAX}
-                hint="Vertical, de 800 × 1000 px. Si no subís una, en el celular se usa la de PC."
+                hint={`Vertical, de ${size(BANNER_IMAGE_SIZES.mobile)} px. Si no subís una, en el celular se usa la de PC (con 2 o 3 banners, recortada para que tenga el mismo alto que los demás: conviene subirla).`}
                 previewClassName="h-24 w-20"
               />
             </Field>
@@ -363,6 +363,11 @@ export function BannerForm({ banner }: { banner: AdminBanner | null }) {
       </div>
     </form>
   );
+}
+
+/** "1920 × 800" */
+function size({ width, height }: { width: number; height: number }): string {
+  return `${width} × ${height}`;
 }
 
 /** URL temporal ("blob:") para ver un archivo antes de subirlo. Se libera sola. */

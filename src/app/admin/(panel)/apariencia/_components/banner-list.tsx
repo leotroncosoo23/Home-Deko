@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -21,35 +21,72 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { formatArgentinaDay } from "@/lib/dates";
-import { deleteBanner, setBannerActive } from "../actions";
+import { deleteBanner, moveBanner, setBannerActive } from "../actions";
 import { BANNER_STATUS_LABELS, type AdminBanner, type BannerStatus } from "../types";
 
-/** Lista de banners: miniatura, fechas, estado, "Activo", editar y eliminar. */
+/**
+ * Lista de banners en el orden del carrusel: número, subir/bajar, miniatura,
+ * fechas, estado, "Activo", editar y eliminar.
+ */
 export function BannerList({ banners }: { banners: AdminBanner[] }) {
   // El banner a eliminar se conserva al cerrar el diálogo (para la animación).
   const [toDelete, setToDelete] = useState<AdminBanner | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // Un solo movimiento a la vez (mientras tanto, todas las flechas quietas).
+  const [moving, startMoving] = useTransition();
+
+  function move(b: AdminBanner, direction: "up" | "down") {
+    startMoving(async () => {
+      try {
+        const result = await moveBanner(b.id, direction);
+        if (!result.ok) toast.error(result.error);
+      } catch {
+        toast.error("No se pudo guardar. Revisá tu conexión e intentá de nuevo.");
+      }
+    });
+  }
 
   return (
     <>
-      <ul className="flex flex-col divide-y overflow-hidden surface-card">
-        {banners.map((b) => (
+      <ol className="flex flex-col divide-y overflow-hidden surface-card">
+        {banners.map((b, i) => (
           <BannerRow
             key={b.id}
             banner={b}
+            number={i + 1}
+            canMoveUp={i > 0}
+            canMoveDown={i < banners.length - 1}
+            moving={moving}
+            onMove={(direction) => move(b, direction)}
             onDelete={() => {
               setToDelete(b);
               setDeleteOpen(true);
             }}
           />
         ))}
-      </ul>
+      </ol>
       <DeleteBannerDialog banner={toDelete} open={deleteOpen} onOpenChange={setDeleteOpen} />
     </>
   );
 }
 
-function BannerRow({ banner: b, onDelete }: { banner: AdminBanner; onDelete: () => void }) {
+function BannerRow({
+  banner: b,
+  number,
+  canMoveUp,
+  canMoveDown,
+  moving,
+  onMove,
+  onDelete,
+}: {
+  banner: AdminBanner;
+  number: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  moving: boolean;
+  onMove: (direction: "up" | "down") => void;
+  onDelete: () => void;
+}) {
   const [pending, startTransition] = useTransition();
 
   function toggleActive(isActive: boolean) {
@@ -64,16 +101,43 @@ function BannerRow({ banner: b, onDelete }: { banner: AdminBanner; onDelete: () 
     });
   }
 
+  const arrow = cn(buttonVariants({ variant: "ghost", size: "icon-xs" }), "text-muted-foreground");
+
   return (
     <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
-      <div className="flex min-w-0 flex-1 items-center gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+        {/* Orden: número + subir/bajar */}
+        <div className="flex shrink-0 flex-col items-center">
+          <button
+            type="button"
+            onClick={() => onMove("up")}
+            disabled={!canMoveUp || moving}
+            aria-label={`Subir «${b.title}» (pasa a ser el banner ${number - 1})`}
+            className={arrow}
+          >
+            <ChevronUp />
+          </button>
+          <span className="text-sm font-semibold tabular-nums">
+            <span className="sr-only">Banner </span>
+            {number}
+          </span>
+          <button
+            type="button"
+            onClick={() => onMove("down")}
+            disabled={!canMoveDown || moving}
+            aria-label={`Bajar «${b.title}» (pasa a ser el banner ${number + 1})`}
+            className={arrow}
+          >
+            <ChevronDown />
+          </button>
+        </div>
         <Thumbnail banner={b} />
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <Link href={`/admin/apariencia/banner/${b.id}`} className="truncate font-medium hover:underline">
               {b.title}
             </Link>
-            <StatusBadge status={b.status} showing={b.isShowing} />
+            <StatusBadge status={b.status} />
           </div>
           <p className="text-sm text-muted-foreground">
             {b.kind === "template" ? "Plantilla" : "Imagen completa"} · {datesText(b)}
@@ -126,16 +190,9 @@ function Thumbnail({ banner: b }: { banner: AdminBanner }) {
 }
 
 /** Colores del CLAUDE.md: verde = se ve, ámbar = programado, gris = terminado/pausado. */
-function StatusBadge({ status, showing }: { status: BannerStatus; showing: boolean }) {
+function StatusBadge({ status }: { status: BannerStatus }) {
   if (status === "live") {
-    return showing ? (
-      <Badge className="bg-emerald-50 text-emerald-700">{BANNER_STATUS_LABELS.live}</Badge>
-    ) : (
-      // Vigente, pero hay otro más reciente que tiene prioridad.
-      <Badge variant="secondary" className="text-muted-foreground">
-        En fecha (se ve otro)
-      </Badge>
-    );
+    return <Badge className="bg-emerald-50 text-emerald-700">{BANNER_STATUS_LABELS.live}</Badge>;
   }
   if (status === "scheduled") {
     return <Badge className="bg-amber-50 text-amber-700">{BANNER_STATUS_LABELS.scheduled}</Badge>;

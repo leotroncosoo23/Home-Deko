@@ -3,10 +3,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
 import { CategoryGrid } from "@/components/store/category-grid";
-import { HeroBanner } from "@/components/store/hero-banner";
+import { HeroBanners } from "@/components/store/hero-banner";
 import { HOME_GRID, HOME_IMAGE_SIZES, ProductCard, ProductGridSkeleton } from "@/components/store/product-card";
 import { StoreHighlights } from "@/components/store/store-highlights";
-import { getActiveBanner, getVisibleCategories } from "@/lib/store-data";
+import { getActiveBanners, getVisibleCategories } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK } from "@/lib/store-nav";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 /**
  * INICIO DE LA TIENDA (/)
  *
- *   1. Banner principal (el del panel, o el de Home Deko por defecto)
+ *   1. Banner principal: los del panel (2 o 3 → carrusel), o el de Home Deko por defecto
  *   2. Bienvenida con el <h1> "Home Deko"
  *   3. Categorías visibles
  *   4. Destacados + "Ver todos los productos"
@@ -42,8 +42,8 @@ export const metadata: Metadata = {
  * borradores, así que esa sección lee la sesión (dentro de <Suspense>).
  */
 export default async function TiendaHomePage() {
-  const [banner, categories, settings] = await Promise.all([
-    getActiveBanner(),
+  const [banners, categories, settings] = await Promise.all([
+    getActiveBanners(),
     getVisibleCategories(),
     getStoreSettings(),
   ]);
@@ -52,8 +52,9 @@ export default async function TiendaHomePage() {
 
   return (
     <main className="flex flex-col pb-16">
-      {/* De borde a borde de la pantalla (sin márgenes ni bordes redondeados) */}
-      <HeroBanner banner={banner} priority />
+      {/* De borde a borde de la pantalla (sin márgenes ni bordes redondeados).
+          1 banner = fijo; 2 o 3 = carrusel. */}
+      <HeroBanners banners={banners} />
 
       <div className={cn(STORE_CONTAINER, "flex flex-col gap-14 pt-10 md:gap-20 md:pt-14")}>
         <header className="flex flex-col items-center gap-2 text-center">

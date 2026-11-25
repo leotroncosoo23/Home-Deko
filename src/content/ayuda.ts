@@ -414,10 +414,11 @@ export const GUIAS: Record<GuiaId, Guia> = {
     id: "apariencia",
     feature: "appearance", // hoy solo el desarrollador
     titulo: "Apariencia de la tienda",
-    resumen: "La barra de anuncios de arriba de todo y el banner grande del inicio.",
+    resumen: "La barra de anuncios de arriba de todo y los banners grandes del inicio (hasta 3, en carrusel).",
     pasosRapidos: [
       "Barra de anuncios: escribí hasta 4 mensajes cortos y tocá \"Guardar mensajes\".",
-      "Banner: tocá \"Nuevo banner\" y elegí \"Plantilla\" (armado con la marca) o \"Imagen completa\" (diseñada aparte).",
+      "Banner: tocá \"Nuevo banner\" y elegí \"Plantilla\" (armado con la marca) o \"Imagen completa\" (diseñada aparte). Podés tener hasta 3.",
+      "Con 2 o 3 activos, en la tienda pasan solos cada 6 segundos. Ordenalos con las flechas de la lista.",
       "Si el banner es para una fecha (Navidad, Día de la Madre…), poné \"Desde\" y \"Hasta\": se prende y se apaga solo.",
       "Si no hay ningún banner activo, la tienda muestra el de Home Deko.",
     ],
@@ -435,7 +436,12 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Imagen completa",
         texto:
-          "Si el banner lo diseñan aparte (por ejemplo en Canva), subí la imagen para PC de 1920 × 800 px (va de borde a borde de la pantalla) y, si querés, otra para celular de 800 × 1000 px (si no, se usa la de PC). Dejá los textos importantes lejos de los bordes: en pantallas distintas se puede recortar un poco. Escribí una descripción corta de la imagen: la usan quienes navegan con lector de pantalla. Si ponés un link, toda la imagen se puede tocar.",
+          "Si el banner lo diseñan aparte (por ejemplo en Canva), subí la imagen para PC de 1920 × 800 px (va de borde a borde de la pantalla) y, si querés, otra para celular de 1080 × 1350 px (si no, se usa la de PC). Con 2 o 3 banners conviene subir siempre la de celular: si falta, la de PC se recorta para que tenga el mismo alto que los demás. Dejá los textos importantes lejos de los bordes: en pantallas distintas se puede recortar un poco. Escribí una descripción corta de la imagen: la usan quienes navegan con lector de pantalla. Si ponés un link, toda la imagen se puede tocar.",
+      },
+      {
+        titulo: "Varios banners (carrusel)",
+        texto:
+          "Podés tener hasta 3 banners. Si hay 2 o 3 activos y en fecha, en la tienda se muestran en carrusel: pasan solos cada 6 segundos, con flechas en la PC, deslizando con el dedo en el celular y con puntitos abajo para elegir uno. Se frena al pasar el mouse o al tocarlo, y tiene un botón para pausarlo. Si la persona tiene activado \"reducir movimiento\" en su celular o compu, no pasa solo. El orden es el de la lista: usá las flechas ↑ ↓ de cada banner para subirlo o bajarlo. Con 3 banners ya no aparece \"Nuevo banner\": eliminá uno para agregar otro.",
       },
       {
         titulo: "Link del botón",
@@ -445,7 +451,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Fechas: se prende y se apaga solo",
         texto:
-          "\"Desde\" y \"Hasta\" son opcionales. Con fechas, el banner aparece a las 0 h del primer día y se apaga al terminar el último. Pueden dejar varios programados: si dos coinciden, se ve el que empezó más recientemente. En la lista, cada banner dice si \"Se ve ahora\", está \"Programado\", \"Terminado\" o \"Pausado\".",
+          "\"Desde\" y \"Hasta\" son opcionales. Con fechas, el banner aparece a las 0 h del primer día y se apaga al terminar el último. Pueden dejar varios programados: los que coinciden en fecha se ven juntos, en carrusel. En la lista, cada banner dice si \"Se ve ahora\", está \"Programado\", \"Terminado\" o \"Pausado\".",
       },
       {
         titulo: "Pausar o eliminar",
@@ -509,7 +515,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Banner y barra de anuncios",
         texto:
-          "El banner grande del inicio y los mensajes de la barra roja de arriba de todo los actualiza Leo. Pedíselos por WhatsApp (botón \"WhatsApp\" en la Ayuda) con el texto, las fechas y la imagen si la tenés.",
+          "Los banners grandes del inicio (pueden ser hasta 3, que pasan solos) y los mensajes de la barra roja de arriba de todo los actualiza Leo. Pedíselos por WhatsApp (botón \"WhatsApp\" en la Ayuda) con el texto, las fechas y la imagen si la tenés.",
       },
       {
         titulo: "Ver como cliente",
@@ -588,7 +594,7 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: "¿Cómo cambio el banner del inicio o los mensajes de la barra de arriba?",
     respuesta:
-      "Los actualiza Leo: pedíselos por WhatsApp (botón \"WhatsApp\" arriba de esta página). Para el banner, contale qué querés mostrar y desde qué día hasta qué día, por ejemplo una promo de Navidad del 1 al 25 de diciembre, y mandale la foto o la imagen si ya la tenés: queda programado y se prende y se apaga solo en esas fechas. Para la barra roja de arriba de todo, pasale los mensajes (hasta 4 cortos, por ejemplo \"Envíos a todo el país\" o un aviso de feriado).",
+      "Los actualiza Leo: pedíselos por WhatsApp (botón \"WhatsApp\" arriba de esta página). Para el banner, contale qué querés mostrar y desde qué día hasta qué día, por ejemplo una promo de Navidad del 1 al 25 de diciembre, y mandale la foto o la imagen si ya la tenés: queda programado y se prende y se apaga solo en esas fechas. Puede haber hasta 3 banners a la vez: pasan solos uno detrás del otro, en el orden que le pidas. Para la barra roja de arriba de todo, pasale los mensajes (hasta 4 cortos, por ejemplo \"Envíos a todo el país\" o un aviso de feriado).",
   },
   {
     pregunta: "¿Qué productos aparecen en \"Destacados\" del inicio?",

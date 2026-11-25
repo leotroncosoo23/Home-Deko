@@ -13,7 +13,7 @@ import type { AdminBanner, BannerStatus } from "./types";
  */
 
 const COLUMNS =
-  "id, kind, title, body, button_label, button_url, background, product_image_path, image_path, image_mobile_path, starts_at, ends_at, is_active, updated_at";
+  "id, kind, title, body, button_label, button_url, background, product_image_path, image_path, image_mobile_path, starts_at, ends_at, is_active, position, updated_at";
 
 type Row = {
   id: string;
@@ -29,6 +29,7 @@ type Row = {
   starts_at: string | null;
   ends_at: string | null;
   is_active: boolean;
+  position: number;
   updated_at: string;
 };
 
@@ -54,35 +55,35 @@ function toAdminBanner(row: Row, now: number): AdminBanner {
     endsOn: exclusiveEndToArgentinaDay(row.ends_at),
     isActive: row.is_active,
     status: statusOf(row, now),
-    isShowing: false,
+    position: row.position,
     updatedAt: row.updated_at,
   };
 }
 
 /**
- * Todos los banners: primero los que se ven o se van a ver, después el resto.
- * Marca con isShowing el que muestra hoy la tienda (mismo orden que
- * getActiveBanner en src/lib/store-data.ts: el que empezó más recientemente).
+ * Todos los banners (como máximo 3), en el orden del carrusel. La tienda
+ * muestra, en este mismo orden, los que están "live" (getActiveBanners en
+ * src/lib/store-data.ts).
  */
 export async function getBannersForAdmin(): Promise<AdminBanner[]> {
   await requireAppearanceAccess();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("banners")
-    .select(COLUMNS)
-    .order("starts_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("banners").select(COLUMNS).order("position");
   if (error) throw new Error("No se pudieron cargar los banners.");
 
   const now = Date.now();
-  const banners = data.map((row) => toAdminBanner(row, now));
+  return data.map((row) => toAdminBanner(row, now));
+}
 
-  const showing = banners.find((b) => b.status === "live");
-  if (showing) showing.isShowing = true;
+/** Cuántos banners hay (para no ofrecer "Nuevo banner" si ya hay 3). */
+export async function countBannersForAdmin(): Promise<number> {
+  await requireAppearanceAccess();
+  const supabase = await createClient();
 
-  const rank: Record<BannerStatus, number> = { live: 0, scheduled: 1, paused: 2, ended: 3 };
-  return banners.sort((a, b) => Number(b.isShowing) - Number(a.isShowing) || rank[a.status] - rank[b.status]);
+  const { count, error } = await supabase.from("banners").select("id", { count: "exact", head: true });
+  if (error) throw new Error("No se pudieron cargar los banners.");
+  return count ?? 0;
 }
 
 /** Un banner para editar (o null si no existe). */
