@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Tag,
   TicketPercent,
+  Undo2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,6 +67,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: TicketPercent,
     group: "Ventas",
     description: "Creá códigos de descuento para la tienda online y mirá cuánto se usan.",
+  },
+  {
+    title: "Arrepentimientos",
+    href: "/admin/arrepentimientos",
+    icon: Undo2,
+    group: "Ventas",
+    description: "Solicitudes del Botón de arrepentimiento: contactá al cliente y coordiná la devolución.",
+    badgeLabel: (n) => (n === 1 ? "1 solicitud nueva" : `${n} solicitudes nuevas`),
   },
   {
     title: "Productos",

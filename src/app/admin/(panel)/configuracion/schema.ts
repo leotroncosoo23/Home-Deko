@@ -18,6 +18,7 @@ export const SETTINGS_FIELDS = [
   "instagram",
   "tiktok",
   "shippingCost",
+  "dispatchTime",
   "storeAddress",
   "storeHours",
   "exchangeDays",
@@ -84,6 +85,8 @@ export const settingsSchema = z.object({
       message: "Escribí un monto válido (ej.: 20.000).",
     })
     .transform((v) => v as number),
+  // Texto libre que se lee en la tienda y en los mails: "Despachamos tu pedido en {plazo}".
+  dispatchTime: optionalText(60),
   storeAddress: optionalText(200),
   storeHours: optionalText(300),
   exchangeDays: z

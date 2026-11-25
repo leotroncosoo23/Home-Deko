@@ -59,6 +59,8 @@ export type DatosComercio = {
   cambiosDias: number;
   /** Costo del envío a domicilio, ya con formato: "$ 20.000". */
   envioDomicilio: string;
+  /** Plazo de despacho ("24 a 48 h hábiles"). Opcional: si no se cargó, llega "" y no se menciona. */
+  despacho: string;
 };
 
 export type Bloque = string | { lista: string[] };
@@ -355,7 +357,7 @@ export function terminos(C: DatosComercio): DocumentoLegal {
           "Al comprar elegís cómo recibir tu pedido:",
           {
             lista: [
-              `Envío a domicilio: ${C.envioDomicilio}, precio fijo a cualquier lugar del país. Te mandamos el código de seguimiento por email. El plazo de entrega depende de la empresa de envíos y de la zona.`,
+              `Envío a domicilio: ${C.envioDomicilio}, precio fijo a cualquier lugar del país. Te mandamos el código de seguimiento por email.${C.despacho ? ` Despachamos el pedido en ${C.despacho} desde que se aprueba el pago.` : ""} El plazo de entrega depende de la empresa de envíos y de la zona.`,
               `Retiro en el local: gratis, en ${C.direccion}. Te avisamos por email cuando está listo. Horarios: ${C.horarios}. Para retirar, presentá el número de pedido y el DNI de quien hizo la compra (o de la persona que autorices).`,
             ],
           },

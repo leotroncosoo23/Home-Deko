@@ -36,6 +36,8 @@ export type EmailOrder = {
   stockIssue: boolean;
   reviewReason: string | null;
   tracking: Tracking | null;
+  /** Plazo de despacho de Configuración ("24 a 48 h hábiles"), o null si no está cargado. */
+  dispatchTime: string | null;
 };
 
 export type EmailLinks = {
@@ -209,7 +211,9 @@ export function paymentConfirmedEmail(o: EmailOrder, links: EmailLinks): Rendere
     ? "Recibimos tu pago. Hubo un inconveniente con la disponibilidad de un producto: vamos a comunicarnos con vos muy pronto para resolverlo, ya sea con otro producto o devolviéndote el dinero."
     : o.pickup
       ? "Recibimos tu pago. Vamos a preparar tu pedido y te avisamos cuando esté listo para retirar."
-      : "Recibimos tu pago. Vamos a preparar tu pedido y te avisamos cuando lo despachemos, con el código de seguimiento.";
+      : o.dispatchTime
+        ? `Recibimos tu pago. Despachamos tu pedido en ${o.dispatchTime} y te avisamos por mail con el código de seguimiento.`
+        : "Recibimos tu pago. Vamos a preparar tu pedido y te avisamos cuando lo despachemos, con el código de seguimiento.";
 
   const html = layout(
     links,
@@ -313,6 +317,92 @@ export function newOrderOwnersEmail(o: EmailOrder, links: EmailLinks): RenderedE
     `Cliente: ${o.customerName} — ${o.customerEmail} — ${o.customerPhone}`,
     textItems(o),
     textDelivery(o),
+    links.panelUrl ? `Ver en el panel: ${links.panelUrl}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return { subject, html, text };
+}
+
+// ---------------------------------------------------------------------------
+// BOTÓN DE ARREPENTIMIENTO (Disposición 954/2025: el cliente recibe el código
+// de su solicitud por el mismo medio; acá, en pantalla y por mail).
+// ---------------------------------------------------------------------------
+
+export type EmailWithdrawal = {
+  id: string;
+  /** ARR-XXXXXX */
+  code: string;
+  fullName: string;
+  email: string;
+  orderNumber: number | null;
+  /** El número y el email coinciden con un pedido real. */
+  orderMatched: boolean;
+  reason: string | null;
+  /** "24/11/2026, 18:30" (hora de Argentina). */
+  receivedAt: string;
+};
+
+export function withdrawalReceivedEmail(w: EmailWithdrawal, links: EmailLinks): RenderedEmail {
+  const subject = `Recibimos tu solicitud de arrepentimiento · ${w.code}`;
+  const details =
+    line(`Código: <strong style="font-size:16px;letter-spacing:.04em;">${esc(w.code)}</strong>`) +
+    line(`Recibida: ${esc(w.receivedAt)}`, true) +
+    (w.orderNumber ? line(`Pedido: #${w.orderNumber}`, true) : "");
+  const html = layout(
+    links,
+    `Tu código de solicitud es ${w.code}.`,
+    heading("Recibimos tu solicitud") +
+      p(
+        `Hola ${esc(firstName(w.fullName))}, registramos tu solicitud para arrepentirte de una compra. Guardá este código: identifica tu pedido de arrepentimiento.`,
+      ) +
+      box("Tu solicitud", details) +
+      p(
+        "En breve te escribimos para coordinar la devolución del producto. No tenés que pagar nada: los gastos de devolución corren por nuestra cuenta y te reintegramos el total pagado por el mismo medio de pago.",
+      ) +
+      p("El producto tiene que volver en el mismo estado en que lo recibiste.") +
+      p(contactLine(links)),
+  );
+  const text = [
+    `Hola ${firstName(w.fullName)}, registramos tu solicitud para arrepentirte de una compra.`,
+    `Código de solicitud: ${w.code}\nRecibida: ${w.receivedAt}${w.orderNumber ? `\nPedido: #${w.orderNumber}` : ""}`,
+    "En breve te escribimos para coordinar la devolución del producto. Los gastos de devolución corren por nuestra cuenta y te reintegramos el total pagado por el mismo medio de pago.",
+    "El producto tiene que volver en el mismo estado en que lo recibiste.",
+  ].join("\n\n");
+  return { subject, html, text };
+}
+
+export function withdrawalOwnersEmail(w: EmailWithdrawal, links: EmailLinks): RenderedEmail {
+  const subject = `Arrepentimiento ${w.code}${w.orderNumber ? ` · pedido #${w.orderNumber}` : ""}`;
+  const order = w.orderNumber
+    ? line(
+        `Pedido: #${w.orderNumber}${w.orderMatched ? "" : ` <span style="color:${MUTED};">(no coincide con el email: revisalo)</span>`}`,
+      )
+    : line("Pedido: no lo indicó", true);
+  const html = layout(
+    links,
+    `${w.fullName} pidió arrepentirse de una compra.`,
+    heading("Nueva solicitud de arrepentimiento") +
+      p(
+        "Un cliente usó el Botón de arrepentimiento. Ya recibió su código por mail; ahora hay que contactarlo para coordinar la devolución.",
+      ) +
+      box(
+        "Solicitud",
+        line(`Código: <strong>${esc(w.code)}</strong>`) +
+          line(`<strong>${esc(w.fullName)}</strong>`) +
+          line(esc(w.email), true) +
+          order +
+          (w.reason ? line(`Motivo: ${esc(w.reason)}`, true) : "") +
+          line(`Recibida: ${esc(w.receivedAt)}`, true),
+      ) +
+      (links.panelUrl ? button(links.panelUrl, "Ver en el panel", INK) : ""),
+  );
+  const text = [
+    `Nueva solicitud de arrepentimiento ${w.code}`,
+    `${w.fullName} — ${w.email}`,
+    w.orderNumber ? `Pedido: #${w.orderNumber}${w.orderMatched ? "" : " (no coincide con el email)"}` : "Pedido: no lo indicó",
+    w.reason ? `Motivo: ${w.reason}` : "",
+    `Recibida: ${w.receivedAt}`,
     links.panelUrl ? `Ver en el panel: ${links.panelUrl}` : "",
   ]
     .filter(Boolean)

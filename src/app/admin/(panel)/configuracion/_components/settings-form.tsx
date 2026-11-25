@@ -22,6 +22,7 @@ function toInput(s: AdminSettings): SettingsInput {
     instagram: s.instagram,
     tiktok: s.tiktok,
     shippingCost: formatMoneyInput(s.shippingCost),
+    dispatchTime: s.dispatchTime,
     storeAddress: s.storeAddress,
     storeHours: s.storeHours,
     exchangeDays: String(s.exchangeDays),
@@ -150,6 +151,14 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
             />
           </div>
           <FieldHelp id={`${ids}-shippingCost-help`} error={errors.shippingCost}>Precio fijo, a cualquier lugar del país.</FieldHelp>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`${ids}-dispatchTime`}>Plazo de despacho</Label>
+          <Input {...fieldProps("dispatchTime")} maxLength={60} placeholder="24 a 48 h hábiles" className="sm:max-w-80" />
+          <FieldHelp id={`${ids}-dispatchTime-help`} error={errors.dispatchTime}>
+            Cuánto tardan en despachar un pedido pagado. Se lee como «Despachamos tu pedido en 24 a 48 h hábiles»
+            en la tienda y en el mail de pago confirmado. Si lo dejás vacío, no se menciona.
+          </FieldHelp>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${ids}-storeAddress`}>Dirección del local</Label>

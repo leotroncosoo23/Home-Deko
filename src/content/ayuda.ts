@@ -45,6 +45,7 @@ export type GuiaId =
   | "inicio"
   | "pedidos"
   | "cupones"
+  | "arrepentimientos"
   | "productos"
   | "categorias"
   | "etiquetas"
@@ -170,6 +171,46 @@ export const GUIAS: Record<GuiaId, Guia> = {
         titulo: "Para revisar",
         texto:
           "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. En el pedido dice el motivo. Si el monto no coincidía pero en Mercado Pago ves el pago acreditado y te parece bien, tocá \"Confirmar el pago igual\". Si el pago se devolvió, cancelá el pedido. Si ya lo revisaron y está todo bien, \"Marcar como revisado\".",
+      },
+    ],
+  },
+
+  arrepentimientos: {
+    id: "arrepentimientos",
+    titulo: "Solicitudes de arrepentimiento",
+    resumen:
+      "Las solicitudes del \"Botón de arrepentimiento\" de la tienda: un cliente que compró online y quiere devolver su compra dentro de los 10 días.",
+    pasosRapidos: [
+      "Cuando llega una solicitud te avisamos por mail y aparece en \"Nuevas\" (con un número en el menú y en el Inicio).",
+      "El cliente ya recibió su código (ARR-…) en pantalla y por mail: no tenés que mandárselo.",
+      "Escribile (mail o WhatsApp) para coordinar la devolución del producto y marcala \"En gestión\".",
+      "Cuando vuelva el producto, devolvé el dinero desde Mercado Pago y marcala \"Resuelta\".",
+    ],
+    pasos: [
+      {
+        titulo: "Qué es el Botón de arrepentimiento",
+        texto:
+          "Es obligatorio por ley para las tiendas online (Disposición 954/2025): un link que está en el pie de todas las páginas, en el menú y arriba en la computadora. Quien compró online tiene 10 días corridos desde que recibió el producto para arrepentirse, sin dar explicaciones y sin costo. El cliente no necesita cuenta: solo deja su nombre, su email y, si lo sabe, el número de pedido y un motivo.",
+      },
+      {
+        titulo: "El código de la solicitud",
+        texto:
+          "La ley pide darle al cliente un código de su solicitud dentro de las 24 horas. La tienda se lo muestra apenas la envía y además se lo manda por mail, así que no tenés que hacer nada. En el detalle de la solicitud ves si el mail salió; si dice que no salió, mandale el código vos.",
+      },
+      {
+        titulo: "El pedido",
+        texto:
+          "Si el número de pedido y el email coinciden con una compra, la solicitud muestra el link al pedido. Si el número no coincide con el email (o no lo puso), buscalo en Pedidos por el nombre o el email del cliente.",
+      },
+      {
+        titulo: "Gestionarla",
+        texto:
+          "Desde el detalle podés escribirle por mail (o por WhatsApp si la solicitud está vinculada a un pedido). Coordiná cómo vuelve el producto: los gastos de devolución corren por cuenta de la tienda. Cuando te contactes, marcala \"En gestión\". Cuando el producto vuelva, devolvé el total pagado (con el envío) desde tu cuenta de Mercado Pago (Actividad → el pago → Devolver dinero) y marcala \"Resuelta\". Si el pedido estaba sin despachar, también podés cancelarlo desde Pedidos: el stock vuelve solo.",
+      },
+      {
+        titulo: "Cuándo marcar \"No corresponde\"",
+        texto:
+          "Si pasaron más de 10 días desde que recibió el producto, si el producto ya se usó o si la compra no fue por la tienda online. Antes de marcarla, explicale el motivo al cliente. Te pide una nota obligatoria para que quede registrado por qué.",
       },
     ],
   },
@@ -420,15 +461,15 @@ export const GUIAS: Record<GuiaId, Guia> = {
     resumen: "Los datos del comercio, las redes, el envío y el interruptor para lanzar la tienda.",
     pasosRapidos: [
       "Completá los \"Datos del comercio\": nombre o razón social, CUIT y email de contacto.",
-      "Cargá WhatsApp, Instagram y TikTok, el costo del envío, la dirección y horarios del local y el plazo para cambios.",
-      "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie y las páginas legales.",
+      "Cargá WhatsApp, Instagram y TikTok, el costo del envío, el plazo de despacho, la dirección y horarios del local y el plazo para cambios.",
+      "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie, las páginas de ayuda y las legales.",
       "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá (antes tienen que estar los datos del comercio y el WhatsApp).",
     ],
     pasos: [
       {
         titulo: "Datos del comercio",
         texto:
-          "El nombre o razón social, el CUIT y el email de contacto aparecen en el pie de la tienda y en las páginas de Privacidad y Términos (la ley pide que estén a la vista). Mientras falte alguno, en esas páginas se ve \"[COMPLETAR]\" resaltado en amarillo.",
+          "El nombre o razón social, el CUIT y el email de contacto aparecen en el pie de la tienda y en las páginas de Privacidad y Términos (la ley pide que estén a la vista). Mientras falte alguno, en Privacidad y Términos se ve \"[COMPLETAR]\" resaltado en amarillo (en el pie, simplemente no aparece).",
       },
       {
         titulo: "Redes y WhatsApp",
@@ -439,6 +480,16 @@ export const GUIAS: Record<GuiaId, Guia> = {
         titulo: "Envío y retiro",
         texto:
           "El costo del envío a domicilio es un precio fijo para todo el país. La dirección y los horarios del local se le muestran a quien elige retirar su compra (el retiro es gratis).",
+      },
+      {
+        titulo: "Plazo de despacho",
+        texto:
+          "Cuánto tardan en despachar un pedido ya pagado, escrito como lo dirían ustedes: por ejemplo \"24 a 48 h hábiles\". Aparece como \"Despachamos tu pedido en 24 a 48 h hábiles\" en Cómo comprar, Envíos, Preguntas frecuentes, los Términos y el mail de pago confirmado. Si lo dejás vacío, esa frase no aparece.",
+      },
+      {
+        titulo: "Páginas de ayuda de la tienda",
+        texto:
+          "Cómo comprar, Envíos y retiro, Cambios y devoluciones, Preguntas frecuentes y Contacto toman estos datos solos: si cambiás el costo del envío, los días de cambio o los horarios, se actualizan al guardar. Lo que no está cargado simplemente no aparece (los clientes nunca ven \"[COMPLETAR]\"). Si querés cambiar algún texto de esas páginas, pedíselo a Leo.",
       },
       {
         titulo: "Cambios por gusto",
@@ -498,6 +549,16 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
     pregunta: "Un pedido dice \"Para revisar\". ¿Qué significa?",
     respuesta:
       "Que hay un detalle a verificar antes de prepararlo; el motivo aparece debajo del aviso (por ejemplo, que el monto cobrado no coincide con el pedido o que el pago se devolvió). El stock no se descuenta solo en esos casos. Si tenés dudas, escribile a Leo.",
+  },
+  {
+    pregunta: "Llegó una solicitud de arrepentimiento. ¿Qué hago?",
+    respuesta:
+      "El cliente ya tiene su código: no hace falta mandárselo. Entrá a Arrepentimientos, abrí la solicitud y escribile para coordinar la devolución (los gastos de envío de la devolución los paga la tienda). Cuando vuelva el producto, devolvé el dinero desde Mercado Pago y marcala \"Resuelta\". Si pasaron más de 10 días desde que recibió el producto, explicáselo y marcala \"No corresponde\" con una nota.",
+  },
+  {
+    pregunta: "¿Por qué hay un \"Botón de arrepentimiento\" en la tienda?",
+    respuesta:
+      "Porque es obligatorio para todas las tiendas online de Argentina (Disposición 954/2025): tiene que verse a simple vista desde la primera página y permitir arrepentirse sin registrarse. Por eso está en el pie de todas las páginas, en el menú y arriba en la computadora. No se puede sacar.",
   },
   {
     pregunta: "Un cupón dice \"1 uso entró por encima del límite\". ¿Qué pasó?",

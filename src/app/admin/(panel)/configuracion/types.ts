@@ -17,6 +17,7 @@ export type AdminSettings = {
   businessName: string;
   cuit: string;
   contactEmail: string;
+  dispatchTime: string;
 };
 
 /** Lo que devuelve cada Server Action: o salió bien, o un mensaje claro. */

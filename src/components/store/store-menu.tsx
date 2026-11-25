@@ -3,17 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, LayoutGrid, Menu } from "lucide-react";
+import { ChevronRight, LayoutGrid, Menu, Undo2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { SocialLinks } from "@/components/social-links";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { StoreCategory } from "@/lib/store-data";
-import { ALL_PRODUCTS_LINK, categoryHref, INFO_LINKS } from "@/lib/store-nav";
+import { ALL_PRODUCTS_LINK, categoryHref, HELP_LINKS, LEGAL_LINKS, WITHDRAWAL_LINK } from "@/lib/store-nav";
 import type { RedSocial } from "@/lib/store-settings";
 
 /**
  * Menú hamburguesa de la tienda (panel que entra desde la izquierda):
- * todos los productos, categorías con su foto, información y redes.
+ * todos los productos, categorías con su foto, ayuda (con el Botón de
+ * arrepentimiento destacado), legales y redes.
  * Se cierra solo al tocar un link.
  */
 export function StoreMenu({
@@ -81,8 +82,33 @@ export function StoreMenu({
             </MenuGroup>
           )}
 
-          <MenuGroup title="Información">
-            {INFO_LINKS.map((l) => (
+          <MenuGroup title="Ayuda">
+            {HELP_LINKS.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  onClick={close}
+                  className="block rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+            {/* Botón de arrepentimiento (Disp. 954/2025): destacado, a simple vista */}
+            <li>
+              <Link
+                href={WITHDRAWAL_LINK.href}
+                onClick={close}
+                className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2.5 font-semibold text-brand transition-colors hover:bg-brand-soft"
+              >
+                <Undo2 className="size-4" aria-hidden />
+                {WITHDRAWAL_LINK.label}
+              </Link>
+            </li>
+          </MenuGroup>
+
+          <MenuGroup title="Legales">
+            {LEGAL_LINKS.map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}
