@@ -3,11 +3,11 @@
  * Nada de esto es importante: si el navegador no deja guardar (modo
  * privado, bloqueado), todo funciona igual, solo que sin recordar.
  *
- *   hd_datos_compra   → nombre, email, teléfono y dirección (con piso/depto
- *                       e indicaciones), para no
+ *   hd_datos_compra   → nombre, email, teléfono, dirección (con piso/depto
+ *                       e indicaciones), DNI y facturación, para no
  *                       volver a escribirlos en la próxima compra.
  *   hd_ultimo_pedido  → link al último pedido iniciado (por si el cliente
- *                       vuelve de Mercado Pago con "atrás").
+ *                       vuelve de la página de pago con "atrás").
  *   hd_carrito_vaciado → último pedido aprobado por el que ya se vació el
  *                       carrito (para no vaciarlo otra vez si recarga).
  */
@@ -27,6 +27,10 @@ export type SavedCustomer = {
   city: string;
   province: string;
   postalCode: string;
+  dni: string;
+  billingStreet: string;
+  billingNumber: string;
+  billingPostalCode: string;
 };
 
 export const EMPTY_CUSTOMER: SavedCustomer = {
@@ -40,6 +44,10 @@ export const EMPTY_CUSTOMER: SavedCustomer = {
   city: "",
   province: "",
   postalCode: "",
+  dni: "",
+  billingStreet: "",
+  billingNumber: "",
+  billingPostalCode: "",
 };
 
 function read(key: string): string | null {

@@ -61,6 +61,8 @@ export type DatosComercio = {
   envioDomicilio: string;
   /** Plazo de despacho ("24 a 48 h hábiles"). Opcional: si no se cargó, llega "" y no se menciona. */
   despacho: string;
+  /** Procesador de pagos activo ("Getnet" o "Mercado Pago"). */
+  procesador: string;
 };
 
 export type Bloque = string | { lista: string[] };
@@ -159,7 +161,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
           "Tener una cuenta es opcional. Podés entrar con Google o con tu email y un código de un solo uso que te mandamos cada vez: no te pedimos ninguna contraseña.",
           "Desde Mi cuenta podés ver tus pedidos y su estado, y ver y corregir tus datos y tu dirección de envío guardada cuando quieras.",
           "Cuando entrás con un email verificado, sumamos a tu cuenta las compras que hayas hecho como invitado con ese mismo email, para que las veas todas juntas.",
-          "Podés eliminar tu cuenta cuando quieras desde Mi cuenta → \"Eliminar mi cuenta\". Borramos en el momento tu nombre, tu teléfono, tu dirección guardada y tu acceso. Los pedidos que ya hiciste los conservamos, sin vincularlos a ninguna cuenta, solo para cumplir las obligaciones contables e impositivas (hasta 10 años).",
+          "Podés eliminar tu cuenta cuando quieras desde Mi cuenta → \"Eliminar mi cuenta\". Borramos en el momento tu nombre, tu teléfono, tu dirección guardada, tu acceso y el DNI y la dirección de facturación de tus pedidos. Los pedidos que ya hiciste los conservamos, sin vincularlos a ninguna cuenta, solo para cumplir las obligaciones contables e impositivas (hasta 10 años).",
         ],
       },
       {
@@ -181,10 +183,11 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
       },
       {
         id: "pagos",
-        titulo: "Pagos con Mercado Pago",
+        titulo: `Pagos con ${C.procesador}`,
         bloques: [
-          "Los pagos se hacen a través de Mercado Pago. Cuando pagás, cargás los datos de tu tarjeta o cuenta directamente en Mercado Pago, no en nuestro sitio.",
-          "Nosotros no vemos ni guardamos los datos de tus tarjetas. Mercado Pago solo nos informa si el pago fue aprobado, el monto y el medio de pago usado. El uso de tus datos por parte de Mercado Pago se rige por su propia política de privacidad.",
+          `Los pagos se hacen a través de ${C.procesador}. Cuando pagás, cargás los datos de tu tarjeta directamente en la página segura de ${C.procesador}, no en nuestro sitio.`,
+          `Nosotros no vemos ni guardamos los datos de tus tarjetas. ${C.procesador} solo nos informa si el pago fue aprobado, el monto y el medio de pago usado. El uso de tus datos por parte de ${C.procesador} se rige por su propia política de privacidad.`,
+          `Para procesar el pago le pasamos a ${C.procesador} tu nombre, tu email, tu DNI y tu dirección de facturación (los pide para validar la tarjeta). El DNI y la dirección de facturación quedan guardados en el pedido y se borran si eliminás tu cuenta.`,
         ],
       },
       {
@@ -194,7 +197,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
           "Nunca vendemos ni alquilamos tus datos. Solo los compartimos, en la medida necesaria, con:",
           {
             lista: [
-              "Mercado Pago, para procesar el pago.",
+              `${C.procesador}, para procesar el pago.`,
               "La empresa de envíos que lleva tu pedido, para entregártelo (nombre, dirección y teléfono).",
               "Los proveedores tecnológicos que hacen funcionar la tienda: alojamiento del sitio, base de datos e inicio de sesión, y envío de emails. Solo pueden usar los datos para prestarnos ese servicio.",
               "Autoridades, cuando una ley o una orden judicial nos obligue.",
@@ -345,9 +348,9 @@ export function terminos(C: DatosComercio): DocumentoLegal {
         id: "pagos",
         titulo: "Medios de pago",
         bloques: [
-          "Los pagos se hacen con Mercado Pago, que acepta tarjetas de crédito y débito, dinero en cuenta y otros medios que ofrezca en ese momento. Las cuotas y sus costos los define Mercado Pago o tu banco.",
-          "Tu pedido queda confirmado cuando Mercado Pago nos informa que el pago fue aprobado. Si el pago queda pendiente o es rechazado, el pedido no se prepara.",
-          "Ante una devolución, el dinero se reintegra por el mismo medio de pago, en los plazos de Mercado Pago y de la entidad emisora.",
+          `Los pagos se hacen con ${C.procesador}, con tarjeta de crédito o débito. Las cuotas disponibles se ven al momento de pagar, y sus costos los define ${C.procesador} o tu banco.`,
+          `Tu pedido queda confirmado cuando ${C.procesador} nos informa que el pago fue aprobado. Si el pago queda pendiente o es rechazado, el pedido no se prepara.`,
+          `Ante una devolución, el dinero se reintegra por el mismo medio de pago, en los plazos de ${C.procesador} y de la entidad emisora.`,
         ],
       },
       {
@@ -413,7 +416,7 @@ export function terminos(C: DatosComercio): DocumentoLegal {
         id: "responsabilidad",
         titulo: "Responsabilidad",
         bloques: [
-          "Hacemos lo posible para que el sitio funcione siempre y la información sea correcta, pero puede haber interrupciones o errores. No respondemos por fallas de servicios de terceros (como Mercado Pago, la empresa de envíos o tu proveedor de internet), sin perjuicio de los derechos que te da la Ley de Defensa del Consumidor.",
+          "Hacemos lo posible para que el sitio funcione siempre y la información sea correcta, pero puede haber interrupciones o errores. No respondemos por fallas de servicios de terceros (como el procesador de pagos, la empresa de envíos o tu proveedor de internet), sin perjuicio de los derechos que te da la Ley de Defensa del Consumidor.",
         ],
       },
       {

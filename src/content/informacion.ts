@@ -110,7 +110,7 @@ export function comoComprar(D: DatosTienda): PaginaInfo & { pasos: Paso[] } {
   return {
     titulo: "Cómo comprar",
     descripcion:
-      "Comprá en Home Deko en pocos pasos: elegí tus productos, completá tus datos y pagá con Mercado Pago. Envío a todo el país o retiro gratis en el local.",
+      "Comprá en Home Deko en pocos pasos: elegí tus productos, completá tus datos y pagá con tarjeta de forma segura. Envío a todo el país o retiro gratis en el local.",
     intro: "Comprar en Home Deko es fácil y seguro. Te contamos el paso a paso.",
     pasos: [
       {
@@ -135,9 +135,9 @@ export function comoComprar(D: DatosTienda): PaginaInfo & { pasos: Paso[] } {
         texto: ["En el resumen de tu pedido tocá «¿Tenés un cupón?», escribí el código y aplicalo. El descuento se ve en el total antes de pagar."],
       },
       {
-        titulo: "Pagá con Mercado Pago",
+        titulo: "Pagá de forma segura",
         texto: [
-          "Tocá «Pagar con Mercado Pago» y elegí cómo pagar: tarjeta de crédito o débito, o dinero en tu cuenta. Las cuotas disponibles las muestra Mercado Pago.",
+          `Tocá el botón de pago: te llevamos a la página segura de ${D.procesador}, donde cargás tu tarjeta. ${D.cuotas}`,
         ],
       },
       {
@@ -155,7 +155,7 @@ export function comoComprar(D: DatosTienda): PaginaInfo & { pasos: Paso[] } {
         titulo: "Pagos seguros",
         icono: "shield",
         bloques: [
-          "Todos los pagos se hacen con Mercado Pago: nosotros nunca vemos ni guardamos los datos de tu tarjeta.",
+          `Todos los pagos se hacen con ${D.procesador}: nosotros nunca vemos ni guardamos los datos de tu tarjeta.`,
           "No aceptamos pagos en efectivo por Rapipago o Pago Fácil. Si tenés dudas con un pago, [escribinos](/contacto).",
         ],
       },
@@ -288,7 +288,7 @@ export function cambios(D: DatosTienda): PaginaInfo {
         icono: "mail",
         bloques: [
           `${escribinos(D)} con tu número de pedido y contanos qué pasó. Te respondemos para coordinar todo.`,
-          "El dinero de una devolución se reintegra por el mismo medio de pago, en los plazos de Mercado Pago y de tu banco.",
+          "El dinero de una devolución se reintegra por el mismo medio de pago, en los plazos del procesador de pagos y de tu banco.",
           "Más detalles en los [Términos y condiciones](/terminos#cambios).",
         ],
       },
@@ -316,13 +316,13 @@ export function preguntasFrecuentes(D: DatosTienda): {
     {
       pregunta: "¿Qué medios de pago aceptan?",
       respuesta: [
-        "Pagás con Mercado Pago: tarjeta de crédito, débito o dinero en tu cuenta. Las cuotas disponibles las muestra Mercado Pago al pagar. No aceptamos efectivo por Rapipago o Pago Fácil.",
+        `${D.cuotas} El pago se hace en la página segura de ${D.procesador}. No aceptamos efectivo por Rapipago o Pago Fácil.`,
       ],
     },
     {
       pregunta: "¿Es seguro pagar en la tienda?",
       respuesta: [
-        "Sí. El pago se hace en Mercado Pago: nosotros nunca vemos ni guardamos los datos de tu tarjeta.",
+        `Sí. El pago se hace en la página segura de ${D.procesador}: nosotros nunca vemos ni guardamos los datos de tu tarjeta.`,
       ],
     },
     {
@@ -384,7 +384,7 @@ export function preguntasFrecuentes(D: DatosTienda): {
 
   return {
     titulo: "Preguntas frecuentes",
-    descripcion: "Respuestas sobre compras, pagos con Mercado Pago, envíos, retiro en el local, cupones, cambios y devoluciones en Home Deko.",
+    descripcion: "Respuestas sobre compras, pagos con tarjeta, envíos, retiro en el local, cupones, cambios y devoluciones en Home Deko.",
     intro: "Las dudas más comunes, en un solo lugar. Si no encontrás lo que buscás, escribinos.",
     preguntas,
   };

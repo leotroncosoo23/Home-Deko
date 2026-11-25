@@ -3,6 +3,7 @@ import { cache } from "react";
 import { trackingFor, type Tracking } from "@/lib/carriers";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { titleCase } from "@/lib/format";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { cleanSearch, PAGE_SIZE, searchNumber, type ListParams } from "./list-params";
 import type { DeliveryMethod, FulfillmentStatus, OrderEventKind, PaymentStatus } from "./status";
@@ -69,6 +70,20 @@ export async function getOrders(params: ListParams): Promise<OrdersPage> {
     case "atencion":
       tabOr = "and(stock_issue.eq.true,fulfillment_status.neq.cancelled),needs_review.eq.true";
       break;
+    case "getnet": {
+      // Igual que el aviso del inicio (admin_home_attention): pago de Getnet
+      // iniciado hace más de 2 h y menos de 72 h, sin ningún aviso recibido.
+      const now = Date.now();
+      query = query
+        .eq("payment_provider", "getnet")
+        .not("payment_intent_id", "is", null)
+        .is("payment_notified_at", null)
+        .eq("payment_status", "pending")
+        .eq("fulfillment_status", "awaiting_payment")
+        .lt("created_at", new Date(now - 2 * 60 * 60 * 1000).toISOString())
+        .gt("created_at", new Date(now - 72 * 60 * 60 * 1000).toISOString());
+      break;
+    }
     case "todos":
       // Sin "sin pagar": los cobrados, los cancelados y los para revisar (los
       // intentos que quedaron sin pagar son la mayoría y no requieren nada).
@@ -188,7 +203,7 @@ export async function getOrderDetail(id: string) {
     supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, customer_phone, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_payment_id, mp_status, mp_status_detail, paid_at, stock_applied_at, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, shipped_at, cancelled_at, cancel_reason, stock_returned_at",
+        "id, order_number, created_at, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, customer_phone, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_payment_id, mp_status, mp_status_detail, payment_provider, payment_intent_id, payment_id, provider_status, payment_status_detail, payment_notified_at, payment_expires_at, paid_at, stock_applied_at, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, shipped_at, cancelled_at, cancel_reason, stock_returned_at",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -206,8 +221,18 @@ export async function getOrderDetail(id: string) {
   if (error) throw new Error("No se pudo leer el pedido.");
   if (!order) return null;
 
+  // DNI y dirección de facturación: datos personales SIN grant para
+  // authenticated. Se leen con la clave secreta, recién después de
+  // requireAdmin() (arriba) y solo para este pedido.
+  const { data: billing } = await createAdminClient()
+    .from("orders")
+    .select("customer_dni, billing_street, billing_number, billing_postal_code")
+    .eq("id", id)
+    .maybeSingle();
+
   return {
     ...order,
+    billing: billing ?? null,
     // Mayúscula inicial solo para mostrar (lo guardado no cambia)
     customer_name: titleCase(order.customer_name),
     ship_city: order.ship_city && titleCase(order.ship_city),

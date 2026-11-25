@@ -86,7 +86,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Qué cuenta como venta",
         texto:
-          "Solo los pedidos de la tienda online con el pago aprobado por Mercado Pago. Los cancelados no cuentan (si cancelan un pedido, sale solo de los números), y tampoco los que quedaron sin pagar o \"Para revisar\". Cada venta cuenta el día en que se aprobó el pago, en hora de Argentina. El monto es el total cobrado, con el envío incluido (la tarjeta dice cuánto fue de envíos).",
+          "Solo los pedidos de la tienda online con el pago aprobado por Getnet. Los cancelados no cuentan (si cancelan un pedido, sale solo de los números), y tampoco los que quedaron sin pagar o \"Para revisar\". Cada venta cuenta el día en que se aprobó el pago, en hora de Argentina. El monto es el total cobrado, con el envío incluido (la tarjeta dice cuánto fue de envíos).",
       },
       {
         titulo: "Los períodos y la comparación",
@@ -130,7 +130,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Cómo llega un pedido",
         texto:
-          "El cliente completa sus datos, elige envío a domicilio o retiro en el local y paga en Mercado Pago. Recién cuando Mercado Pago confirma el pago, el pedido aparece en \"Para preparar\" y se descuenta el stock solo (en Stock lo ves como \"Venta web\"). Los precios y el costo del envío quedan guardados en el pedido tal como estaban al comprar: si después los cambian, ese pedido no cambia.",
+          "El cliente completa sus datos, elige envío a domicilio o retiro en el local y paga con tarjeta en la página segura de Getnet. Recién cuando Getnet confirma el pago, el pedido aparece en \"Para preparar\" y se descuenta el stock solo (en Stock lo ves como \"Venta web\"). Los precios y el costo del envío quedan guardados en el pedido tal como estaban al comprar: si después los cambian, ese pedido no cambia.",
       },
       {
         titulo: "Cómo despachar un pedido (paso a paso)",
@@ -145,7 +145,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Las pestañas",
         texto:
-          "\"Para preparar\": pagados, todavía sin armar. \"Preparando\": se están armando. \"Enviados\": en camino. \"Para retirar\": listos, esperando al cliente en el local. \"Entregados y retirados\": terminados. \"Todos\": todo junto, también los cancelados; con \"Ver también los que no se pagaron\" suma los intentos que quedaron sin pagar (alguien que llegó a Mercado Pago y no terminó), que no descuentan stock ni requieren nada. Podés buscar por número de pedido, nombre o email, y filtrar solo envíos o solo retiros.",
+          "\"Para preparar\": pagados, todavía sin armar. \"Preparando\": se están armando. \"Enviados\": en camino. \"Para retirar\": listos, esperando al cliente en el local. \"Entregados y retirados\": terminados. \"Todos\": todo junto, también los cancelados; con \"Ver también los que no se pagaron\" suma los intentos que quedaron sin pagar (alguien que llegó a la página de pago y no terminó), que no descuentan stock ni requieren nada. Podés buscar por número de pedido, nombre o email, y filtrar solo envíos o solo retiros.",
       },
       {
         titulo: "El detalle del pedido",
@@ -160,17 +160,17 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Cancelar un pedido",
         texto:
-          "Entrá al pedido y tocá \"Cancelar pedido\" (solo mientras no salió: \"Para preparar\", \"Preparando\" o \"Listo para retirar\"). El stock vuelve solo (en Stock lo ves como \"Cancelación de pedido\"). El dinero NO se devuelve solo: hacelo desde tu cuenta de Mercado Pago (Actividad → buscá el número de operación que figura en el pedido → Devolver dinero).",
+          "Entrá al pedido y tocá \"Cancelar pedido\" (solo mientras no salió: \"Para preparar\", \"Preparando\" o \"Listo para retirar\"). El stock vuelve solo (en Stock lo ves como \"Cancelación de pedido\"). El dinero NO se devuelve solo: hacelo desde el portal de Getnet (buscá la operación con el número que figura en el pedido).",
       },
       {
         titulo: "Pagado sin stock",
         texto:
-          "Pasa muy rara vez: dos personas pagan la última unidad casi al mismo tiempo. El segundo pago se cobra, pero ya no hay stock y no se descuenta nada. Escribile al cliente (el botón de WhatsApp está en el pedido) y elegí: si te entra mercadería, cargá el ingreso en Stock y tocá \"Descontar el stock y seguir\"; si le ofreciste otra cosa, tocá \"Lo resolvimos de otra forma\" y contá qué hicieron; si no se puede, \"Cancelar pedido\" y devolvé el dinero desde Mercado Pago.",
+          "Pasa muy rara vez: dos personas pagan la última unidad casi al mismo tiempo. El segundo pago se cobra, pero ya no hay stock y no se descuenta nada. Escribile al cliente (el botón de WhatsApp está en el pedido) y elegí: si te entra mercadería, cargá el ingreso en Stock y tocá \"Descontar el stock y seguir\"; si le ofreciste otra cosa, tocá \"Lo resolvimos de otra forma\" y contá qué hicieron; si no se puede, \"Cancelar pedido\" y devolvé el dinero desde el portal de Getnet.",
       },
       {
         titulo: "Para revisar",
         texto:
-          "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Mercado Pago no coincida con el total, o que un pago se haya devuelto. En el pedido dice el motivo. Si el monto no coincidía pero en Mercado Pago ves el pago acreditado y te parece bien, tocá \"Confirmar el pago igual\". Si el pago se devolvió, cancelá el pedido. Si ya lo revisaron y está todo bien, \"Marcar como revisado\".",
+          "El pedido tiene algo raro que conviene mirar antes de prepararlo: por ejemplo, que el monto aprobado por Getnet no coincida con el total, o que un pago se haya devuelto. En el pedido dice el motivo. Si el monto no coincidía pero en el portal de Getnet ves el pago acreditado y te parece bien, tocá \"Confirmar el pago igual\". Si el pago se devolvió, cancelá el pedido. Si ya lo revisaron y está todo bien, \"Marcar como revisado\".",
       },
     ],
   },
@@ -184,7 +184,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       "Cuando llega una solicitud te avisamos por mail y aparece en \"Nuevas\" (con un número en el menú y en el Inicio).",
       "El cliente ya recibió su código (ARR-…) en pantalla y por mail: no tenés que mandárselo.",
       "Escribile (mail o WhatsApp) para coordinar la devolución del producto y marcala \"En gestión\".",
-      "Cuando vuelva el producto, devolvé el dinero desde Mercado Pago y marcala \"Resuelta\".",
+      "Cuando vuelva el producto, devolvé el dinero desde el portal de Getnet y marcala \"Resuelta\".",
     ],
     pasos: [
       {
@@ -205,7 +205,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Gestionarla",
         texto:
-          "Desde el detalle podés escribirle por mail (o por WhatsApp si la solicitud está vinculada a un pedido). Coordiná cómo vuelve el producto: los gastos de devolución corren por cuenta de la tienda. Cuando te contactes, marcala \"En gestión\". Cuando el producto vuelva, devolvé el total pagado (con el envío) desde tu cuenta de Mercado Pago (Actividad → el pago → Devolver dinero) y marcala \"Resuelta\". Si el pedido estaba sin despachar, también podés cancelarlo desde Pedidos: el stock vuelve solo.",
+          "Desde el detalle podés escribirle por mail (o por WhatsApp si la solicitud está vinculada a un pedido). Coordiná cómo vuelve el producto: los gastos de devolución corren por cuenta de la tienda. Cuando te contactes, marcala \"En gestión\". Cuando el producto vuelva, devolvé el total pagado (con el envío) desde el portal de Getnet y marcala \"Resuelta\". Si el pedido estaba sin despachar, también podés cancelarlo desde Pedidos: el stock vuelve solo.",
       },
       {
         titulo: "Cuándo marcar \"No corresponde\"",
@@ -542,14 +542,19 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
       "Agregá al final del link ?utm_source= y el nombre de la red. Por ejemplo, en la bio de Instagram: www.homedekotrevelin.com/?utm_source=instagram; en un mensaje de WhatsApp: www.homedekotrevelin.com/?utm_source=whatsapp. WhatsApp casi nunca avisa de dónde viene la persona, así que sin eso esas visitas aparecen como \"Directo\".",
   },
   {
-    pregunta: "¿Por qué las ventas del Inicio no coinciden con lo que veo en Mercado Pago?",
+    pregunta: "¿Por qué las ventas del Inicio no coinciden con lo que veo en Getnet?",
     respuesta:
-      "El Inicio cuenta cada venta el día en que se aprobó el pago, en hora de Argentina, con el envío incluido y sin los pedidos cancelados. Mercado Pago muestra todo lo que cobró, también lo que después se devolvió, y le descuenta sus comisiones.",
+      "El Inicio cuenta cada venta el día en que se aprobó el pago, en hora de Argentina, con el envío incluido y sin los pedidos cancelados. Getnet muestra todo lo que cobró, también lo que después se devolvió, y le descuenta sus comisiones.",
+  },
+  {
+    pregunta: "En el Inicio dice \"Revisar pago en Getnet\". ¿Qué hago?",
+    respuesta:
+      "Un cliente empezó a pagar hace más de 2 horas y Getnet todavía no nos avisó si el pago se aprobó o se rechazó. Casi siempre es alguien que abandonó el pago: no hace falta hacer nada. Si querés confirmarlo, entrá al pedido, tocá \"Verificar pago\" y buscá ese código en el portal de Getnet. Si ahí figura aprobado por el total del pedido, no lo despaches todavía: avisale a quien administra la tienda online para revisarlo. El aviso desaparece solo a los 3 días.",
   },
   {
     pregunta: "Un pedido dice \"Pagado sin stock\". ¿Qué hago?",
     respuesta:
-      "Dos clientes pagaron la última unidad casi al mismo tiempo y para el segundo ya no alcanzó. Escribile (sus datos están en el pedido) y ofrecele otro producto o devolvele el dinero desde tu cuenta de Mercado Pago: Actividad → el pago → Devolver.",
+      "Dos clientes pagaron la última unidad casi al mismo tiempo y para el segundo ya no alcanzó. Escribile (sus datos están en el pedido) y ofrecele otro producto o devolvele el dinero desde el portal de Getnet.",
   },
   {
     pregunta: "Un pedido dice \"Para revisar\". ¿Qué significa?",
@@ -559,7 +564,7 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: "Llegó una solicitud de arrepentimiento. ¿Qué hago?",
     respuesta:
-      "El cliente ya tiene su código: no hace falta mandárselo. Entrá a Arrepentimientos, abrí la solicitud y escribile para coordinar la devolución (los gastos de envío de la devolución los paga la tienda). Cuando vuelva el producto, devolvé el dinero desde Mercado Pago y marcala \"Resuelta\". Si pasaron más de 10 días desde que recibió el producto, explicáselo y marcala \"No corresponde\" con una nota.",
+      "El cliente ya tiene su código: no hace falta mandárselo. Entrá a Arrepentimientos, abrí la solicitud y escribile para coordinar la devolución (los gastos de envío de la devolución los paga la tienda). Cuando vuelva el producto, devolvé el dinero desde el portal de Getnet y marcala \"Resuelta\". Si pasaron más de 10 días desde que recibió el producto, explicáselo y marcala \"No corresponde\" con una nota.",
   },
   {
     pregunta: "¿Por qué hay un \"Botón de arrepentimiento\" en la tienda?",

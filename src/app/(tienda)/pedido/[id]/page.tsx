@@ -12,6 +12,7 @@ import { formatARS, titleCase } from "@/lib/format";
 import { publicImageUrl } from "@/lib/storage";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, CHECKOUT_PATH } from "@/lib/store-nav";
+import { paymentCopy } from "@/lib/payments/config";
 import { getStoreSettings, whatsappLink } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 import { getGuestOrder, type GuestOrder } from "./data";
@@ -24,10 +25,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * /pedido/[id]?t=... — a donde vuelve el cliente desde Mercado Pago.
+ * /pedido/[id]?t=... — a donde vuelve el cliente desde la página de pago
+ * (Getnet o Mercado Pago).
  *
  * Muestra el estado REAL del pedido en la base (que solo cambia el
- * webhook), nunca lo que diga la URL de regreso de Mercado Pago.
+ * webhook), nunca lo que diga la URL de regreso.
  * Sin el token correcto: 404 (cambiar el id no muestra pedidos ajenos).
  */
 export default function OrderPage({ params, searchParams }: PageProps<"/pedido/[id]">) {
@@ -46,17 +48,23 @@ type View = {
   text: string;
   poll?: boolean;
   retry?: boolean;
+  /** Getnet: volver a la MISMA página de pago para probar con otra tarjeta. */
+  retryUrl?: string | null;
 };
 
 function viewFor(order: GuestOrder): View {
   const pickup = order.delivery_method === "pickup";
+  const provider = paymentCopy(order.payment_provider === "mercadopago" ? "mercadopago" : "getnet").name;
+  // Estado tal como lo informó el proveedor (los pedidos viejos de MP, en mp_status).
+  const providerStatus = order.provider_status ?? order.mp_status;
+  const expiresAt = order.payment_expires_at ?? order.mp_expires_at;
 
   // Cancelado por la tienda (después de pagar o al revisar un pago)
   if (order.fulfillment_status === "cancelled") {
     return {
       tone: "bad",
       title: "Tu pedido fue cancelado",
-      text: "Si ya lo habías pagado, la devolución del dinero la ves en tu cuenta de Mercado Pago o en el resumen de tu tarjeta (según el medio de pago, puede demorar unos días). Cualquier duda, escribinos.",
+      text: "Si ya lo habías pagado, la devolución del dinero la ves en el resumen de tu tarjeta (según el medio de pago, puede demorar unos días). Cualquier duda, escribinos.",
     };
   }
 
@@ -123,8 +131,11 @@ function viewFor(order: GuestOrder): View {
     return {
       tone: "bad",
       title: "El pago no se completó",
-      text: "Mercado Pago no aprobó el pago. Podés intentar de nuevo con otra tarjeta o medio de pago: tu carrito sigue guardado.",
+      text: order.retryPaymentUrl
+        ? `${provider} no aprobó el pago. Podés probar con otra tarjeta desde la misma página de pago.`
+        : `${provider} no aprobó el pago. Podés intentar de nuevo con otra tarjeta: tu carrito sigue guardado.`,
       retry: true,
+      retryUrl: order.retryPaymentUrl,
     };
   }
 
@@ -138,15 +149,15 @@ function viewFor(order: GuestOrder): View {
   }
 
   // Pendiente
-  if (order.mp_status === "pending" || order.mp_status === "in_process") {
+  if (providerStatus === "pending" || providerStatus === "in_process") {
     return {
       tone: "wait",
       title: "Tu pago está en revisión",
-      text: "Mercado Pago está procesando tu pago. Puede demorar un rato: volvé a esta página más tarde para ver el estado.",
+      text: `${provider} está procesando tu pago. Puede demorar un rato: volvé a esta página más tarde para ver el estado.`,
     };
   }
 
-  const expired = !order.mp_status && order.mp_expires_at && new Date(order.mp_expires_at).getTime() < Date.now();
+  const expired = !providerStatus && expiresAt && new Date(expiresAt).getTime() < Date.now();
   if (expired) {
     return {
       tone: "bad",
@@ -207,7 +218,15 @@ async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[i
       {tracking && order.fulfillment_status === "shipped" && <TrackingCard tracking={tracking} />}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        {view.retry && (
+        {view.retry && view.retryUrl && (
+          <a
+            href={view.retryUrl}
+            className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none"
+          >
+            Probar con otra tarjeta
+          </a>
+        )}
+        {view.retry && !view.retryUrl && (
           <Link
             href={CHECKOUT_PATH}
             className="inline-flex h-12 items-center justify-center rounded-full bg-brand px-6 font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none"

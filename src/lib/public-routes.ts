@@ -9,11 +9,19 @@
  *   - /api/mercadopago: los avisos de pago (webhook). Mercado Pago no tiene
  *     sesión; si no estuviera acá, el aviso terminaría en "Muy pronto".
  *     La seguridad la da la firma del aviso, no el proxy.
+ *   - /api/getnet: lo mismo para Getnet (la seguridad es su Basic auth).
  *
  * Las usa src/proxy.ts. Si sumás una página que tenga que verse siempre,
  * agregala acá.
  */
-export const ALWAYS_PUBLIC_PATHS = ["/privacidad", "/terminos", "/auth", "/sin-acceso", "/api/mercadopago"];
+export const ALWAYS_PUBLIC_PATHS = [
+  "/privacidad",
+  "/terminos",
+  "/auth",
+  "/sin-acceso",
+  "/api/mercadopago",
+  "/api/getnet",
+];
 
 /** true si la ruta (o una subruta, ej. /auth/callback) está en la lista. */
 export function isAlwaysPublic(pathname: string) {

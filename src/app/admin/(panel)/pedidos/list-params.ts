@@ -18,6 +18,7 @@ export const TABS = {
   todos: "Todos",
   // Sin pestaña propia: se llega desde los avisos de arriba
   atencion: "Requieren atención",
+  getnet: "Revisar pago en Getnet",
 } as const;
 export type Tab = keyof typeof TABS;
 

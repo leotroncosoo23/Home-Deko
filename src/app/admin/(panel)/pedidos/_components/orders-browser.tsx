@@ -24,7 +24,7 @@ import { OrdersTable } from "./orders-table";
 import { usePrintOrders } from "./print-dialogs";
 
 /** Pestañas visibles, en el orden del despacho. */
-const VISIBLE_TABS: Exclude<Tab, "atencion">[] = ["preparar", "preparando", "enviados", "retirar", "listos", "todos"];
+const VISIBLE_TABS: Exclude<Tab, "atencion" | "getnet">[] = ["preparar", "preparando", "enviados", "retirar", "listos", "todos"];
 
 const EMPTY: Record<Tab, string> = {
   preparar: "No hay pedidos para preparar. ¡Todo al día!",
@@ -34,6 +34,7 @@ const EMPTY: Record<Tab, string> = {
   listos: "Acá van a aparecer los pedidos entregados y retirados.",
   todos: "Acá vas a ver los pedidos cuando los clientes compren en la tienda.",
   atencion: "No hay pedidos que requieran atención.",
+  getnet: "No hay pagos de Getnet para revisar.",
 };
 
 /**
@@ -91,6 +92,13 @@ export function OrdersBrowser({ params, list, counts }: { params: ListParams; li
             <li>
               <TabButton active count={counts.stockIssue + counts.needsReview} attention onClick={() => {}}>
                 {TABS.atencion}
+              </TabButton>
+            </li>
+          )}
+          {params.estado === "getnet" && (
+            <li>
+              <TabButton active count={list.total} attention onClick={() => {}}>
+                {TABS.getnet}
               </TabButton>
             </li>
           )}

@@ -19,7 +19,7 @@ export async function getGuestOrder(id: string, token: unknown) {
   const { data: order, error } = await supabase
     .from("orders")
     .select(
-      "id, order_number, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_status, mp_expires_at, stock_issue, needs_review, created_at, carrier, carrier_name, tracking_code, tracking_url, cancelled_at",
+      "id, order_number, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_status, mp_expires_at, payment_provider, provider_status, payment_expires_at, payment_redirect_url, stock_issue, needs_review, created_at, carrier, carrier_name, tracking_code, tracking_url, cancelled_at",
     )
     .eq("id", id)
     .eq("access_token_hash", hashOrderToken(token))
@@ -34,7 +34,19 @@ export async function getGuestOrder(id: string, token: unknown) {
     .order("product_name");
   if (itemsError) throw new Error("No se pudo leer el pedido.");
 
-  return { ...order, items: items ?? [] };
+  // La página segura de Getnet NO se manda entera al navegador: solo como
+  // link de "Probar con otra tarjeta", y solo si el pago se rechazó y el
+  // intent todavía no venció. A CONFIRMAR que Getnet deje reabrir el mismo
+  // intent después de un rechazo (si no, el plan B es crear un intent nuevo).
+  const { payment_redirect_url: redirectUrl, ...rest } = order;
+  const canRetrySameIntent =
+    rest.payment_provider === "getnet" &&
+    rest.payment_status === "rejected" &&
+    !!redirectUrl &&
+    !!rest.payment_expires_at &&
+    new Date(rest.payment_expires_at).getTime() > Date.now();
+
+  return { ...rest, retryPaymentUrl: canRetrySameIntent ? redirectUrl : null, items: items ?? [] };
 }
 
 export type GuestOrder = NonNullable<Awaited<ReturnType<typeof getGuestOrder>>>;

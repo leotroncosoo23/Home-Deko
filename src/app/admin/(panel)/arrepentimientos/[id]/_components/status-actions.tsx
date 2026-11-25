@@ -36,10 +36,10 @@ const DIALOGS: Record<
   resolved: {
     title: "¿Marcar como «Resuelta»?",
     description:
-      "Usalo cuando el producto volvió y ya le devolviste el dinero desde Mercado Pago (Actividad → el pago → Devolver dinero).",
+      "Usalo cuando el producto volvió y ya le devolviste el dinero desde el portal del medio de pago (Getnet o Mercado Pago).",
     confirm: "Sí, resuelta",
     noteLabel: "Nota (opcional)",
-    placeholder: "Ej.: Producto recibido el 2/12, dinero devuelto por Mercado Pago.",
+    placeholder: "Ej.: Producto recibido el 2/12, dinero devuelto desde Getnet.",
     noteRequired: false,
   },
   rejected: {

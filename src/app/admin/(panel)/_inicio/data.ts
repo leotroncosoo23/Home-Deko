@@ -26,6 +26,8 @@ export type Attention = {
   outOfStock: number;
   /** Solicitudes nuevas del Botón de arrepentimiento. */
   pendingWithdrawals: number;
+  /** Pagos de Getnet iniciados hace más de 2 h (y menos de 72 h) sin ningún aviso. */
+  getnetPending: number;
   /** Datos del comercio que faltan en Configuración, en el orden en que se nombran. */
   missingSettings: string[];
 };
@@ -49,6 +51,7 @@ export async function getAttention(): Promise<Attention> {
     lowStock: Number(data.low_stock),
     outOfStock: Number(data.out_of_stock),
     pendingWithdrawals: Number(data.pending_withdrawals),
+    getnetPending: Number(data.getnet_pending),
     missingSettings: missing,
   };
 }

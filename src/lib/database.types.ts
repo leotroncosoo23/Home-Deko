@@ -454,6 +454,9 @@ export type Database = {
       orders: {
         Row: {
           access_token_hash: string | null
+          billing_number: string | null
+          billing_postal_code: string | null
+          billing_street: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           carrier: Database["public"]["Enums"]["shipping_carrier"] | null
@@ -463,6 +466,7 @@ export type Database = {
           coupon_id: string | null
           created_at: string
           created_by: string | null
+          customer_dni: string | null
           customer_email: string
           customer_id: string | null
           customer_name: string
@@ -480,12 +484,20 @@ export type Database = {
           needs_review: boolean
           order_number: number
           paid_at: string | null
+          payment_expires_at: string | null
+          payment_id: string | null
+          payment_intent_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_notified_at: string | null
+          payment_provider: string
+          payment_redirect_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_status_detail: string | null
           picked_up_at: string | null
           pickup_address: string | null
           pickup_hours: string | null
           preparing_at: string | null
+          provider_status: string | null
           ready_at: string | null
           review_reason: string | null
           ship_address: string | null
@@ -507,6 +519,9 @@ export type Database = {
         }
         Insert: {
           access_token_hash?: string | null
+          billing_number?: string | null
+          billing_postal_code?: string | null
+          billing_street?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           carrier?: Database["public"]["Enums"]["shipping_carrier"] | null
@@ -516,6 +531,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_dni?: string | null
           customer_email: string
           customer_id?: string | null
           customer_name: string
@@ -533,12 +549,20 @@ export type Database = {
           needs_review?: boolean
           order_number?: never
           paid_at?: string | null
+          payment_expires_at?: string | null
+          payment_id?: string | null
+          payment_intent_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_notified_at?: string | null
+          payment_provider?: string
+          payment_redirect_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status_detail?: string | null
           picked_up_at?: string | null
           pickup_address?: string | null
           pickup_hours?: string | null
           preparing_at?: string | null
+          provider_status?: string | null
           ready_at?: string | null
           review_reason?: string | null
           ship_address?: string | null
@@ -560,6 +584,9 @@ export type Database = {
         }
         Update: {
           access_token_hash?: string | null
+          billing_number?: string | null
+          billing_postal_code?: string | null
+          billing_street?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           carrier?: Database["public"]["Enums"]["shipping_carrier"] | null
@@ -569,6 +596,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_dni?: string | null
           customer_email?: string
           customer_id?: string | null
           customer_name?: string
@@ -586,12 +614,20 @@ export type Database = {
           needs_review?: boolean
           order_number?: never
           paid_at?: string | null
+          payment_expires_at?: string | null
+          payment_id?: string | null
+          payment_intent_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_notified_at?: string | null
+          payment_provider?: string
+          payment_redirect_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status_detail?: string | null
           picked_up_at?: string | null
           pickup_address?: string | null
           pickup_hours?: string | null
           preparing_at?: string | null
+          provider_status?: string | null
           ready_at?: string | null
           review_reason?: string | null
           ship_address?: string | null
@@ -1755,6 +1791,7 @@ export type Database = {
       admin_home_attention: {
         Args: never
         Returns: {
+          getnet_pending: number
           low_stock: number
           missing_business_name: boolean
           missing_cuit: boolean
@@ -1784,8 +1821,10 @@ export type Database = {
         Args: {
           p_amount: number
           p_currency: string
+          p_mismatch?: boolean
           p_order_id: string
           p_payment_id: string
+          p_provider?: string
           p_status: string
           p_status_detail: string
         }
@@ -1825,6 +1864,7 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       delete_coupon: { Args: { p_id: string }; Returns: undefined }
       delete_product: { Args: { p_id: string }; Returns: Json }
+      forget_order_personal_data: { Args: { p_user: string }; Returns: number }
       format_ars: { Args: { v: number }; Returns: string }
       fulfillment_label: {
         Args: { p: Database["public"]["Enums"]["fulfillment_status"] }
@@ -1929,6 +1969,7 @@ export type Database = {
         | "credito"
         | "efectivo"
         | "transferencia"
+        | "getnet"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       product_status: "draft" | "active" | "archived"
       shipping_carrier: "correo_argentino" | "andreani" | "oca" | "otra"
@@ -2101,6 +2142,7 @@ export const Constants = {
         "credito",
         "efectivo",
         "transferencia",
+        "getnet",
       ],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       product_status: ["draft", "active", "archived"],
