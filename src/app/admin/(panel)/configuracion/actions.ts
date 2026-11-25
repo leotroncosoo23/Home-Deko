@@ -75,7 +75,7 @@ export async function setStoreLaunched(launched: boolean): Promise<ActionResult>
   return updateSettings({ is_launched: launched });
 }
 
-/** Guarda redes, envío, local y datos del comercio. */
+/** Guarda redes, envío, local, datos del comercio y precios. */
 export async function saveStoreSettings(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
 
@@ -104,5 +104,7 @@ export async function saveStoreSettings(formData: FormData): Promise<ActionResul
     business_name: v.businessName,
     cuit: v.cuit,
     contact_email: v.contactEmail,
+    show_price_without_taxes: v.showPriceWithoutTaxes,
+    national_tax_percent: v.nationalTaxPercent,
   });
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { NOMBRE_COMERCIO, SITIO, type DatosComercio } from "@/content/legales";
-import { formatARS, formatCuit, formatWhatsApp } from "@/lib/format";
+import { formatCuit, formatPrice, formatWhatsApp } from "@/lib/format";
 import { paymentCopy } from "@/lib/payments/config";
 import { createPublicClient } from "@/lib/supabase/public";
 
@@ -23,7 +23,7 @@ export const STORE_SETTINGS_TAG = "store-settings";
 
 /** Columnas que se pueden leer desde la tienda (ver el grant en la migración). */
 export const STORE_SETTINGS_COLUMNS =
-  "id, is_launched, whatsapp, instagram, tiktok, shipping_cost, store_address, store_hours, exchange_days, business_name, cuit, contact_email, dispatch_time";
+  "id, is_launched, whatsapp, instagram, tiktok, shipping_cost, store_address, store_hours, exchange_days, business_name, cuit, contact_email, dispatch_time, show_price_without_taxes, national_tax_percent";
 
 export type StoreSettings = {
   id: string;
@@ -45,6 +45,10 @@ export type StoreSettings = {
   contactEmail: string;
   /** Plazo de despacho de los envíos, texto libre (ej.: "24 a 48 h hábiles"). "" si no se cargó. */
   dispatchTime: string;
+  /** Mostrar "Precio sin impuestos nacionales" en la página del producto (apagado por defecto). */
+  showPriceWithoutTaxes: boolean;
+  /** % de impuestos nacionales para ese cálculo (21 por defecto). */
+  nationalTaxPercent: number;
 };
 
 type Row = {
@@ -61,6 +65,8 @@ type Row = {
   cuit: string;
   contact_email: string;
   dispatch_time: string;
+  show_price_without_taxes: boolean;
+  national_tax_percent: number;
 };
 
 /** Fila de la base → objeto que usa la app (también lo usa el panel). */
@@ -79,6 +85,8 @@ export function mapStoreSettings(row: Row): StoreSettings {
     cuit: row.cuit,
     contactEmail: row.contact_email,
     dispatchTime: row.dispatch_time,
+    showPriceWithoutTaxes: row.show_price_without_taxes,
+    nationalTaxPercent: Number(row.national_tax_percent),
   };
 }
 
@@ -120,7 +128,7 @@ export function datosComercio(s: StoreSettings): DatosComercio {
     horarios: s.storeHours || FALTA,
     cambiosDias: s.exchangeDays,
     // "$ 20.000" en vez de "$ 20.000,00" (en un texto se lee mejor sin centavos)
-    envioDomicilio: formatARS(s.shippingCost).replace(/,00$/, ""),
+    envioDomicilio: formatPrice(s.shippingCost),
     // Opcional (no es un dato legal obligatorio): vacío = la frase no aparece.
     despacho: s.dispatchTime.trim(),
     // Medio de pago activo (PAYMENT_PROVIDER): "Getnet" o "Mercado Pago".
@@ -155,7 +163,7 @@ export type DatosTienda = {
 export function datosTienda(s: StoreSettings, mensajeWhatsApp?: string): DatosTienda {
   const whatsapp = whatsappLink(s, mensajeWhatsApp);
   return {
-    envio: s.shippingCost > 0 ? formatARS(s.shippingCost).replace(/,00$/, "") : null,
+    envio: s.shippingCost > 0 ? formatPrice(s.shippingCost) : null,
     despacho: s.dispatchTime.trim() || null,
     direccion: s.storeAddress.trim() || null,
     horarios: s.storeHours.trim() || null,

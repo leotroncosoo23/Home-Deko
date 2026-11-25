@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "cn";
-import { formatARS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import type { StoreProduct } from "@/lib/store-data";
 import { productHref } from "@/lib/store-nav";
 import { QuickAdd } from "./cart/quick-add";
@@ -25,15 +25,16 @@ export const HOME_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 2
  * Tarjeta de producto de la tienda (inicio, catálogo, categorías, búsqueda):
  * foto grande cuadrada, nombre (hasta 2 líneas), precio y botón rápido.
  *
- *   - Con descuento vigente: etiqueta "-10%" (o "Hasta -20%"), precio final
- *     en rojo y el anterior tachado.
- *   - Quedan 1 a 3 unidades: "¡Últimas unidades!" (nunca junto a "Sin stock").
+ *   - Con descuento vigente: etiqueta "-10% OFF" (o "Hasta -20% OFF"), precio
+ *     final en rojo y el anterior tachado.
+ *   - Quedan 1 o 2 unidades en total: "¡Últimas unidades!" (nunca junto a "Sin stock").
  *   - Con variantes de distinto precio: "Desde $ …".
  *   - Sin stock: etiqueta "Sin stock", la foto un poco apagada y sin botón.
  *   - Con 2 fotos o más: la segunda aparece al pasar el mouse.
  *   - Borrador: etiqueta gris "Borrador" (solo les llegan a los admins).
- *   - Botón rápido: "Agregar" (una variante) o "Elegir opciones" (varias).
- *     En el celular es un ícono al lado del precio, para no tapar la foto.
+ *   - Botón rápido debajo del precio, con texto en todos los tamaños:
+ *     "Agregar" (una variante) o "Ver opciones" (varias).
+ *   - Precios sin ",00" (formatPrice).
  *   - Al pasar el mouse: zoom leve de la foto y una sombra suave. En
  *     Tailwind v4, hover/group-hover solo aplican en dispositivos con
  *     mouse: en el celular nada queda "pegado" después de tocar.
@@ -50,7 +51,7 @@ export function ProductCard({
   const p = product;
   const discount = p.discountActive && p.finalPrice < p.price;
   const href = productHref(p.slug);
-  // Botón rápido: sin stock no hay; con una variante "Agregar"; con varias "Elegir opciones".
+  // Botón rápido: sin stock no hay; con una variante "Agregar"; con varias "Ver opciones".
   const quick =
     p.inStock && p.variantCount > 0
       ? { variantId: p.variantCount === 1 ? p.singleVariantId : null, href, name: p.name, imageUrl: p.imageUrl }
@@ -59,7 +60,7 @@ export function ProductCard({
   return (
     // <article> y no un solo <Link>: el botón "Agregar" no puede ir dentro de un link.
     // data-product-card / data-card-image: desde esta foto vuela la miniatura al carrito.
-    <article data-product-card className="group flex flex-col gap-3">
+    <article data-product-card className="group flex h-full flex-col gap-3">
       <Link
         href={href}
         className="flex flex-col gap-3 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:ring-offset-4"
@@ -110,36 +111,28 @@ export function ProductCard({
         </h3>
       </Link>
 
-      <div className="-mt-1.5 flex flex-col gap-3 px-0.5">
-        <div className="flex min-h-9 items-center justify-between gap-2 md:min-h-0">
-          <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 tabular-nums">
-            {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
-            <span
-              className={cn(
-                "text-base font-semibold tracking-tight md:text-[17px]",
-                discount ? "text-brand" : "text-foreground",
-              )}
-            >
-              {formatARS(p.finalPrice)}
-            </span>
-            {discount && (
-              <span className="text-sm text-muted-foreground line-through">
-                <span className="sr-only">Antes: </span>
-                {formatARS(p.price)}
-              </span>
+      <div className="-mt-1.5 flex flex-1 flex-col gap-2.5 px-0.5 md:gap-3">
+        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 tabular-nums">
+          {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
+          <span
+            className={cn(
+              "text-base font-semibold tracking-tight md:text-[17px]",
+              discount ? "text-brand" : "text-foreground",
             )}
-          </p>
-          {/* Celular: botón chico al lado del precio */}
-          {quick && (
-            <div className="md:hidden">
-              <QuickAdd {...quick} size="icon" />
-            </div>
+          >
+            {formatPrice(p.finalPrice)}
+          </span>
+          {discount && (
+            <span className="text-sm text-muted-foreground line-through">
+              <span className="sr-only">Antes: </span>
+              {formatPrice(p.price)}
+            </span>
           )}
-        </div>
-        {/* Tablet y PC: botón con texto debajo del precio */}
+        </p>
+        {/* mt-auto: en una misma fila, los botones quedan alineados abajo */}
         {quick && (
-          <div className="hidden md:block">
-            <QuickAdd {...quick} size="full" />
+          <div className="mt-auto">
+            <QuickAdd {...quick} />
           </div>
         )}
       </div>
@@ -148,7 +141,7 @@ export function ProductCard({
 }
 
 /**
- * Etiquetas sobre la foto: "Borrador", "-10%", "Sin stock" o "¡Últimas
+ * Etiquetas sobre la foto: "Borrador", "-10% OFF", "Sin stock" o "¡Últimas
  * unidades!". Las comparten la tarjeta y la página del producto.
  */
 export function ProductBadges({ product: p }: { product: StoreProduct }) {
@@ -161,7 +154,7 @@ export function ProductBadges({ product: p }: { product: StoreProduct }) {
         </span>
       )}
       {discount && (
-        <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white tabular-nums">
+        <span className="rounded-full bg-brand px-3 py-1 text-[13px] font-bold tracking-tight text-white shadow-sm tabular-nums md:text-sm">
           {discountLabel(p)}
         </span>
       )}
@@ -181,13 +174,18 @@ export function ProductBadges({ product: p }: { product: StoreProduct }) {
 }
 
 /**
- * Etiqueta del descuento: "-10%", o "Hasta -20%" si las variantes ahorran
- * distinto (descuento de monto fijo con precios distintos). Si el
+ * Etiqueta del descuento: "-10% OFF", o "Hasta -20% OFF" si las variantes
+ * ahorran distinto (descuento de monto fijo con precios distintos). Si el
  * porcentaje redondea a 0, queda "Oferta".
  */
 export function discountLabel(p: StoreProduct): string {
-  if (p.discountPercent === null) return "Oferta";
-  return `${p.discountPercentVaries ? "Hasta " : ""}-${p.discountPercent}%`;
+  if (p.discountPercent === null || p.discountPercent <= 0) return "Oferta";
+  return `${p.discountPercentVaries ? "Hasta " : ""}${percentOffLabel(p.discountPercent)}`;
+}
+
+/** 15 → "-15% OFF". */
+export function percentOffLabel(percent: number): string {
+  return `-${percent}% OFF`;
 }
 
 /** Sin foto: el corazón de la marca, suave, para que la grilla no quede rota. */

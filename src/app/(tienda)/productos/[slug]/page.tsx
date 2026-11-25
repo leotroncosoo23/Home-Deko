@@ -5,7 +5,7 @@ import { Store, Truck } from "lucide-react";
 import { Breadcrumbs, type Crumb } from "@/components/store/catalog/breadcrumbs";
 import { HOME_GRID, HOME_IMAGE_SIZES, ProductCard } from "@/components/store/product-card";
 import { ProductPurchase } from "@/components/store/product/product-purchase";
-import { formatARS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { siteUrl } from "@/lib/site-url";
 import {
   getPublishedProduct,
@@ -91,7 +91,13 @@ async function ProductContent({ params }: Pick<PageProps<"/productos/[slug]">, "
   return (
     <>
       <Breadcrumbs items={crumbs} />
-      <ProductPurchase product={card} options={product.options} variants={product.variants} photos={product.photos}>
+      <ProductPurchase
+        product={card}
+        options={product.options}
+        variants={product.variants}
+        photos={product.photos}
+        nationalTaxPercent={settings.showPriceWithoutTaxes ? settings.nationalTaxPercent : null}
+      >
         <ProductDetails product={product} settings={settings} />
       </ProductPurchase>
       {!card.isDraft && <ProductJsonLd product={product} />}
@@ -119,7 +125,7 @@ function ProductDetails({ product, settings }: { product: ProductDetail; setting
           <Truck aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
           <p>
             <span className="font-semibold">Envío a domicilio: </span>
-            <span className="tabular-nums">{formatARS(settings.shippingCost).replace(/,00$/, "")}</span> a todo el
+            <span className="tabular-nums">{formatPrice(settings.shippingCost)}</span> a todo el
             país.
           </p>
         </li>

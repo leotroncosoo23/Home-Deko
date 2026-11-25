@@ -7,7 +7,7 @@ import { AlertCircle, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { getCartLines } from "@/app/(tienda)/actions";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { productCountLabel, type CartData, type CartItem, type CartLine } from "@/lib/cart";
-import { formatARS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { ALL_PRODUCTS_LINK, CHECKOUT_PATH, productHref } from "@/lib/store-nav";
 import { cn } from "@/lib/utils";
 import { getCartSnapshot, removeCartItem, replaceCart, setCartItemQty } from "./cart-store";
@@ -125,7 +125,7 @@ export function CartSheet({
                 <div className="flex items-baseline justify-between gap-4">
                   <dt className="text-base font-semibold">Subtotal</dt>
                   <dd className="text-lg font-semibold tabular-nums">
-                    {data ? formatARS(subtotal) : <span className="inline-block h-5 w-24 animate-pulse rounded bg-muted" />}
+                    {data ? formatPrice(subtotal) : <span className="inline-block h-5 w-24 animate-pulse rounded bg-muted" />}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4 text-muted-foreground">
@@ -133,7 +133,7 @@ export function CartSheet({
                   <dd className="text-right">
                     {data ? (
                       <>
-                        <span className="tabular-nums">{formatARS(data.shippingCost).replace(/,00$/, "")}</span> a
+                        <span className="tabular-nums">{formatPrice(data.shippingCost)}</span> a
                         domicilio o retiro gratis
                       </>
                     ) : (
@@ -287,12 +287,12 @@ function CartLineRow({ line, onNavigate }: { line: CartLine; onNavigate: () => v
           </div>
           <p className="flex flex-col items-end tabular-nums">
             <span className={cn("font-semibold", line.unitPriceBefore && "text-brand")}>
-              {formatARS(line.unitPrice * line.qty)}
+              {formatPrice(line.unitPrice * line.qty)}
             </span>
             {line.unitPriceBefore && (
               <span className="text-xs text-muted-foreground line-through">
                 <span className="sr-only">Antes: </span>
-                {formatARS(line.unitPriceBefore * line.qty)}
+                {formatPrice(line.unitPriceBefore * line.qty)}
               </span>
             )}
           </p>

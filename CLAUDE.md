@@ -335,8 +335,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   (`src/components/store/catalog/`). Estado en la URL (`?orden=&min=&max=&pagina=`, + `q` y `categoria` en
   `/buscar`), parseado en `src/lib/catalog-params.ts`. 24 por tanda; "Ver más" es un link a `?pagina=N`.
   Búsqueda sobre `store_products.search_text` (nombre + categoría + códigos de barras, sin tildes).
-- Tarjeta de producto (`product-card.tsx`): descuento como "-10%" (redondeado) o "Hasta -20%" si las variantes
-  ahorran distinto (`discount_percent_max/min` de la vista); "¡Últimas unidades!" si quedan 1 a 3 en total
+- Tarjeta de producto (`product-card.tsx`): descuento como "-10% OFF" (redondeado) o "Hasta -20% OFF" si las variantes
+  ahorran distinto (`discount_percent_max/min` de la vista); "¡Últimas unidades!" si quedan 1 o 2 en total
   (`few_left`, un sí/no: la tienda nunca muestra el número de unidades). Lo que cambie el stock (también las
   ventas web del paso 4) tiene que llamar a `updateTag(STORE_PRODUCTS_TAG)` para que la etiqueta se actualice.
 - Fotos grandes; al elegir un color se muestran sus fotos.
@@ -351,9 +351,12 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 ### Carrito, checkout y envío
 - **Botón rápido en la tarjeta de producto** (`ProductCard`: inicio, catálogo, categorías y búsqueda):
   - Producto con **una sola variante**: "Agregar" lo suma al carrito, con el aviso "Agregado ✓".
-  - Con **varias variantes**: "Elegir opciones" lleva a la página del producto.
+  - Con **varias variantes**: "Ver opciones" lleva a la página del producto.
   - **Sin stock**: sin botón.
-  - En **celular**: botón chico con ícono de carrito que **no tape la foto**.
+  - Botón con texto en todos los tamaños, debajo del precio (no tapa la foto).
+- **Precios para clientes sin ",00"**: `formatPrice` (tienda, carrito, checkout, pedido y mails); el panel sigue con
+  `formatARS`. "Precio sin impuestos nacionales" opcional en Configuración (`store_settings.show_price_without_taxes`
+  y `national_tax_percent`), en la página del producto.
 - **Carrito (paso 3, implementado)** — `src/components/store/cart/`:
   - El navegador guarda SOLO `{ variantId, qty }` en localStorage (`hd_carrito`). Nombre, foto, precio y stock
     los arma siempre el servidor con `getCartLines` (`src/app/(tienda)/actions.ts`, lee `store_variants`), que

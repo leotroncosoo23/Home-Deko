@@ -5,6 +5,7 @@ import { ArrowRight, Star } from "lucide-react";
 import { CategoryGrid } from "@/components/store/category-grid";
 import { HeroBanners } from "@/components/store/hero-banner";
 import { HOME_GRID, HOME_IMAGE_SIZES, ProductCard, ProductGridSkeleton } from "@/components/store/product-card";
+import { StoreBenefits } from "@/components/store/store-benefits";
 import { StoreHighlights } from "@/components/store/store-highlights";
 import { getActiveBanners, getVisibleCategories } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
  * INICIO DE LA TIENDA (/)
  *
  *   1. Banner principal: los del panel (2 o 3 → carrusel), o el de Home Deko por defecto
+ *      + barra de beneficios (envíos, retiro, pago seguro, cambios)
  *   2. Bienvenida con el <h1> "Home Deko"
  *   3. Categorías visibles
  *   4. Destacados + "Ver todos los productos"
@@ -55,6 +57,7 @@ export default async function TiendaHomePage() {
       {/* De borde a borde de la pantalla (sin márgenes ni bordes redondeados).
           1 banner = fijo; 2 o 3 = carrusel. */}
       <HeroBanners banners={banners} />
+      <StoreBenefits />
 
       <div className={cn(STORE_CONTAINER, "flex flex-col gap-14 pt-10 md:gap-20 md:pt-14")}>
         <header className="flex flex-col items-center gap-2 text-center">

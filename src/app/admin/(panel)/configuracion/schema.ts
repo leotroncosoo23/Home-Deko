@@ -11,6 +11,7 @@ import { parseInteger, parseMoney } from "@/lib/format";
  *   - Instagram "@homedeko.hogar" o el link     → "homedeko.hogar"
  *   - CUIT "20-12345678-6"                      → "20123456786"
  *   - Envío "20.000"                            → 20000
+ *   - Impuestos "10,5"                          → 10.5
  */
 
 export const SETTINGS_FIELDS = [
@@ -25,6 +26,8 @@ export const SETTINGS_FIELDS = [
   "businessName",
   "cuit",
   "contactEmail",
+  "showPriceWithoutTaxes",
+  "nationalTaxPercent",
 ] as const;
 
 export type SettingsField = (typeof SETTINGS_FIELDS)[number];
@@ -34,6 +37,8 @@ export type SettingsInput = Record<SettingsField, string>;
 
 export const SHIPPING_MAX = 10_000_000;
 export const EXCHANGE_DAYS_MAX = 365;
+/** El % de impuestos nacionales tiene que ser menor a 100 (igual que en la base). */
+export const TAX_PERCENT_MAX = 99.99;
 
 /** Saca el link, la "@" y espacios: queda solo el nombre de usuario. */
 function cleanHandle(value: string) {
@@ -111,6 +116,15 @@ export const settingsSchema = z.object({
       message: "Escribí un email válido (ej.: hola@homedeko.com).",
     })
     .refine((v) => v.length <= 254, { message: "El email es demasiado largo." }),
+  // Interruptor: llega como texto "true" / "false" (el formulario manda todo como texto).
+  showPriceWithoutTaxes: z.string().transform((v) => v === "true"),
+  nationalTaxPercent: z
+    .string()
+    .transform((v) => parseMoney(v.replace("%", "")))
+    .refine((v) => v !== null && !Number.isNaN(v) && v >= 0 && v <= TAX_PERCENT_MAX, {
+      message: "Escribí un porcentaje entre 0 y 99 (ej.: 21).",
+    })
+    .transform((v) => v as number),
 });
 
 export type SettingsValues = z.output<typeof settingsSchema>;
@@ -135,7 +149,7 @@ export const LAUNCH_REQUIRED: LaunchRequirement[] = [
 ];
 
 /** Lo que falta para poder lanzar (vacío = se puede). */
-export function missingForLaunch(values: Partial<Record<SettingsField, string | number>>) {
+export function missingForLaunch(values: Partial<Record<SettingsField, string | number | boolean>>) {
   return LAUNCH_REQUIRED.filter(({ field }) => String(values[field] ?? "").trim() === "");
 }
 

@@ -18,6 +18,33 @@ export function formatARS(value: number): string {
   return ars.format(value).replace(/ /g, " ");
 }
 
+const arsWhole = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+/**
+ * Precio para CLIENTES (tienda, carrito, checkout, pedido y mails):
+ * "$ 25.000" sin ",00"; si tiene centavos reales, se muestran ("$ 25.000,50").
+ * El panel sigue con formatARS (siempre con centavos, columnas alineadas).
+ */
+export function formatPrice(value: number): string {
+  const cents = Math.round(value * 100);
+  const text = cents % 100 === 0 ? arsWhole.format(cents / 100) : ars.format(value);
+  // Intl pone un espacio "duro" (U+00A0) entre $ y el número; lo dejamos normal.
+  return text.replace(/ /g, " ");
+}
+
+/**
+ * "Precio sin impuestos nacionales" (opcional, se prende en la
+ * Configuración): precio / (1 + %/100), redondeado a pesos.
+ */
+export function priceWithoutTaxes(price: number, taxPercent: number): number {
+  return Math.round(price / (1 + taxPercent / 100));
+}
+
 /** "12.345" o "12.345,50" (sin $; para el valor de un campo). */
 export function formatMoneyInput(value: number | null): string {
   if (value === null || Number.isNaN(value)) return "";

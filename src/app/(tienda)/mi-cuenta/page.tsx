@@ -18,7 +18,7 @@ import type { Tracking } from "@/lib/carriers";
 import { DeleteAccount } from "@/components/store/account/delete-account";
 import { DetailsForm } from "@/components/store/account/details-form";
 import { getMyAccount, getMyOrders, safeReturnPath, type MyAccount, type MyOrder } from "@/lib/account";
-import { firstNameOf, formatARS } from "@/lib/format";
+import { firstNameOf, formatPrice } from "@/lib/format";
 import { ALL_PRODUCTS_LINK } from "@/lib/store-nav";
 import { cn } from "@/lib/utils";
 import { signOutCustomer } from "./actions";
@@ -226,7 +226,7 @@ function OrderList({ orders }: { orders: MyOrder[] }) {
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="font-semibold">Pedido #{o.number}</span>
               <span className="text-sm text-muted-foreground">
-                {dateFormat.format(new Date(o.createdAt))} · <span className="tabular-nums">{formatARS(o.total)}</span>
+                {dateFormat.format(new Date(o.createdAt))} · <span className="tabular-nums">{formatPrice(o.total)}</span>
               </span>
             </span>
             <StatusBadge status={o.status} />

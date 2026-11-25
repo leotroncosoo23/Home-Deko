@@ -1243,7 +1243,9 @@ export type Database = {
           id: string
           instagram: string
           is_launched: boolean
+          national_tax_percent: number
           shipping_cost: number
+          show_price_without_taxes: boolean
           singleton: boolean
           store_address: string
           store_hours: string
@@ -1261,7 +1263,9 @@ export type Database = {
           id?: string
           instagram?: string
           is_launched?: boolean
+          national_tax_percent?: number
           shipping_cost?: number
+          show_price_without_taxes?: boolean
           singleton?: boolean
           store_address?: string
           store_hours?: string
@@ -1279,7 +1283,9 @@ export type Database = {
           id?: string
           instagram?: string
           is_launched?: boolean
+          national_tax_percent?: number
           shipping_cost?: number
+          show_price_without_taxes?: boolean
           singleton?: boolean
           store_address?: string
           store_hours?: string

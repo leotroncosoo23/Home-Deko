@@ -18,7 +18,7 @@ import { HeroCarousel } from "./hero-carousel";
  * el celular" dentro de una PC, solo con hacer la caja angosta.
  *
  * Tipos:
- *   - null      → banner de Home Deko por defecto (rojo, logo blanco).
+ *   - null      → banner de Home Deko por defecto (rojo, solo texto: el logo ya está en el encabezado).
  *   - template  → plantilla de marca: título, texto, botón y foto.
  *   - image     → imagen completa diseñada aparte (una para PC y otra
  *                 opcional para celular).
@@ -111,10 +111,10 @@ function BannerContent({
 // Por defecto
 // ---------------------------------------------------------------------------
 
+/** Sin logo: ya está en el encabezado, justo arriba. Solo texto y fondo de marca. */
 function DefaultBanner() {
   return (
-    <div className="flex flex-col items-center gap-6 overflow-hidden bg-brand px-6 py-14 text-center text-white @2xl:py-24">
-      <Logo variant="stacked" tone="light" decorative preload className="h-auto w-36 @2xl:w-44" />
+    <div className="flex flex-col items-center gap-6 overflow-hidden bg-brand px-6 py-16 text-center text-white @2xl:py-24">
       <h2 className="max-w-xl font-display text-3xl leading-tight font-semibold text-balance @2xl:text-5xl">
         Tu casa, tu refugio, con diseño y calidez.
       </h2>

@@ -8,7 +8,7 @@ import { Check, CheckCircle2, Clock, ExternalLink, ShoppingBag, Truck, XCircle }
 import { AutoRefresh, ClearCartOnApproved, CopyCode } from "@/components/store/checkout/order-client";
 import { trackingFor, type Tracking } from "@/lib/carriers";
 import { WhatsAppIcon } from "@/components/store/whatsapp-icon";
-import { formatARS, titleCase } from "@/lib/format";
+import { formatPrice, titleCase } from "@/lib/format";
 import { publicImageUrl } from "@/lib/storage";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, CHECKOUT_PATH } from "@/lib/store-nav";
@@ -376,10 +376,10 @@ function OrderSummary({ order }: { order: GuestOrder }) {
               <span className="line-clamp-2 font-medium">{item.product_name}</span>
               {item.variant_label && <span className="text-muted-foreground">{item.variant_label}</span>}
               <span className="text-muted-foreground tabular-nums">
-                {item.quantity} × {formatARS(Number(item.unit_price))}
+                {item.quantity} × {formatPrice(Number(item.unit_price))}
               </span>
             </span>
-            <span className="text-sm font-semibold tabular-nums">{formatARS(Number(item.line_total))}</span>
+            <span className="text-sm font-semibold tabular-nums">{formatPrice(Number(item.line_total))}</span>
           </li>
         ))}
       </ul>
@@ -387,21 +387,21 @@ function OrderSummary({ order }: { order: GuestOrder }) {
       <dl className="flex flex-col gap-2 border-t pt-4 text-[15px]">
         <div className="flex justify-between gap-4">
           <dt className="text-muted-foreground">Subtotal</dt>
-          <dd className="tabular-nums">{formatARS(Number(order.subtotal))}</dd>
+          <dd className="tabular-nums">{formatPrice(Number(order.subtotal))}</dd>
         </div>
         {Number(order.discount_total) > 0 && (
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">{order.coupon_code ? `Cupón ${order.coupon_code}` : "Descuento"}</dt>
-            <dd className="text-brand tabular-nums">− {formatARS(Number(order.discount_total))}</dd>
+            <dd className="text-brand tabular-nums">− {formatPrice(Number(order.discount_total))}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4">
           <dt className="text-muted-foreground">{pickup ? "Retiro en el local" : "Envío a domicilio"}</dt>
-          <dd className="tabular-nums">{pickup ? "Gratis" : formatARS(Number(order.shipping_cost))}</dd>
+          <dd className="tabular-nums">{pickup ? "Gratis" : formatPrice(Number(order.shipping_cost))}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-4 border-t pt-3">
           <dt className="font-semibold">Total</dt>
-          <dd className="text-lg font-semibold tabular-nums">{formatARS(Number(order.total))}</dd>
+          <dd className="text-lg font-semibold tabular-nums">{formatPrice(Number(order.total))}</dd>
         </div>
       </dl>
 

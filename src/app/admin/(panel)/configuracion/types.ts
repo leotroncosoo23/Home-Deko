@@ -18,6 +18,8 @@ export type AdminSettings = {
   cuit: string;
   contactEmail: string;
   dispatchTime: string;
+  showPriceWithoutTaxes: boolean;
+  nationalTaxPercent: number;
 };
 
 /** Lo que devuelve cada Server Action: o salió bien, o un mensaje claro. */
