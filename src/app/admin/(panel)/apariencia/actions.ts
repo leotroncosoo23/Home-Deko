@@ -2,6 +2,7 @@
 
 import { refresh, updateTag } from "next/cache";
 import { getPanelAccess, requireAdmin } from "@/lib/auth";
+import { BANNERS_MAX } from "@/lib/banners";
 import { dayAfterStartToIso, dayStartToIso } from "@/lib/dates";
 import { STORE_ANNOUNCEMENTS_TAG, STORE_BANNERS_TAG } from "@/lib/store-cache";
 import { IMAGES_BUCKET } from "@/lib/storage";
@@ -26,6 +27,7 @@ import type { ActionResult, BannerField, BannerFormValues } from "./types";
  */
 
 const GENERIC_ERROR = "No se pudo guardar. Intentá de nuevo en unos segundos.";
+const MAX_BANNERS_ERROR = `Ya hay ${BANNERS_MAX} banners, que es el máximo. Eliminá uno para agregar otro.`;
 const IMAGE_MAX_BYTES = 3 * 1024 * 1024; // ya llegan comprimidas (~200–600 KB)
 const IMAGE_TYPES: Record<string, string> = {
   "image/webp": "webp",
@@ -182,10 +184,12 @@ export async function saveBanner(formData: FormData): Promise<ActionResult> {
       return { ok: false, error: GENERIC_ERROR };
     }
   } else {
+    // El lugar en el carrusel lo pone la base (trigger banners_assign_position).
     const { data: saved, error } = await supabase.from("banners").insert(row).select("id").single();
     if (error || !saved) {
       await removeImageFiles(uploaded);
-      return { ok: false, error: GENERIC_ERROR };
+      // HD409: ya hay 3 banners (el máximo).
+      return { ok: false, error: error?.code === "HD409" ? MAX_BANNERS_ERROR : GENERIC_ERROR };
     }
     savedId = saved.id;
   }
@@ -212,6 +216,35 @@ export async function setBannerActive(id: string, isActive: boolean): Promise<Ac
   const { data, error } = await supabase.from("banners").update({ is_active: isActive }).eq("id", id).select("id");
   if (error) return { ok: false, error: GENERIC_ERROR };
   if (data.length === 0) return { ok: false, error: "Este banner ya no existe. Recargá la página." };
+
+  updateTag(STORE_BANNERS_TAG);
+  refresh();
+  return { ok: true, id };
+}
+
+// ---------------------------------------------------------------------
+// Subir / bajar en el carrusel
+// ---------------------------------------------------------------------
+
+/**
+ * Lo intercambia con el de al lado (move_banner en la base, todo junto).
+ * "up" = hacia el banner 1. En el borde no hace nada.
+ */
+export async function moveBanner(id: string, direction: "up" | "down"): Promise<ActionResult> {
+  const denied = await checkAppearanceAccess();
+  if (denied) return denied;
+  if (!UUID_PATTERN.test(id) || (direction !== "up" && direction !== "down")) {
+    return { ok: false, error: "Banner inválido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("move_banner", { p_id: id, p_direction: direction === "up" ? -1 : 1 });
+  if (error) {
+    return {
+      ok: false,
+      error: error.code === "HD404" ? "Este banner ya no existe. Recargá la página." : GENERIC_ERROR,
+    };
+  }
 
   updateTag(STORE_BANNERS_TAG);
   refresh();

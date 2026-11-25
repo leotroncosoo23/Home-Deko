@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { BANNER_VIEW_COLUMNS, toBannerView, type BannerView } from "@/lib/banners";
+import { BANNER_VIEW_COLUMNS, BANNERS_MAX, toBannerView, type BannerView } from "@/lib/banners";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSort } from "@/lib/catalog-params";
 import type { Database } from "@/lib/database.types";
@@ -434,11 +434,11 @@ export async function getRelatedProducts(categoryId: string, excludeId: string):
 // ---------------------------------------------------------------------------
 
 /**
- * El banner que se ve hoy, o null (→ banner de Home Deko por defecto).
- * El RLS ya filtra los activos y dentro de sus fechas; si hay varios, gana
- * el que empezó más recientemente (los que no tienen fecha de inicio, al final).
+ * Los banners que se ven hoy, en el orden del panel (banners.position).
+ * El RLS ya filtra los activos y dentro de sus fechas. Vacío → banner de
+ * Home Deko por defecto; 1 → fijo; 2 o 3 → carrusel.
  */
-export async function getActiveBanner(): Promise<BannerView | null> {
+export async function getActiveBanners(): Promise<BannerView[]> {
   "use cache";
   cacheTag(STORE_BANNERS_TAG);
   cacheLife("minutes");
@@ -446,13 +446,11 @@ export async function getActiveBanner(): Promise<BannerView | null> {
   const { data, error } = await createPublicClient()
     .from("banners")
     .select(BANNER_VIEW_COLUMNS)
-    .order("starts_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error("No se pudo leer el banner.");
+    .order("position")
+    .limit(BANNERS_MAX);
+  if (error) throw new Error("No se pudieron leer los banners.");
 
-  return data ? toBannerView(data) : null;
+  return data.map(toBannerView);
 }
 
 // ---------------------------------------------------------------------------

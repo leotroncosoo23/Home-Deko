@@ -7,6 +7,18 @@ import { publicImageUrl } from "@/lib/storage";
  * exactamente lo que va a salir.
  */
 
+/** Como máximo 3 banners (lo controla la base: banners.position va de 1 a 3). */
+export const BANNERS_MAX = 3;
+
+/** Con 2 o 3 banners vigentes, pasan solos cada 6 segundos. */
+export const CAROUSEL_INTERVAL_MS = 6000;
+
+/** Tamaños recomendados de la imagen completa (los mismos que dice la Ayuda). */
+export const BANNER_IMAGE_SIZES = {
+  desktop: { width: 1920, height: 800 },
+  mobile: { width: 1080, height: 1350 },
+} as const;
+
 export type BannerKind = "template" | "image";
 export type BannerBackground = "red" | "white";
 

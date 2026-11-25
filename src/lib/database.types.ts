@@ -48,6 +48,7 @@ export type Database = {
           image_path: string | null
           is_active: boolean
           kind: string
+          position: number
           product_image_path: string | null
           starts_at: string | null
           title: string
@@ -65,6 +66,7 @@ export type Database = {
           image_path?: string | null
           is_active?: boolean
           kind: string
+          position?: number
           product_image_path?: string | null
           starts_at?: string | null
           title: string
@@ -82,6 +84,7 @@ export type Database = {
           image_path?: string | null
           is_active?: boolean
           kind?: string
+          position?: number
           product_image_path?: string | null
           starts_at?: string | null
           title?: string
@@ -1849,6 +1852,10 @@ export type Database = {
           order_number: number
           reason: string
         }[]
+      }
+      move_banner: {
+        Args: { p_direction: number; p_id: string }
+        Returns: undefined
       }
       redeem_order_coupon: { Args: { p_order_id: string }; Returns: string }
       reorder_categories: { Args: { p_ids: string[] }; Returns: undefined }

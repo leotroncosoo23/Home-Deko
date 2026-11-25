@@ -7,7 +7,7 @@ import type { BannerBackground, BannerKind, BannerView } from "@/lib/banners";
 
 /**
  * Estado de un banner HOY:
- *   live      → activo y dentro de sus fechas (puede verse en la tienda)
+ *   live      → activo y dentro de sus fechas (se ve en la tienda)
  *   scheduled → activo, pero empieza más adelante
  *   ended     → activo, pero ya pasó su fecha de fin
  *   paused    → apagado a mano
@@ -25,8 +25,8 @@ export type AdminBanner = BannerView & {
   endsOn: string;
   isActive: boolean;
   status: BannerStatus;
-  /** true si es EL que se ve hoy en la tienda (si hay varios vigentes, uno solo). */
-  isShowing: boolean;
+  /** Lugar en el carrusel (1 a 3). Lo asigna la base; se cambia con move_banner. */
+  position: number;
   updatedAt: string;
 };
 
