@@ -7,46 +7,38 @@ import { useCart } from "./cart-provider";
 import { useAddedFlash } from "./use-added-flash";
 
 /**
- * Botón rápido de la tarjeta de producto:
- *   - una sola variante → "Agregar" (suma 1 al carrito, con la animación)
- *   - varias            → "Elegir opciones" (lleva a la página del producto)
+ * Botón rápido de la tarjeta de producto, con texto en todos los tamaños:
+ *   - una sola variante → "Agregar" (suma 1 al carrito, con la animación de
+ *     vuelo al carrito)
+ *   - varias            → "Ver opciones" (lleva a la página del producto)
  * (Sin stock, la tarjeta no lo muestra.)
- *
- *   size="icon": celular, botón chico redondo al lado del precio (no tapa la foto)
- *   size="full": desde tablet, botón con texto debajo del precio
+ * En el celular es un poco más bajo (las tarjetas van de a 2 por fila).
  */
 export function QuickAdd({
   variantId,
   href,
   name,
   imageUrl,
-  size,
 }: {
-  /** null → tiene varias variantes: "Elegir opciones". */
+  /** null → tiene varias variantes: "Ver opciones". */
   variantId: string | null;
   href: string;
   name: string;
   imageUrl: string | null;
-  size: "icon" | "full";
 }) {
   const { add } = useCart();
   const [added, flash] = useAddedFlash();
 
   const base =
-    size === "icon"
-      ? "inline-flex size-9 shrink-0 items-center justify-center rounded-full"
-      : "inline-flex h-10 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold";
+    "inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-semibold whitespace-nowrap md:h-10 md:gap-2 md:px-4 md:text-sm";
   const look =
     "border border-brand/30 text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white focus-visible:ring-3 focus-visible:ring-brand/30 focus-visible:outline-none";
 
   if (!variantId) {
     return (
-      <Link
-        href={href}
-        aria-label={size === "icon" ? `Elegir opciones de ${name}` : undefined}
-        className={cn(base, look)}
-      >
-        {size === "icon" ? <SlidersHorizontal aria-hidden className="size-4" /> : "Elegir opciones"}
+      <Link href={href} aria-label={`Ver opciones de ${name}`} className={cn(base, look)}>
+        <SlidersHorizontal aria-hidden className="size-3.5 md:size-4" />
+        Ver opciones
       </Link>
     );
   }
@@ -66,19 +58,13 @@ export function QuickAdd({
       aria-label={added ? `${name}: agregado al carrito` : `Agregar ${name} al carrito`}
       className={cn(base, look, added && "border-brand bg-brand text-white")}
     >
-      {size === "icon" ? (
-        added ? (
-          <Check aria-hidden className="size-4" strokeWidth={3} />
-        ) : (
-          <ShoppingBag aria-hidden className="size-4" />
-        )
-      ) : added ? (
+      {added ? (
         <>
-          Agregado <Check aria-hidden className="size-4" strokeWidth={3} />
+          Agregado <Check aria-hidden className="size-3.5 md:size-4" strokeWidth={3} />
         </>
       ) : (
         <>
-          <ShoppingBag aria-hidden className="size-4" />
+          <ShoppingBag aria-hidden className="size-3.5 md:size-4" />
           Agregar
         </>
       )}

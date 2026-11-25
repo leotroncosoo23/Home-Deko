@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import type { ProductOption, ProductPhoto, ProductVariant, StoreProduct } from "@/lib/store-data";
-import { formatARS } from "@/lib/format";
+import { formatPrice, priceWithoutTaxes } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCart } from "../cart/cart-provider";
 import { useAddedFlash } from "../cart/use-added-flash";
-import { discountLabel, ProductBadges } from "../product-card";
+import { discountLabel, percentOffLabel, ProductBadges } from "../product-card";
 import { ProductGallery } from "./product-gallery";
 
 /** Lo elegido: id de la opción → id del valor ("Color" → "Rojo"). */
@@ -28,12 +28,18 @@ export function ProductPurchase({
   options,
   variants,
   photos,
+  nationalTaxPercent = null,
   children,
 }: {
   product: StoreProduct;
   options: ProductOption[];
   variants: ProductVariant[];
   photos: ProductPhoto[];
+  /**
+   * Configuración "Mostrar precio sin impuestos nacionales": el % (ej.: 21)
+   * si está prendida; null si está apagada (no se muestra nada).
+   */
+  nationalTaxPercent?: number | null;
   children: React.ReactNode;
 }) {
   const { add, qtyInCart } = useCart();
@@ -99,6 +105,8 @@ export function ProductPurchase({
   const finalPrice = variant ? variant.finalPrice : product.finalPrice;
   const hasDiscount = finalPrice < price;
   const percent = variant && hasDiscount ? Math.round((100 * (price - finalPrice)) / price) : null;
+  // "¡Últimas unidades!": con una variante elegida, SU stock (1 o 2); si no, el total del producto.
+  const fewLeft = variant ? variant.stock >= 1 && variant.stock <= 2 : product.inStock && product.fewLeft;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-12 xl:gap-16">
@@ -112,23 +120,26 @@ export function ProductPurchase({
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
             {!variant && product.hasPriceRange && <span className="text-sm text-muted-foreground">Desde</span>}
             <span className={cn("text-2xl font-semibold tracking-tight md:text-[28px]", hasDiscount && "text-brand")}>
-              {formatARS(finalPrice)}
+              {formatPrice(finalPrice)}
             </span>
             {hasDiscount && (
               <>
                 <span className="text-base text-muted-foreground line-through">
                   <span className="sr-only">Antes: </span>
-                  {formatARS(price)}
+                  {formatPrice(price)}
                 </span>
-                <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white">
-                  {percent !== null && percent > 0 ? `-${percent}%` : discountLabel(product)}
+                <span className="self-center rounded-full bg-brand px-3 py-1 text-sm font-bold tracking-tight text-white shadow-sm">
+                  {percent !== null && percent > 0 ? percentOffLabel(percent) : discountLabel(product)}
                 </span>
               </>
             )}
           </div>
-          {product.inStock && product.fewLeft && (
-            <p className="text-sm font-semibold text-brand">¡Últimas unidades!</p>
+          {nationalTaxPercent !== null && (
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Precio sin impuestos nacionales: {formatPrice(priceWithoutTaxes(finalPrice, nationalTaxPercent))}
+            </p>
           )}
+          {fewLeft && <p className="text-sm font-semibold text-brand">¡Últimas unidades!</p>}
         </div>
 
         {options.map((o, i) => (

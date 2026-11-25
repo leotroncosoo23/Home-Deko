@@ -1,4 +1,4 @@
-import { formatARS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 
 /**
  * Cupones de descuento (paso 7): lo que comparten la tienda, el panel y los
@@ -20,7 +20,7 @@ export function normalizeCouponCode(text: string): string {
 
 /** "$ 20.000" (sin ",00" cuando es redondo). */
 export function shortARS(value: number): string {
-  return formatARS(value).replace(/,00$/, "");
+  return formatPrice(value);
 }
 
 /** "2026-12-31" → "31/12/2026" (sin pasar por Date: es un día de Argentina, no un instante). */

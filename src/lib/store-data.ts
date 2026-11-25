@@ -94,9 +94,9 @@ export type StoreProduct = {
   discountPercent: number | null;
   /** Las variantes ahorran distinto % (descuento de monto fijo) → "Hasta -20%". */
   discountPercentVaries: boolean;
-  /** Quedan entre 1 y 3 unidades en total → "¡Últimas unidades!". */
+  /** Quedan 1 o 2 unidades en total → "¡Últimas unidades!". */
   fewLeft: boolean;
-  /** Cuántas variantes activas tiene (botón rápido: 1 → "Agregar", más → "Elegir opciones"). */
+  /** Cuántas variantes activas tiene (botón rápido: 1 → "Agregar", más → "Ver opciones"). */
   variantCount: number;
   /** La variante, si tiene UNA sola (la que suma "Agregar" de la tarjeta). */
   singleVariantId: string | null;

@@ -1,6 +1,6 @@
 import "server-only";
 import type { Tracking } from "@/lib/carriers";
-import { firstNameOf, formatARS } from "@/lib/format";
+import { firstNameOf, formatPrice } from "@/lib/format";
 
 /**
  * Plantillas de los mails de pedidos.
@@ -105,7 +105,7 @@ function itemsTable(o: EmailOrder): string {
 ${esc(i.name)}${i.variant ? `<br><span style="color:${MUTED};">${esc(i.variant)}</span>` : ""}
 </td>
 <td style="padding:8px 8px;border-bottom:1px solid ${BORDER};${FONT}font-size:14px;color:${MUTED};white-space:nowrap;" align="center">× ${i.quantity}</td>
-<td style="padding:8px 0;border-bottom:1px solid ${BORDER};${FONT}font-size:14px;color:${INK};white-space:nowrap;" align="right">${esc(formatARS(i.lineTotal))}</td>
+<td style="padding:8px 0;border-bottom:1px solid ${BORDER};${FONT}font-size:14px;color:${INK};white-space:nowrap;" align="right">${esc(formatPrice(i.lineTotal))}</td>
 </tr>`,
     )
     .join("");
@@ -115,10 +115,10 @@ ${esc(i.name)}${i.variant ? `<br><span style="color:${MUTED};">${esc(i.variant)}
 </tr>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
 ${rows}
-${total("Subtotal", formatARS(o.subtotal))}
-${o.discount > 0 ? total(discountLabel(o), `− ${formatARS(o.discount)}`) : ""}
-${total(o.pickup ? "Retiro en el local" : "Envío a domicilio", o.pickup ? "Gratis" : formatARS(o.shippingCost))}
-${total("Total", formatARS(o.total), true)}
+${total("Subtotal", formatPrice(o.subtotal))}
+${o.discount > 0 ? total(discountLabel(o), `− ${formatPrice(o.discount)}`) : ""}
+${total(o.pickup ? "Retiro en el local" : "Envío a domicilio", o.pickup ? "Gratis" : formatPrice(o.shippingCost))}
+${total("Total", formatPrice(o.total), true)}
 </table>`;
 }
 
@@ -178,9 +178,9 @@ function heading(text: string): string {
 
 function textItems(o: EmailOrder): string {
   return [
-    ...o.items.map((i) => `- ${i.name}${i.variant ? ` (${i.variant})` : ""} × ${i.quantity}: ${formatARS(i.lineTotal)}`),
-    ...(o.discount > 0 ? [`${discountLabel(o)}: − ${formatARS(o.discount)}`] : []),
-    `Total: ${formatARS(o.total)}`,
+    ...o.items.map((i) => `- ${i.name}${i.variant ? ` (${i.variant})` : ""} × ${i.quantity}: ${formatPrice(i.lineTotal)}`),
+    ...(o.discount > 0 ? [`${discountLabel(o)}: − ${formatPrice(o.discount)}`] : []),
+    `Total: ${formatPrice(o.total)}`,
   ].join("\n");
 }
 
@@ -292,7 +292,7 @@ export function readyForPickupEmail(o: EmailOrder, links: EmailLinks): RenderedE
 // ---------------------------------------------------------------------------
 
 export function newOrderOwnersEmail(o: EmailOrder, links: EmailLinks): RenderedEmail {
-  const subject = `${o.stockIssue ? "⚠ Pagado sin stock — " : ""}Pedido nuevo #${o.number} · ${formatARS(o.total)}`;
+  const subject = `${o.stockIssue ? "⚠ Pagado sin stock — " : ""}Pedido nuevo #${o.number} · ${formatPrice(o.total)}`;
   const warning = o.stockIssue
     ? p(
         `<strong style="color:${RED};">Pagado sin stock:</strong> cuando llegó el pago ya no alcanzaba el stock. Entrá al pedido para resolverlo.`,
@@ -300,7 +300,7 @@ export function newOrderOwnersEmail(o: EmailOrder, links: EmailLinks): RenderedE
     : "";
   const html = layout(
     links,
-    `${o.customerName} · ${o.pickup ? "Retiro en el local" : "Envío a domicilio"} · ${formatARS(o.total)}`,
+    `${o.customerName} · ${o.pickup ? "Retiro en el local" : "Envío a domicilio"} · ${formatPrice(o.total)}`,
     heading(`Pedido nuevo #${o.number}`) +
       warning +
       box(

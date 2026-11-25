@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Building2, Loader2, Share2, Truck } from "lucide-react";
+import { Building2, Loader2, Receipt, Share2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { SectionCard } from "@/components/admin/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCuit, formatMoneyInput } from "@/lib/format";
 import { useUnsavedWarning } from "../../productos/_components/use-unsaved-warning";
@@ -29,11 +30,13 @@ function toInput(s: AdminSettings): SettingsInput {
     businessName: s.businessName,
     cuit: formatCuit(s.cuit),
     contactEmail: s.contactEmail,
+    showPriceWithoutTaxes: String(s.showPriceWithoutTaxes),
+    nationalTaxPercent: formatMoneyInput(s.nationalTaxPercent),
   };
 }
 
 /**
- * Formulario de Configuración: tres tarjetas y un solo "Guardar cambios".
+ * Formulario de Configuración: cuatro tarjetas y un solo "Guardar cambios".
  *
  * La página lo monta con una `key` armada con los datos guardados: después
  * de guardar, el servidor devuelve los datos limpios (ej.: "@usuario" →
@@ -222,6 +225,54 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
           <Label htmlFor={`${ids}-contactEmail`}>Email de contacto</Label>
           <Input {...fieldProps("contactEmail")} type="email" inputMode="email" placeholder="hola@homedeko.com" autoComplete="off" />
           <FieldHelp id={`${ids}-contactEmail-help`} error={errors.contactEmail}>Donde les escriben los clientes (consultas, cambios, datos personales).</FieldHelp>
+        </div>
+      </SectionCard>
+
+      {/* ---------- Precios ---------- */}
+      <SectionCard
+        icon={Receipt}
+        title="Precios"
+        description="Cómo se muestran los precios en la página de cada producto."
+        contentClassName="grid gap-5"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor={`${ids}-showPriceWithoutTaxes`}>Mostrar precio sin impuestos nacionales</Label>
+            <FieldHelp id={`${ids}-showPriceWithoutTaxes-help`} error={errors.showPriceWithoutTaxes}>
+              Debajo del precio aparece «Precio sin impuestos nacionales: $ …». Consultá con tu contador si te
+              corresponde mostrarlo.
+            </FieldHelp>
+          </div>
+          <Switch
+            id={`${ids}-showPriceWithoutTaxes`}
+            checked={values.showPriceWithoutTaxes === "true"}
+            onCheckedChange={(checked) => set("showPriceWithoutTaxes", String(checked === true))}
+            disabled={pending}
+            aria-describedby={`${ids}-showPriceWithoutTaxes-help`}
+            className="mt-0.5"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`${ids}-nationalTaxPercent`}>Impuestos nacionales incluidos en el precio</Label>
+          <div
+            className={cn(
+              "flex h-8 items-center overflow-hidden rounded-lg border border-input text-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20 sm:max-w-40",
+              errors.nationalTaxPercent && "border-destructive ring-3 ring-destructive/20",
+            )}
+          >
+            <input
+              {...fieldProps("nationalTaxPercent")}
+              disabled={pending || values.showPriceWithoutTaxes !== "true"}
+              inputMode="decimal"
+              placeholder="21"
+              autoComplete="off"
+              className="h-full min-w-0 flex-1 bg-transparent px-2.5 tabular-nums outline-none disabled:opacity-50"
+            />
+            <span className="flex h-full items-center border-l bg-muted px-2.5 text-muted-foreground">%</span>
+          </div>
+          <FieldHelp id={`${ids}-nationalTaxPercent-help`} error={errors.nationalTaxPercent}>
+            Normalmente 21 (IVA). El precio sin impuestos se calcula como precio ÷ (1 + %/100), redondeado.
+          </FieldHelp>
         </div>
       </SectionCard>
 

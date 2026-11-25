@@ -19,7 +19,7 @@ import {
   type CheckoutFieldName,
 } from "@/lib/checkout-schema";
 import type { AppliedCoupon } from "@/lib/coupons";
-import { formatARS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CouponField } from "./coupon-field";
 import { WhatsAppIcon } from "../whatsapp-icon";
@@ -119,11 +119,6 @@ const FIELD_ORDER: CheckoutFieldName[] = [
 ];
 
 const GENERIC_ERROR = "No pudimos iniciar el pago. Probá de nuevo en unos minutos o escribinos por WhatsApp.";
-
-/** "$ 20.000" (sin ",00" cuando es redondo, como en el carrito). */
-function shortARS(value: number): string {
-  return formatARS(value).replace(/,00$/, "");
-}
 
 /**
  * Formulario de compra: tus datos, entrega y resumen con el botón de pago.
@@ -374,7 +369,7 @@ export function CheckoutForm({
                 onSelect={() => selectDelivery("shipping")}
                 icon={<Truck aria-hidden className="size-5" />}
                 title="Envío a domicilio"
-                price={shortARS(shippingCost)}
+                price={formatPrice(shippingCost)}
                 detail="A cualquier lugar del país. Te avisamos cuando lo despachemos, con el código de seguimiento."
               />
               <DeliveryOption
@@ -530,13 +525,13 @@ export function CheckoutForm({
           <dl className="flex flex-col gap-2 border-t pt-4 text-[15px]">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="tabular-nums">{formatARS(subtotal)}</dd>
+              <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
             </div>
             {/* Descuento del cupón (productos). El de envío gratis se ve en la fila del envío. */}
             {coupon && coupon.kind !== "free_shipping" && discount > 0 && (
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Cupón {coupon.code}</dt>
-                <dd className="font-medium text-brand tabular-nums">− {formatARS(discount)}</dd>
+                <dd className="font-medium text-brand tabular-nums">− {formatPrice(discount)}</dd>
               </div>
             )}
             <div className="flex justify-between gap-4">
@@ -549,11 +544,11 @@ export function CheckoutForm({
                     <span className="font-medium text-brand">Gratis</span>
                     <span className="text-xs text-muted-foreground line-through">
                       <span className="sr-only">Antes: </span>
-                      {formatARS(shippingCost)}
+                      {formatPrice(shippingCost)}
                     </span>
                   </span>
                 ) : values.delivery === "shipping" ? (
-                  formatARS(shippingCost)
+                  formatPrice(shippingCost)
                 ) : values.delivery === "pickup" ? (
                   "Gratis"
                 ) : (
@@ -568,7 +563,7 @@ export function CheckoutForm({
             )}
             <div className="flex items-baseline justify-between gap-4 border-t pt-3">
               <dt className="text-base font-semibold">Total</dt>
-              <dd className="text-xl font-semibold tabular-nums">{formatARS(total)}</dd>
+              <dd className="text-xl font-semibold tabular-nums">{formatPrice(total)}</dd>
             </div>
           </dl>
 
@@ -752,11 +747,11 @@ function SummaryLine({ line }: { line: CartLine }) {
         {line.variantLabel && <span className="text-muted-foreground">{line.variantLabel}</span>}
       </span>
       <span className="flex flex-col items-end text-sm tabular-nums">
-        <span className={cn("font-semibold", line.unitPriceBefore && "text-brand")}>{formatARS(line.unitPrice * line.qty)}</span>
+        <span className={cn("font-semibold", line.unitPriceBefore && "text-brand")}>{formatPrice(line.unitPrice * line.qty)}</span>
         {line.unitPriceBefore && (
           <span className="text-xs text-muted-foreground line-through">
             <span className="sr-only">Antes: </span>
-            {formatARS(line.unitPriceBefore * line.qty)}
+            {formatPrice(line.unitPriceBefore * line.qty)}
           </span>
         )}
       </span>
