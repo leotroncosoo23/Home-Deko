@@ -199,6 +199,42 @@ Tiene que medir desde el día del lanzamiento.
 Estados vacíos: hasta que haya ventas o visitas, un mensaje claro
 ("Acá vas a ver las ventas cuando se lance la tienda"), nunca un gráfico en cero que parezca roto.
 
+### Inicio del panel (paso 8, implementado)
+- Migraciones `20261202000001_inicio_panel.sql` + `20261202000002_inicio_panel_atencion.sql` (corrige un nombre de
+  columna ambiguo en plpgsql: en funciones `returns table`, calificar SIEMPRE las columnas con el alias de su tabla).
+- **Venta** (en todo el Inicio): `channel = 'web'`, `payment_status = 'approved'`, no cancelada. "Pagado sin stock"
+  cuenta. Día = `paid_at` en hora de Argentina. Monto = `total` (con envío; la tarjeta dice "incluye $ X de envíos").
+  Índice parcial `orders_sales_paid_at_idx`.
+- `admin_home_attention()` (definer, `is_admin()`): para preparar, pagados sin stock, para revisar, variantes con stock
+  bajo / sin stock (misma regla que `admin_variant_stock`) y datos vacíos de Configuración (email, WhatsApp, razón
+  social, CUIT). Mismos números que Pedidos y Stock. Sin nada: "Todo al día".
+- `admin_dashboard(desde, hasta, desde_ant, hasta_ant, 'day'|'week'|'month')` (definer, `is_admin()`, un `jsonb`):
+  tarjetas de los dos períodos, serie sin huecos (`generate_series`; la semana empieza el lunes), 5 más vendidos (un
+  producto borrado se agrupa por el nombre guardado), orígenes y 5 más vistos con unidades vendidas. `HD422` si
+  hasta < desde, > 2 años o > 92 días agrupado por día.
+- Períodos en `src/lib/dashboard-period.ts` (puro; la URL: `?periodo=&agrupar=&desde=&hasta=`; por defecto 30 días).
+  La app decide el período anterior: Hoy → ayer; 7/30 días → los anteriores; Este mes → mismos días del mes pasado;
+  Mes anterior → el previo; Este año → mismo tramo del año pasado; Personalizado → mismo largo justo antes.
+  Agrupación automática: día ≤ 31 días, semana ≤ 120, mes después. Un solo día: sin gráfico (mensaje).
+- Pantalla (`src/app/admin/(panel)/page.tsx` + `_inicio/`): Requiere atención en su propio `<Suspense>`, selector
+  (links + `next/form` para Personalizado), tarjetas, gráfico de barras **HTML/CSS armado en el servidor** (sin
+  librería; tooltip con CSS, tabla `sr-only`), más vendidos, últimos 5 pedidos ("Todos") y visitas.
+- **Visitas: contador propio, anónimo y SIN cookies** (se descartó Vercel Web Analytics: los datos quedan en Vercel y
+  no se pueden cruzar con las ventas en el panel). Tablas `visit_daily (day, source)` y `product_view_daily (day,
+  product_id)`: solo contadores por día, nada de la persona. Solo admins leen; escriben `track_visit(source)` y
+  `track_product_view(product_id)` (invoker, solo `service_role`; origen desconocido o producto no `active` → nada).
+  - Navegador: `VisitTracker` (layout de `(tienda)`) y `ProductViewTracker` (página de producto), en
+    `src/components/store/visit-tracker.tsx`. Una visita por sesión (marca en `sessionStorage` `hd_visita`, sin
+    identificador), una vista por producto y sesión. Manda solo el DOMINIO del referrer y `utm_source`, con
+    `sendBeacon` cuando el navegador está libre (no afecta la carga).
+  - Servidor: `POST /api/visita` (fuera del `matcher` del proxy). Descarta otro Origin / `Sec-Fetch-Site`, bots por
+    user-agent y sesiones admin (`user_role` del token; solo si hay cookie `sb-`). Siempre 204; la suma va en `after()`.
+  - Origen: `src/lib/visit-source.ts` (utm primero; después el dominio, también `android-app://`). WhatsApp casi
+    nunca manda referrer → "Directo" salvo `?utm_source=whatsapp` (explicado en la Ayuda).
+  - Los números son orientativos: alguien podría inflarlos a propósito (no hay límite por IP para no guardar IPs).
+- Conversión = pedidos ÷ visitas. "Mucho interés, pocas ventas": ≥ 20 vistas y menos de 1 venta cada 20.
+- Ayuda: guía `inicio` (id especial: su ruta es `/admin`) y 3 preguntas frecuentes. Privacidad: "sin cookies".
+
 ## Etapa actual: la tienda (prometido en la propuesta)
 Se construye en pasos visibles. Cada paso: rama → probar en local → merge a `main` → los dueños lo ven.
 
@@ -245,7 +281,7 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 5. Pedidos en el panel + emails
 6. Cuenta del cliente y seguimiento
 7. Cupones de descuento
-8. Inicio del panel (ventas y visitas)
+8. Inicio del panel (ventas y visitas) — implementado (ver "Inicio del panel (paso 8, implementado)")
 9. Páginas de información, legales y revisión final (muestra del 27/11)
 
 ### Inicio de la tienda

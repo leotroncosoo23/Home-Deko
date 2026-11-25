@@ -943,6 +943,60 @@ export type Database = {
           },
         ]
       }
+      product_view_daily: {
+        Row: {
+          day: string
+          product_id: string
+          views: number
+        }
+        Insert: {
+          day: string
+          product_id: string
+          views?: number
+        }
+        Update: {
+          day?: string
+          product_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_view_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_label_queue"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_view_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_view_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "admin_variant_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_view_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_view_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           base_price: number
@@ -1280,6 +1334,24 @@ export type Database = {
           },
         ]
       }
+      visit_daily: {
+        Row: {
+          day: string
+          source: string
+          visits: number
+        }
+        Insert: {
+          day: string
+          source: string
+          visits?: number
+        }
+        Update: {
+          day?: string
+          source?: string
+          visits?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       admin_coupons: {
@@ -1581,6 +1653,30 @@ export type Database = {
         }
         Returns: number
       }
+      admin_dashboard: {
+        Args: {
+          p_bucket?: string
+          p_from: string
+          p_prev_from: string
+          p_prev_to: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      admin_home_attention: {
+        Args: never
+        Returns: {
+          low_stock: number
+          missing_business_name: boolean
+          missing_cuit: boolean
+          missing_email: boolean
+          missing_whatsapp: boolean
+          needs_review: number
+          out_of_stock: number
+          stock_issue: number
+          to_prepare: number
+        }[]
+      }
       admin_order_counts: {
         Args: never
         Returns: {
@@ -1697,6 +1793,8 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["fulfillment_status"]
       }
+      track_product_view: { Args: { p_product_id: string }; Returns: undefined }
+      track_visit: { Args: { p_source: string }; Returns: undefined }
     }
     Enums: {
       coupon_kind: "percent" | "fixed" | "free_shipping"

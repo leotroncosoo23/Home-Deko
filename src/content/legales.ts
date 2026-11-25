@@ -209,7 +209,7 @@ export function privacidad(C: DatosComercio): DocumentoLegal {
           {
             lista: [
               "Cookies necesarias: para mantener tu sesión iniciada y que la tienda funcione (por ejemplo, el carrito). Sin ellas el sitio no funciona bien.",
-              "Medición anónima de visitas: contamos cuántas personas visitan la tienda, qué productos miran y de dónde llegan (por ejemplo, Instagram o Google). Es un contador propio que no guarda tu nombre, tu email ni ningún dato que te identifique.",
+              "Medición anónima de visitas: contamos cuántas personas visitan la tienda, qué productos miran y de dónde llegan (por ejemplo, Instagram o Google). Es un contador propio, sin cookies, que no guarda tu nombre, tu email, tu dirección IP ni ningún dato que te identifique: solo suma uno al total del día.",
             ],
           },
           "No usamos cookies de publicidad ni de seguimiento de terceros. Podés borrar o bloquear las cookies desde la configuración de tu navegador, pero si bloqueás las necesarias quizás no puedas iniciar sesión o comprar.",

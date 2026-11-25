@@ -50,7 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
     title: "Inicio",
     href: "/admin",
     icon: House,
-    description: "Resumen del negocio: ventas recientes y productos con poco stock.",
+    description: "Cómo viene la tienda online: lo que requiere atención, las ventas y las visitas.",
   },
   {
     title: "Pedidos",

@@ -16,6 +16,7 @@ import {
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, categoryHref, productHref } from "@/lib/store-nav";
 import { WhatsAppIcon } from "@/components/store/whatsapp-icon";
+import { ProductViewTracker } from "@/components/store/visit-tracker";
 import { getStoreSettings, whatsappLink, type StoreSettings } from "@/lib/store-settings";
 import { getProductForViewer } from "@/lib/store-viewer";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,8 @@ async function ProductContent({ params }: Pick<PageProps<"/productos/[slug]">, "
         <ProductDetails product={product} settings={settings} />
       </ProductPurchase>
       {!card.isDraft && <ProductJsonLd product={product} />}
+      {/* "Más vistos" del Inicio del panel (anónimo; los borradores solo los ven admins) */}
+      {!card.isDraft && <ProductViewTracker productId={card.id} />}
       {category && <RelatedProducts categoryId={category.id} productId={card.id} />}
     </>
   );

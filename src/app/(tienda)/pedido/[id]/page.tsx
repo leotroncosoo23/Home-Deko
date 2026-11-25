@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Check, CheckCircle2, Clock, ExternalLink, ShoppingBag, Truck, XCircle } from "lucide-react";
 import { AutoRefresh, ClearCartOnApproved, CopyCode } from "@/components/store/checkout/order-client";
 import { trackingFor, type Tracking } from "@/lib/carriers";
@@ -165,6 +166,10 @@ function viewFor(order: GuestOrder): View {
 
 async function OrderContent({ params, searchParams }: Pick<PageProps<"/pedido/[id]">, "params" | "searchParams">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
+  // El estado depende de la hora actual ("vencido" usa Date.now() en viewFor) y
+  // el pedido se lee con la clave de servicio (que no lee cookies): connection()
+  // le avisa a Next que esto se arma en cada pedido, nunca de antemano.
+  await connection();
   const [order, settings] = await Promise.all([getGuestOrder(id, query.t), getStoreSettings()]);
   if (!order) notFound();
 
