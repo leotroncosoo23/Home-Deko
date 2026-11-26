@@ -332,6 +332,11 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - Datos en `store-data.ts`: `getNewArrivals`, `getOnSaleProducts`, `getBestSellersStrip`. Más vendidos = unidades
     de pedidos `approved` no cancelados (lee `order_items` con `createAdminClient`; solo salen ids). **Con menos de 4
     vendidos, la tira se titula "Destacados"** y muestra los `is_featured` (`src/lib/best-sellers.ts`, con tests).
+    Si leer las ventas falla (o falta `SUPABASE_SECRET_KEY`), muestra Destacados y lo avisa en el log
+    (`[inicio] …`). **Un error tirado dentro de un `"use cache"` hace fallar el build aunque se atrape afuera**:
+    esas piezas devuelven `null` y se cachean 1 minuto (`cacheLife("minutes")`).
+  - `SUPABASE_SECRET_KEY` hace falta también en el **build** (el inicio se arma de antemano): cargarla en Vercel
+    en Production **y Preview**.
   - "Ver todos": Novedades → `/productos?orden=nuevos`; Ofertas → `/productos?ofertas=1` (filtro `ofertas` de
     `catalog-params.ts`, título "Ofertas" y chip para quitarlo); Más vendidos/Destacados → `/productos`.
   - Categorías: `CategoryShowcase` con la "Foto de portada" (`categories.image_path`, se sube en el panel);

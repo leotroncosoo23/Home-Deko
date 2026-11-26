@@ -211,57 +211,102 @@ export type BestSellersStrip = { kind: "best" | "featured"; products: StoreProdu
  * Con menos de 4 productos vendidos (que sigan publicados y con stock), la
  * tira muestra los Destacados con ese título (ver src/lib/best-sellers.ts).
  *
- * Los pedidos no los puede leer un visitante: se leen con la clave secreta
- * (createAdminClient), pero de acá solo sale el id de cada producto y sus
- * unidades. Ningún dato de clientes llega a la página.
+ * Si leer las ventas FALLA (base caída, o falta SUPABASE_SECRET_KEY, como en
+ * un deploy de Preview sin esa variable), el inicio no se cae: la tira muestra
+ * los Destacados.
+ *
+ * Ojo: un error tirado ADENTRO de una función "use cache" hace fallar el build
+ * (y el render) aunque afuera haya un try/catch. Por eso las dos piezas de las
+ * ventas nunca tiran: si fallan devuelven null, y ese null queda en caché
+ * apenas un minuto (cacheLife("minutes")), así se vuelve a intentar enseguida.
  */
 export async function getBestSellersStrip(): Promise<BestSellersStrip> {
+  let bestSellers: StoreProduct[] = [];
+  const rankedIds = await getSoldProductRanking();
+  if (rankedIds && rankedIds.length >= BEST_SELLERS_MIN) {
+    bestSellers = (await getProductsInSalesOrder(rankedIds.slice(0, 200))) ?? [];
+  }
+
+  const featured = bestSellers.length < BEST_SELLERS_MIN ? await getFeaturedInStock() : [];
+  return pickBestSellersOrFeatured(bestSellers, featured, HOME_STRIP_LIMIT);
+}
+
+/** Un fallo de las piezas de "Más vendidos": se avisa en el log y se cachea poco. */
+function bestSellersFailed(error: unknown): null {
+  cacheLife("minutes");
+  // Solo el mensaje (nunca claves ni datos de pedidos): queda en los logs del servidor.
+  console.error(
+    "[inicio] No se pudieron leer los más vendidos; se muestran los Destacados.",
+    error instanceof Error ? error.message : String(error),
+  );
+  return null;
+}
+
+/**
+ * Ids de los productos vendidos, del más vendido al menos vendido (null si falla).
+ *
+ * Los pedidos no los puede leer un visitante: se leen con la clave secreta
+ * (createAdminClient), pero de acá solo sale el id de cada producto. Ningún
+ * dato de clientes llega a la página.
+ */
+async function getSoldProductRanking(): Promise<string[] | null> {
   "use cache";
   cacheTag(STORE_PRODUCTS_TAG);
-  // Las ventas nuevas también llaman a updateTag/revalidateTag(STORE_PRODUCTS_TAG) (stock).
+  // Las ventas aprobadas también llaman a revalidateTag(STORE_PRODUCTS_TAG) (por el stock).
   cacheLife("hours");
 
-  const { data: sold, error: soldError } = await createAdminClient()
-    .from("order_items")
-    .select("product_id, quantity, orders!inner(payment_status, fulfillment_status)")
-    .eq("orders.payment_status", "approved")
-    .neq("orders.fulfillment_status", "cancelled")
-    .not("product_id", "is", null);
-  if (soldError) throw new Error("No se pudieron leer los más vendidos.");
+  try {
+    const { data, error } = await createAdminClient()
+      .from("order_items")
+      .select("product_id, quantity, orders!inner(payment_status, fulfillment_status)")
+      .eq("orders.payment_status", "approved")
+      .neq("orders.fulfillment_status", "cancelled")
+      .not("product_id", "is", null);
+    if (error) throw new Error("No se pudieron leer las ventas.");
+    return rankBestSellers(data);
+  } catch (error) {
+    return bestSellersFailed(error);
+  }
+}
 
-  const rankedIds = rankBestSellers(sold);
-  const publicClient = createPublicClient();
+/** Esos productos, si hoy se pueden comprar (publicados y con stock), en el mismo orden (null si falla). */
+async function getProductsInSalesOrder(rankedIds: string[]): Promise<StoreProduct[] | null> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  cacheLife("hours");
 
-  // Los vendidos que hoy se pueden comprar, en el orden de las ventas.
-  let bestSellers: StoreProduct[] = [];
-  if (rankedIds.length >= BEST_SELLERS_MIN) {
-    const { data, error } = await publicClient
+  try {
+    const { data, error } = await createPublicClient()
       .from("store_products")
       .select(STORE_PRODUCT_COLUMNS)
-      .in("id", rankedIds.slice(0, 200))
+      .in("id", rankedIds)
       .eq("in_stock", true);
-    if (error) throw new Error("No se pudieron leer los más vendidos.");
+    if (error) throw new Error("No se pudieron leer los productos más vendidos.");
+
     const position = new Map(rankedIds.map((id, i) => [id, i]));
-    bestSellers = data
-      .map(toStoreProduct)
-      .sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+    return data.map(toStoreProduct).sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+  } catch (error) {
+    return bestSellersFailed(error);
   }
+}
 
-  let featured: StoreProduct[] = [];
-  if (bestSellers.length < BEST_SELLERS_MIN) {
-    const { data, error } = await publicClient
-      .from("store_products")
-      .select(STORE_PRODUCT_COLUMNS)
-      .eq("is_featured", true)
-      .eq("in_stock", true)
-      .order("created_at", { ascending: false })
-      .order("id")
-      .limit(HOME_STRIP_LIMIT);
-    if (error) throw new Error("No se pudieron leer los productos destacados.");
-    featured = data.map(toStoreProduct);
-  }
+/** Destacados con stock (la tira cuando todavía no hay 4 productos vendidos). */
+async function getFeaturedInStock(): Promise<StoreProduct[]> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  cacheLife("hours");
 
-  return pickBestSellersOrFeatured(bestSellers, featured, HOME_STRIP_LIMIT);
+  const { data, error } = await createPublicClient()
+    .from("store_products")
+    .select(STORE_PRODUCT_COLUMNS)
+    .eq("is_featured", true)
+    .eq("in_stock", true)
+    .order("created_at", { ascending: false })
+    .order("id")
+    .limit(HOME_STRIP_LIMIT);
+  if (error) throw new Error("No se pudieron leer los productos destacados.");
+
+  return data.map(toStoreProduct);
 }
 
 // ---------------------------------------------------------------------------
