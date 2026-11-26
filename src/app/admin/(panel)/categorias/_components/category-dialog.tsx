@@ -204,10 +204,13 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         />
       </div>
 
-      {/* Imagen */}
+      {/* Foto de portada (fondo de la tarjeta de la categoría en el inicio de la tienda) */}
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">
-          Imagen <span className="font-normal text-muted-foreground">(opcional)</span>
+          Foto de portada <span className="font-normal text-muted-foreground">(opcional)</span>
+        </span>
+        <span className="text-[13px] text-muted-foreground">
+          Se ve de fondo en la tarjeta de la categoría, en el inicio de la tienda. Mejor una foto horizontal.
         </span>
         <ImageField
           currentUrl={category?.imageUrl ?? null}

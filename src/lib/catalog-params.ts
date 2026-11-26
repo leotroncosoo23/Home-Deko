@@ -4,6 +4,7 @@
  *   /productos?orden=menor-precio&min=5000&max=20000&pagina=2
  *   /categorias/bazar?orden=nuevos
  *   /buscar?q=sabana&categoria=blanqueria
+ *   /productos?ofertas=1          (solo con descuento: el "Ver todos" de Ofertas del inicio)
  *
  * Todo el estado del catálogo vive en la URL: así un link se puede
  * compartir y el botón "atrás" vuelve exactamente a lo que se veía.
@@ -42,6 +43,8 @@ export type CatalogParams = {
   /** Precio mínimo y máximo en pesos (lo que paga el cliente), o null. */
   min: number | null;
   max: number | null;
+  /** Solo productos con descuento vigente (?ofertas=1). */
+  ofertas: boolean;
   /** Cuántas tandas de PAGE_SIZE se muestran (1 = la primera). */
   pagina: number;
   /** Solo en /buscar. */
@@ -81,6 +84,7 @@ export function parseCatalogParams(sp: SearchParamsRecord): CatalogParams {
     orden: sort,
     min,
     max,
+    ofertas: first(sp.ofertas) === "1",
     pagina: Number.isFinite(page) ? Math.min(Math.max(page, 1), MAX_PAGE) : 1,
     q: first(sp.q).trim().slice(0, MAX_SEARCH_LENGTH),
     categoria: /^[a-z0-9-]{1,100}$/.test(categoria) ? categoria : null,
@@ -88,6 +92,7 @@ export function parseCatalogParams(sp: SearchParamsRecord): CatalogParams {
 }
 
 /** ¿Cuántos filtros eligió el cliente? (para el botón "Filtrar (2)"). La búsqueda no cuenta. */
+// "Ofertas" no cuenta: no está en el panel de filtros, se saca con su propio chip.
 export function activeFilterCount(p: Pick<CatalogParams, "min" | "max" | "categoria">): number {
   return (p.min !== null || p.max !== null ? 1 : 0) + (p.categoria ? 1 : 0);
 }
@@ -100,6 +105,7 @@ export function catalogHref(path: string, p: Partial<CatalogParams>): string {
   const sp = new URLSearchParams();
   if (p.q) sp.set("q", p.q);
   if (p.categoria) sp.set("categoria", p.categoria);
+  if (p.ofertas) sp.set("ofertas", "1");
   if (p.orden && p.orden !== DEFAULT_SORT) sp.set("orden", p.orden);
   if (p.min != null) sp.set("min", String(p.min));
   if (p.max != null) sp.set("max", String(p.max));

@@ -318,7 +318,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
     titulo: "Categorías",
     resumen: "Agrupá los productos (Cocina, Baño, Deco…) para que sea fácil encontrarlos en la tienda.",
     pasosRapidos: [
-      "Tocá \"Nueva categoría\", escribí el nombre y, si querés, elegí una imagen.",
+      "Tocá \"Nueva categoría\", escribí el nombre y, si querés, elegí una foto de portada.",
       "Tocá \"Crear categoría\".",
       "Para cambiar el orden, arrastrá cada fila desde la manija (⠿).",
       "Para editar o eliminar, usá el menú de los tres puntos de cada fila.",
@@ -327,7 +327,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Crear una categoría",
         texto:
-          "Tocá \"Nueva categoría\" y escribí el nombre. El \"slug\" (la dirección en la tienda) se completa solo. Podés agregar una imagen. Tocá \"Crear categoría\".",
+          "Tocá \"Nueva categoría\" y escribí el nombre. El \"slug\" (la dirección en la tienda) se completa solo. Podés agregar una \"Foto de portada\": se ve de fondo en la tarjeta de la categoría, en el inicio de la tienda (mejor una foto horizontal). Si no tiene, la tarjeta se ve con un fondo de la marca. Tocá \"Crear categoría\".",
       },
       {
         titulo: "Ordenarlas",

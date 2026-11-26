@@ -5,7 +5,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CatalogSort } from "@/lib/catalog-params";
 import type { Database } from "@/lib/database.types";
 import { STORE_ANNOUNCEMENTS_TAG, STORE_BANNERS_TAG, STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
+import { BEST_SELLERS_MIN, pickBestSellersOrFeatured, rankBestSellers } from "@/lib/best-sellers";
 import { publicImageUrl } from "@/lib/storage";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
 
 /**
@@ -105,9 +107,6 @@ export type StoreProduct = {
 export const STORE_PRODUCT_COLUMNS =
   "id, name, slug, status, min_price, final_min_price, discount_active, has_price_range, in_stock, primary_image_path, primary_image_alt, secondary_image_path, discount_percent_max, discount_percent_min, few_left, variant_count, single_variant_id";
 
-/** Cuántos destacados muestra el inicio (4 filas de 2 en el celular, 2 de 4 en PC). */
-export const FEATURED_LIMIT = 8;
-
 type StoreProductRow = {
   id: string | null;
   name: string | null;
@@ -156,8 +155,19 @@ export function toStoreProduct(p: StoreProductRow): StoreProduct {
   };
 }
 
-/** Productos destacados que ve un visitante (solo publicados). */
-export async function getFeaturedProducts(): Promise<StoreProduct[]> {
+// ---------------------------------------------------------------------------
+// Tiras del inicio: Novedades, Ofertas y Más vendidos (o Destacados)
+//
+// Solo productos CON STOCK: una tira que vende no ofrece agotados. Son las
+// mismas para todos (también para los admins): así salen de la caché y el
+// inicio carga rápido. Los borradores se revisan en el catálogo.
+// ---------------------------------------------------------------------------
+
+/** Productos por tira (2 filas de 4 en PC; en el celular se desliza). */
+export const HOME_STRIP_LIMIT = 8;
+
+/** Novedades: los últimos productos publicados con stock. */
+export async function getNewArrivals(): Promise<StoreProduct[]> {
   "use cache";
   cacheTag(STORE_PRODUCTS_TAG);
   cacheLife("hours");
@@ -165,12 +175,93 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
   const { data, error } = await createPublicClient()
     .from("store_products")
     .select(STORE_PRODUCT_COLUMNS)
-    .eq("is_featured", true)
+    .eq("in_stock", true)
     .order("created_at", { ascending: false })
-    .limit(FEATURED_LIMIT);
-  if (error) throw new Error("No se pudieron leer los productos destacados.");
+    .order("id")
+    .limit(HOME_STRIP_LIMIT);
+  if (error) throw new Error("No se pudieron leer las novedades.");
 
   return data.map(toStoreProduct);
+}
+
+/** Ofertas: productos con descuento vigente y stock (los más nuevos primero). */
+export async function getOnSaleProducts(): Promise<StoreProduct[]> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  // Cada hora: los descuentos con fecha empiezan y terminan solos.
+  cacheLife("hours");
+
+  const { data, error } = await createPublicClient()
+    .from("store_products")
+    .select(STORE_PRODUCT_COLUMNS)
+    .eq("in_stock", true)
+    .eq("discount_active", true)
+    .order("created_at", { ascending: false })
+    .order("id")
+    .limit(HOME_STRIP_LIMIT);
+  if (error) throw new Error("No se pudieron leer las ofertas.");
+
+  return data.map(toStoreProduct);
+}
+
+export type BestSellersStrip = { kind: "best" | "featured"; products: StoreProduct[] };
+
+/**
+ * Más vendidos: unidades de los pedidos PAGADOS (aprobados y no cancelados).
+ * Con menos de 4 productos vendidos (que sigan publicados y con stock), la
+ * tira muestra los Destacados con ese título (ver src/lib/best-sellers.ts).
+ *
+ * Los pedidos no los puede leer un visitante: se leen con la clave secreta
+ * (createAdminClient), pero de acá solo sale el id de cada producto y sus
+ * unidades. Ningún dato de clientes llega a la página.
+ */
+export async function getBestSellersStrip(): Promise<BestSellersStrip> {
+  "use cache";
+  cacheTag(STORE_PRODUCTS_TAG);
+  // Las ventas nuevas también llaman a updateTag/revalidateTag(STORE_PRODUCTS_TAG) (stock).
+  cacheLife("hours");
+
+  const { data: sold, error: soldError } = await createAdminClient()
+    .from("order_items")
+    .select("product_id, quantity, orders!inner(payment_status, fulfillment_status)")
+    .eq("orders.payment_status", "approved")
+    .neq("orders.fulfillment_status", "cancelled")
+    .not("product_id", "is", null);
+  if (soldError) throw new Error("No se pudieron leer los más vendidos.");
+
+  const rankedIds = rankBestSellers(sold);
+  const publicClient = createPublicClient();
+
+  // Los vendidos que hoy se pueden comprar, en el orden de las ventas.
+  let bestSellers: StoreProduct[] = [];
+  if (rankedIds.length >= BEST_SELLERS_MIN) {
+    const { data, error } = await publicClient
+      .from("store_products")
+      .select(STORE_PRODUCT_COLUMNS)
+      .in("id", rankedIds.slice(0, 200))
+      .eq("in_stock", true);
+    if (error) throw new Error("No se pudieron leer los más vendidos.");
+    const position = new Map(rankedIds.map((id, i) => [id, i]));
+    bestSellers = data
+      .map(toStoreProduct)
+      .sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+  }
+
+  let featured: StoreProduct[] = [];
+  if (bestSellers.length < BEST_SELLERS_MIN) {
+    const { data, error } = await publicClient
+      .from("store_products")
+      .select(STORE_PRODUCT_COLUMNS)
+      .eq("is_featured", true)
+      .eq("in_stock", true)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .limit(HOME_STRIP_LIMIT);
+    if (error) throw new Error("No se pudieron leer los productos destacados.");
+    featured = data.map(toStoreProduct);
+  }
+
+  return pickBestSellersOrFeatured(bestSellers, featured, HOME_STRIP_LIMIT);
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +275,8 @@ export type CatalogQuery = {
   orden: CatalogSort;
   min: number | null;
   max: number | null;
+  /** Solo productos con descuento vigente (/productos?ofertas=1). */
+  onSale: boolean;
   /** Cuántos productos traer desde el principio (PAGE_SIZE × tandas). */
   limit: number;
 };
@@ -213,6 +306,7 @@ export async function queryCatalog(
   if (q.categoryId) query = query.eq("category_id", q.categoryId);
   if (q.min !== null) query = query.gte("final_min_price", q.min);
   if (q.max !== null) query = query.lte("final_min_price", q.max);
+  if (q.onSale) query = query.eq("discount_active", true);
 
   // Cada palabra tiene que aparecer (en cualquier orden): "sabana blanca"
   // encuentra "Sábana de algodón blanca".
