@@ -17,7 +17,8 @@ import {
 } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK } from "@/lib/store-nav";
-import { datosTienda, getStoreSettings } from "@/lib/store-settings";
+import type { PricingSettings } from "@/lib/pricing";
+import { datosTienda, getStoreSettings, pricingFrom } from "@/lib/store-settings";
 import { cn } from "@/lib/utils";
 
 const DESCRIPTION =
@@ -65,6 +66,7 @@ export default async function TiendaHomePage() {
   // Solo categorías con algún producto publicado (igual que el menú y la barra).
   const categoriesWithProducts = categories.filter((c) => c.productCount > 0);
   const tienda = datosTienda(settings);
+  const pricing = pricingFrom(settings);
   const hasLocation = Boolean(tienda.direccion || tienda.horarios || tienda.instagram);
 
   return (
@@ -74,10 +76,10 @@ export default async function TiendaHomePage() {
       {/* De borde a borde de la pantalla (sin márgenes ni bordes redondeados).
           1 banner = fijo; 2 o 3 = carrusel. */}
       <HeroBanners banners={banners} />
-      <StoreBenefits />
+      <StoreBenefits pricing={pricing} />
 
       <div className={cn(STORE_CONTAINER, "flex flex-col gap-12 pt-8 md:gap-16 md:pt-12")}>
-        <Strip id="novedades" title="Novedades" href={catalogHref("/productos", { orden: "nuevos" })} products={newArrivals} />
+        <Strip id="novedades" title="Novedades" href={catalogHref("/productos", { orden: "nuevos" })} products={newArrivals} pricing={pricing} />
 
         {categoriesWithProducts.length > 0 && (
           <section aria-labelledby="categorias" className="flex flex-col gap-5 md:gap-6">
@@ -88,13 +90,14 @@ export default async function TiendaHomePage() {
           </section>
         )}
 
-        <Strip id="ofertas" title="Ofertas" href={catalogHref("/productos", { ofertas: true })} products={onSale} />
+        <Strip id="ofertas" title="Ofertas" href={catalogHref("/productos", { ofertas: true })} products={onSale} pricing={pricing} />
 
         <Strip
           id="mas-vendidos"
           title={bestSellers.kind === "best" ? "Más vendidos" : "Destacados"}
           href={ALL_PRODUCTS_LINK.href}
           products={bestSellers.products}
+          pricing={pricing}
         />
 
         {/* PC: el local a la izquierda y Cómo comprar a la derecha (si no hay
@@ -120,13 +123,25 @@ export default async function TiendaHomePage() {
 }
 
 /** Una tira de productos (no se muestra si está vacía). Las fotos cargan diferidas (lazy). */
-function Strip({ id, title, href, products }: { id: string; title: string; href: string; products: StoreProduct[] }) {
+function Strip({
+  id,
+  title,
+  href,
+  products,
+  pricing,
+}: {
+  id: string;
+  title: string;
+  href: string;
+  products: StoreProduct[];
+  pricing: PricingSettings;
+}) {
   if (products.length === 0) return null;
   return (
     <ProductStrip id={id} title={title} href={href}>
       {products.map((p) => (
         <li key={p.id}>
-          <ProductCard product={p} sizes={STRIP_IMAGE_SIZES} />
+          <ProductCard product={p} pricing={pricing} sizes={STRIP_IMAGE_SIZES} />
         </li>
       ))}
     </ProductStrip>

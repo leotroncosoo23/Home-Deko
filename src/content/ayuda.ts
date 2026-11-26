@@ -291,6 +291,11 @@ export const GUIAS: Record<GuiaId, Guia> = {
           "Si una variante cuesta distinto, escribí su precio en la tabla. Si lo dejás vacío, usa el precio del producto.",
       },
       {
+        titulo: "Precio de lista y precio en 1 pago",
+        texto:
+          "El precio que cargás es el precio de lista: el que se paga en cuotas. Si en Configuración → Precios pusieron un \"% de descuento en 1 pago\", la tienda muestra grande el precio en 1 pago (más barato) y abajo, chico, el de lista. Debajo del campo \"Precio de lista\" ves en vivo cuánto queda en 1 pago. Los descuentos del producto (la tarjeta \"Descuento\") se aplican solo sobre el precio en 1 pago; el de lista no cambia nunca.",
+      },
+      {
         titulo: "Publicar, ocultar y archivar",
         texto:
           "\"Borrador\" no lo ven los clientes. \"Publicado\" se ve y se puede comprar. Desde el listado podés seleccionar varios productos y publicarlos, ocultarlos, cambiarles la categoría o archivarlos de una vez.",
@@ -468,6 +473,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
     pasosRapidos: [
       "Completá los \"Datos del comercio\": nombre o razón social, CUIT y email de contacto.",
       "Cargá WhatsApp, Instagram y TikTok, el costo del envío, el plazo de despacho, la dirección y horarios del local y el plazo para cambios.",
+      "En \"Precios\", poné el % de descuento en 1 pago y, si querés, prendé las cuotas sin interés.",
       "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie, las páginas de ayuda y las legales.",
       "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá (antes tienen que estar los datos del comercio y el WhatsApp).",
     ],
@@ -486,6 +492,11 @@ export const GUIAS: Record<GuiaId, Guia> = {
         titulo: "Envío y retiro",
         texto:
           "El costo del envío a domicilio es un precio fijo para todo el país. La dirección y los horarios del local se le muestran a quien elige retirar su compra (el retiro es gratis).",
+      },
+      {
+        titulo: "Precios: 1 pago y cuotas",
+        texto:
+          "El precio cargado en cada producto es el precio de lista. En \"% de descuento en 1 pago\" ponés cuánto más barato sale pagando en 1 pago con tarjeta (por ejemplo 15: lista $ 10.000 → 1 pago $ 8.500). Con 0, los dos precios son iguales y la tienda se ve como siempre. Las compras de la tienda online se cobran al precio en 1 pago. \"Cuotas sin interés\" muestra \"hasta 6 cuotas sin interés de $ …\" (calculado sobre el precio de lista) en los productos, el carrito y la barra del inicio; apagado, no aparece nada de cuotas. Elegí la cantidad máxima: 3, 6, 9 o 12.",
       },
       {
         titulo: "Plazo de despacho",
@@ -531,6 +542,11 @@ export const GUIAS: Record<GuiaId, Guia> = {
 // ---------------------------------------------------------------------------
 
 export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
+  {
+    pregunta: "¿Qué precio cargo en cada producto: el de contado o el de lista?",
+    respuesta:
+      "El de lista (el de cuotas). El precio en 1 pago lo calcula la tienda sola con el \"% de descuento en 1 pago\" de Configuración → Precios. Si cambian ese %, cambian todos los precios en 1 pago a la vez, sin tocar ningún producto.",
+  },
   {
     pregunta: "¿Cómo se cuentan las visitas? ¿Se guardan datos de los clientes?",
     respuesta:

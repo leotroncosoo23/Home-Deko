@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Copy } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { getStoreSettings } from "@/lib/store-settings";
 import { getCategoryChoices, getProductCopy } from "../data";
 import { emptyValues } from "../form-state";
 import { BackToProducts } from "../_components/back-to-products";
@@ -36,9 +37,10 @@ export default function NewProductPage({ searchParams }: PageProps<"/admin/produ
 }
 
 async function NewProductForm({ duplicateId }: { duplicateId: string | null }) {
-  const [categories, copy] = await Promise.all([
+  const [categories, copy, settings] = await Promise.all([
     getCategoryChoices(),
     duplicateId ? getProductCopy(duplicateId) : Promise.resolve(null),
+    getStoreSettings(),
   ]);
 
   return (
@@ -52,7 +54,11 @@ async function NewProductForm({ duplicateId }: { duplicateId: string | null }) {
           </span>
         </p>
       )}
-      <ProductForm initialValues={copy?.values ?? emptyValues()} categories={categories} />
+      <ProductForm
+        initialValues={copy?.values ?? emptyValues()}
+        categories={categories}
+        cashDiscountPercent={settings.cashDiscountPercent}
+      />
     </>
   );
 }

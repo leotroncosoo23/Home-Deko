@@ -44,6 +44,7 @@ export function ProductForm({
   categories,
   aside,
   liveStock = {},
+  cashDiscountPercent = 0,
 }: {
   initialValues: ProductFormValues;
   categories: CategoryChoice[];
@@ -51,6 +52,8 @@ export function ProductForm({
   aside?: React.ReactNode;
   /** Stock actual por variante (en la edición). Ver FormCardProps.liveStock. */
   liveStock?: Record<string, number>;
+  /** "% descuento en 1 pago" de Configuración (para mostrar el precio en 1 pago). */
+  cashDiscountPercent?: number;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -197,8 +200,8 @@ export function ProductForm({
         <div className="flex min-w-0 flex-col gap-6">
           <GeneralCard {...cardProps} />
           <ImagesCard {...cardProps} />
-          <PricingCard {...cardProps} />
-          <DiscountCard {...cardProps} />
+          <PricingCard {...cardProps} cashDiscountPercent={cashDiscountPercent} />
+          <DiscountCard {...cardProps} cashDiscountPercent={cashDiscountPercent} />
           <VariantsCard {...cardProps} />
           {/* Sin variantes: un solo stock y stock mínimo */}
           {!values.hasVariants && <InventoryCard {...cardProps} />}

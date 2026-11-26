@@ -343,7 +343,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
     sin foto = fondo cálido con el corazón. Celular carrusel, PC grilla de 2/3.
   - Google: `<h1>` "Home Deko – Bazar, blanquería y deco en Trevelin" solo para lectores (`sr-only`) y
     `HowToBuyCompact` (store-highlights.tsx) con "Home Deko" escrito en el texto visible. No quitarlos.
-  - La barra de beneficios no muestra cuotas: las cuotas se harán aparte con Getnet.
+  - Barra de beneficios: con "Cuotas sin interés" prendido (Configuración → Precios) muestra "Hasta N cuotas sin
+    interés" en lugar de "Pago seguro con tarjeta"; apagado, queda como siempre.
 - Menú hamburguesa con categorías e información (envíos, cómo comprar, contacto…).
 
 ### Catálogo y producto
@@ -367,6 +368,29 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   con el producto, "Productos relacionados" y JSON-LD `Product`.
 - **Precio por variante: vista `store_variants`** (`final_price` con el descuento vigente, misma regla que
   `store_products`). Es la única fuente de precios de la tienda: página de producto, carrito y checkout.
+- **Precio contado (1 pago) y precio de lista (cuotas)** (rama `precios-contado`):
+  - El precio cargado (`base_price` / `product_variants.price`) es el **precio de lista**; nunca cambia.
+  - **Contado** = lista − "% descuento en 1 pago" (`store_settings.cash_discount_percent`, Configuración → Precios),
+    redondeado a pesos. Las **ofertas** del producto se aplican **solo sobre el contado** (misma proporción
+    `final_price / price` que calcula `store_variants`). Con 0 % → contado = `final_price` tal cual, sin redondear.
+  - **Una sola regla**: `getPrices()` / `cashPrice()` / `cartTotals()` en `src/lib/pricing.ts` (tienda, carrito, panel)
+    y su espejo SQL `public.cash_price(price, final_price)` (+ `cash_price_at` puro) que usan `create_order` y
+    `coupon_quote`. Si cambiás una, cambiá la otra y los dos tests de monto: `src/lib/pricing.test.ts` y
+    `supabase/tests/precio_contado.sql` (mismos números; el SQL corre con begin…rollback y consume 1 número de pedido).
+  - **Cobro**: hoy todo es 1 pago → `create_order` cobra el contado (`unit_price` = contado, `unit_price_before` =
+    contado sin oferta) y los cupones se aplican sobre el contado. `getCartLines` devuelve lo mismo
+    (`unitPrice`/`unitPriceBefore`) + `listPrice`/`offerPrice` y `pricing` para los totales del carrito.
+  - **PENDIENTE (Getnet)**: el checkout tendrá que elegir **1 pago (precio contado) o cuotas (precio de lista)** antes
+    de crear el pago, y `create_order` calcular ese monto en el servidor según la elección.
+  - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("hasta N cuotas sin
+    interés de $ lista/N"); todavía no cambian el cobro.
+  - Tienda: tarjeta y página con el contado grande + "1 pago", "Precio de lista" chico (solo si el % > 0) y las cuotas
+    (si están prendidas); textos en `src/components/store/price-lines.tsx`. Carrito: "Total en 1 pago" y, con cuotas,
+    "Total en cuotas". "Precio sin impuestos nacionales" y JSON-LD usan el contado. El filtro de precio del catálogo
+    se escribe en contado (`finalBoundForCash`).
+  - Ver la tienda con otro % **en local sin tocar producción**: `PRICING_PREVIEW=15,6` en `.env.local` (15 % y 6
+    cuotas; `pricingFrom()` en `store-settings.ts`, se ignora en producción). Solo cambia lo que se MUESTRA: el cobro
+    usa la configuración real, así que con el override no crear pedidos.
 
 ### Carrito, checkout y envío
 - **Botón rápido en la tarjeta de producto** (`ProductCard`: inicio, catálogo, categorías y búsqueda):
@@ -555,7 +579,8 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   aporta solo la diferencia. Monto fijo: gana la opción más barata entre A (ofertas con su descuento + cupón sobre los
   productos sin descuento) y B (todo a lista − cupón). Envío gratis: descuento = envío (retiro → no aplica). Nunca
   baja de $ 0; si el total daría $ 0 → `total_cero` ("escribinos por WhatsApp": MP no cobra $ 0). El descuento va en
-  `discount_total`; `order_items.unit_price` sigue con el precio de la tienda.
+  `discount_total`; `order_items.unit_price` sigue con el precio de la tienda. Desde `precios-contado`, "lista" y
+  `final_price` de esta regla son los de CONTADO (`cash_price`): el cupón se aplica sobre el precio en 1 pago.
 - **Usos**: se cuentan en el webhook (`apply_order_payment` → `redeem_order_coupon`) y en `resolve_review('approve')`,
   NUNCA al crear el pedido. La fila del cupón se bloquea (`for update`): dos aprobaciones simultáneas con el último uso
   se atienden de a una; la segunda **se respeta** (ya pagó) con `over_limit = true` (decisión de Leo) y queda en el

@@ -2,6 +2,7 @@
  * Tipos compartidos entre el servidor (data.ts, actions.ts) y los
  * componentes del navegador. No importa nada del servidor.
  */
+import type { InstallmentCount } from "@/lib/pricing";
 import type { SettingsField } from "./schema";
 
 /** La configuración tal como la muestra el panel. */
@@ -20,6 +21,9 @@ export type AdminSettings = {
   dispatchTime: string;
   showPriceWithoutTaxes: boolean;
   nationalTaxPercent: number;
+  cashDiscountPercent: number;
+  installmentsEnabled: boolean;
+  installmentsMax: InstallmentCount;
 };
 
 /** Lo que devuelve cada Server Action: o salió bien, o un mensaje claro. */
