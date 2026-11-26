@@ -48,6 +48,47 @@ export function StoreHighlights({
   );
 }
 
+/**
+ * "Cómo comprar" CORTO, para el final del inicio. Cubre lo mismo que
+ * StoreHighlights (qué es la tienda, cómo se paga, envío o retiro y para qué
+ * sirve la cuenta con Google, con el link a la privacidad) y además dice
+ * "Home Deko" en el texto visible: Google lo busca para verificar la marca.
+ * NO quitar ninguno de los cuatro puntos.
+ *
+ * Recibe los datos de datosTienda(): lo que falta se omite (nunca "[COMPLETAR]").
+ */
+export function HowToBuyCompact({ envio, className }: { envio: string | null; className?: string }) {
+  return (
+    <ul className={className ?? "grid gap-6 sm:grid-cols-2"}>
+      <Feature icon={Store} title="Comprá online">
+        <strong className="font-semibold text-foreground">Home Deko</strong> es una tienda de bazar, blanquería y
+        deco en Trevelin, Chubut. Elegí lo que te gusta y comprá desde tu casa.
+      </Feature>
+      <Feature icon={CreditCard} title="Pagá con tarjeta">
+        Crédito o débito, en una página de pago segura. Las cuotas disponibles se ven al momento de pagar.
+      </Feature>
+      <Feature icon={Truck} title="Envío o retiro">
+        {envio ? (
+          <>
+            Te lo mandamos a todo el país (<span className="whitespace-nowrap">{envio}</span>, precio fijo) o lo
+            retirás gratis en el local.
+          </>
+        ) : (
+          "Te lo mandamos a todo el país o lo retirás gratis en el local."
+        )}
+      </Feature>
+      <Feature icon={UserRound} title="Tu cuenta">
+        Entrá con Google o con tu email y un código (sin contraseñas) para seguir tus pedidos y guardar tu
+        dirección. Con Google solo usamos tu nombre, tu email y tu foto: lo explicamos en la{" "}
+        <Link href="/privacidad#google" className="font-medium text-foreground underline underline-offset-4">
+          Política de privacidad
+        </Link>
+        .
+      </Feature>
+    </ul>
+  );
+}
+
 function Feature({
   icon: Icon,
   title,

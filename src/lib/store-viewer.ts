@@ -2,18 +2,13 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import {
-  FEATURED_LIMIT,
-  getFeaturedProducts,
   getPublishedCatalog,
   getPublishedProduct,
   queryCatalog,
   queryProduct,
   type ProductDetail,
-  STORE_PRODUCT_COLUMNS,
-  toStoreProduct,
   type CatalogQuery,
   type CatalogResult,
-  type StoreProduct,
 } from "@/lib/store-data";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
@@ -64,29 +59,8 @@ export const getStoreViewer = cache(async (): Promise<StoreViewer> => {
 });
 
 /**
- * Destacados para quien está mirando:
- *   - admin (vista de admin) → con su sesión: publicados + borradores
- *   - cualquier otro         → la versión en caché, igual para todos
- */
-export async function getFeaturedProductsForViewer(): Promise<StoreProduct[]> {
-  const viewer = await getStoreViewer();
-  if (!viewer.seesAdminView) return getFeaturedProducts();
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("store_products")
-    .select(STORE_PRODUCT_COLUMNS)
-    .eq("is_featured", true)
-    .order("created_at", { ascending: false })
-    .limit(FEATURED_LIMIT);
-  if (error) throw new Error("No se pudieron leer los productos destacados.");
-
-  return data.map(toStoreProduct);
-}
-
-/**
- * Catálogo (todos, una categoría o una búsqueda) para quien está mirando.
- * Igual que los destacados: los admins ven también los borradores.
+ * Catálogo (todos, una categoría o una búsqueda) para quien está mirando:
+ * los admins ven también los borradores.
  *
  *   - Visitante sin búsqueda → la versión en caché (igual para todos).
  *   - Visitante con búsqueda → como "anon", sin caché (cada búsqueda es

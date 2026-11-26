@@ -164,7 +164,8 @@ export function ProductBadges({ product: p }: { product: StoreProduct }) {
         </span>
       ) : (
         p.fewLeft && (
-          <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-brand backdrop-blur">
+          // En una línea siempre (en las tiras del inicio la tarjeta es más angosta y se partía sobre la foto).
+          <span className="rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-brand backdrop-blur md:text-xs">
             ¡Últimas unidades!
           </span>
         )

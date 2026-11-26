@@ -288,8 +288,9 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
 - Indexación sin lanzar: `/`, `/privacidad` y `/terminos` indexables (Google); el resto `noindex`
   (header `X-Robots-Tag` en el rewrite y metadata del layout de `(tienda)`).
 - Requisitos de Google para verificar la marca, NO quitarlos (en "Muy pronto" **y** en el inicio real
-  del paso 1): pública (nunca redirigir al login), `<title>` absoluto y `<h1>` "Home Deko", texto que
-  explique qué es la tienda, cómo se compra y para qué sirve la cuenta con Google, y links a
+  del paso 1): pública (nunca redirigir al login), `<title>` absoluto y `<h1>` "Home Deko" (en el inicio, solo
+  para lectores de pantalla), texto visible que nombre a "Home Deko" y explique qué es la tienda, cómo se compra y
+  para qué sirve la cuenta con Google ("Cómo comprar" corto del inicio), y links a
   `/privacidad` y `/terminos` en el pie (`SiteFooter`).
 
 ### Páginas legales (adelantadas del paso 9)
@@ -323,7 +324,26 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
     `prefers-reduced-motion` no pasa solo. Alto fijo por CSS (12:5 en PC; 4:5 en celular salvo que ninguna
     diapositiva tenga formato de celular). Solo la 1ª imagen con prioridad. Las que no se ven son `inert`.
   - Panel: lista en el orden del carrusel con ↑ ↓; "Nuevo banner" desaparece con 3.
-- Productos destacados, botón "Ver todos los productos" y categorías.
+- **Orden del inicio (rama `home-ventas`)**: banner → barra de beneficios → Novedades → Categorías → Ofertas → Más
+  vendidos → "Estamos en Trevelin" + "Cómo comprar" corto → pie. Componentes en `src/components/store/home/`.
+  - Tiras (`ProductStrip`, la misma `ProductCard` del catálogo): celular = fila que se desliza (2 y un pedacito),
+    PC = 4 con flechas si hay más. Solo productos **con stock**, hasta 8; una tira vacía no se muestra. Iguales para
+    todos (también admins: sin borradores), todo en caché.
+  - Datos en `store-data.ts`: `getNewArrivals`, `getOnSaleProducts`, `getBestSellersStrip`. Más vendidos = unidades
+    de pedidos `approved` no cancelados (lee `order_items` con `createAdminClient`; solo salen ids). **Con menos de 4
+    vendidos, la tira se titula "Destacados"** y muestra los `is_featured` (`src/lib/best-sellers.ts`, con tests).
+    Si leer las ventas falla (o falta `SUPABASE_SECRET_KEY`), muestra Destacados y lo avisa en el log
+    (`[inicio] …`). **Un error tirado dentro de un `"use cache"` hace fallar el build aunque se atrape afuera**:
+    esas piezas devuelven `null` y se cachean 1 minuto (`cacheLife("minutes")`).
+  - `SUPABASE_SECRET_KEY` hace falta también en el **build** (el inicio se arma de antemano): cargarla en Vercel
+    en Production **y Preview**.
+  - "Ver todos": Novedades → `/productos?orden=nuevos`; Ofertas → `/productos?ofertas=1` (filtro `ofertas` de
+    `catalog-params.ts`, título "Ofertas" y chip para quitarlo); Más vendidos/Destacados → `/productos`.
+  - Categorías: `CategoryShowcase` con la "Foto de portada" (`categories.image_path`, se sube en el panel);
+    sin foto = fondo cálido con el corazón. Celular carrusel, PC grilla de 2/3.
+  - Google: `<h1>` "Home Deko – Bazar, blanquería y deco en Trevelin" solo para lectores (`sr-only`) y
+    `HowToBuyCompact` (store-highlights.tsx) con "Home Deko" escrito en el texto visible. No quitarlos.
+  - La barra de beneficios no muestra cuotas: las cuotas se harán aparte con Getnet.
 - Menú hamburguesa con categorías e información (envíos, cómo comprar, contacto…).
 
 ### Catálogo y producto

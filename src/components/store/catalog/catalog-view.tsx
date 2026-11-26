@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { X } from "lucide-react";
 import {
   activeFilterCount,
   CATALOG_SORTS,
@@ -74,11 +76,12 @@ export async function CatalogView({
     orden: p.orden,
     min: p.min,
     max: p.max,
+    onSale: p.ofertas,
     limit: PAGE_SIZE * p.pagina,
   });
 
   // --- Links de los filtros (conservan lo demás y vuelven a la 1.ª tanda) ---
-  const keepForCategory = { orden: p.orden, min: p.min, max: p.max };
+  const keepForCategory = { orden: p.orden, min: p.min, max: p.max, ofertas: p.ofertas };
   const filterCategories: FilterCategory[] = categories
     .filter((c) => c.productCount > 0)
     .map((c) => ({
@@ -97,9 +100,12 @@ export async function CatalogView({
   if (p.q) keep.q = p.q;
   if (p.categoria) keep.categoria = p.categoria;
   if (p.orden !== "destacados") keep.orden = p.orden;
+  if (p.ofertas) keep.ofertas = "1";
 
   const filterCount = activeFilterCount(p);
-  const clearHref = filterCount > 0 ? catalogHref(basePath, { q: p.q, orden: p.orden }) : null;
+  const clearHref = filterCount > 0 ? catalogHref(basePath, { q: p.q, orden: p.orden, ofertas: p.ofertas }) : null;
+  // Chip "Ofertas ✕": vuelve a todos los productos, conservando lo demás.
+  const removeOnSaleHref = p.ofertas ? catalogHref(basePath, { ...p, ofertas: false, pagina: 1 }) : null;
 
   const sortHrefs = Object.fromEntries(
     CATALOG_SORTS.map((s) => [s.value, catalogHref(basePath, { ...p, orden: s.value, pagina: 1 })]),
@@ -137,6 +143,16 @@ export async function CatalogView({
           <p aria-live="polite" className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">
             {total === 1 ? "1 producto" : `${total} productos`}
           </p>
+          {removeOnSaleHref && (
+            <Link
+              href={removeOnSaleHref}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-brand-soft px-3 text-sm font-semibold text-brand outline-none hover:bg-brand-soft/70 focus-visible:ring-3 focus-visible:ring-ring/30"
+            >
+              Ofertas
+              <X aria-hidden className="size-3.5" />
+              <span className="sr-only">(quitar el filtro)</span>
+            </Link>
+          )}
           {total > 0 && (
             <div className="ml-auto">
               <SortSelect value={p.orden} hrefs={sortHrefs} />
@@ -147,7 +163,7 @@ export async function CatalogView({
         {total > 0 ? (
           <ProductGrid products={products} />
         ) : (
-          <EmptyState scope={scope} q={p.q} clearHref={clearHref} />
+          <EmptyState scope={scope} q={p.q} clearHref={clearHref} removeOnSaleHref={removeOnSaleHref} />
         )}
 
         {hasMore && p.pagina < MAX_PAGE && (
@@ -164,7 +180,26 @@ export async function CatalogView({
 }
 
 /** Mensajes cuando no hay nada para mostrar (pensados para los clientes). */
-function EmptyState({ scope, q, clearHref }: { scope: CatalogScope; q: string; clearHref: string | null }) {
+function EmptyState({
+  scope,
+  q,
+  clearHref,
+  removeOnSaleHref,
+}: {
+  scope: CatalogScope;
+  q: string;
+  clearHref: string | null;
+  removeOnSaleHref: string | null;
+}) {
+  if (removeOnSaleHref && !clearHref) {
+    return (
+      <NoProducts
+        title="Ahora no hay ofertas"
+        text="Volvé pronto: siempre estamos sumando descuentos. Mientras tanto, mirá todos los productos."
+        action={{ label: "Ver todos los productos", href: removeOnSaleHref }}
+      />
+    );
+  }
   if (clearHref) {
     return (
       <NoProducts

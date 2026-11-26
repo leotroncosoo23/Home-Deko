@@ -33,13 +33,22 @@ export default function ProductsPage({ searchParams }: PageProps<"/productos">) 
     <main className={CATALOG_MAIN}>
       <header className={CATALOG_HEADER}>
         <Breadcrumbs items={[{ label: ALL_PRODUCTS_LINK.label, href: ALL_PRODUCTS_LINK.href }]} />
-        <h1 className={CATALOG_TITLE}>Todos los productos</h1>
+        {/* "Ofertas" con ?ofertas=1 (el "Ver todos" de la tira del inicio). La URL
+            se lee dentro de <Suspense>; mientras tanto, el título de siempre. */}
+        <Suspense fallback={<h1 className={CATALOG_TITLE}>Todos los productos</h1>}>
+          <ProductsTitle searchParams={searchParams} />
+        </Suspense>
       </header>
       <Suspense fallback={<CatalogSkeleton />}>
         <Products searchParams={searchParams} />
       </Suspense>
     </main>
   );
+}
+
+async function ProductsTitle({ searchParams }: Pick<PageProps<"/productos">, "searchParams">) {
+  const { ofertas } = parseCatalogParams(await searchParams);
+  return <h1 className={CATALOG_TITLE}>{ofertas ? "Ofertas" : "Todos los productos"}</h1>;
 }
 
 async function Products({ searchParams }: Pick<PageProps<"/productos">, "searchParams">) {
