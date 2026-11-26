@@ -106,5 +106,8 @@ export async function saveStoreSettings(formData: FormData): Promise<ActionResul
     contact_email: v.contactEmail,
     show_price_without_taxes: v.showPriceWithoutTaxes,
     national_tax_percent: v.nationalTaxPercent,
+    cash_discount_percent: v.cashDiscountPercent,
+    installments_enabled: v.installmentsEnabled,
+    installments_max: v.installmentsMax,
   });
 }

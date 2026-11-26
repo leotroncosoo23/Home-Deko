@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseInteger, parseMoney } from "@/lib/format";
+import { INSTALLMENT_OPTIONS, type InstallmentCount } from "@/lib/pricing";
 
 /**
  * Validación del formulario de Configuración. Se usa en el navegador (para
@@ -12,6 +13,7 @@ import { parseInteger, parseMoney } from "@/lib/format";
  *   - CUIT "20-12345678-6"                      → "20123456786"
  *   - Envío "20.000"                            → 20000
  *   - Impuestos "10,5"                          → 10.5
+ *   - Descuento en 1 pago "15 %"                → 15
  */
 
 export const SETTINGS_FIELDS = [
@@ -28,6 +30,9 @@ export const SETTINGS_FIELDS = [
   "contactEmail",
   "showPriceWithoutTaxes",
   "nationalTaxPercent",
+  "cashDiscountPercent",
+  "installmentsEnabled",
+  "installmentsMax",
 ] as const;
 
 export type SettingsField = (typeof SETTINGS_FIELDS)[number];
@@ -39,6 +44,8 @@ export const SHIPPING_MAX = 10_000_000;
 export const EXCHANGE_DAYS_MAX = 365;
 /** El % de impuestos nacionales tiene que ser menor a 100 (igual que en la base). */
 export const TAX_PERCENT_MAX = 99.99;
+/** Descuento en 1 pago: hasta 90 % (la base acepta menos de 100; más de 90 es casi seguro un error de tipeo). */
+export const CASH_DISCOUNT_MAX = 90;
 
 /** Saca el link, la "@" y espacios: queda solo el nombre de usuario. */
 function cleanHandle(value: string) {
@@ -125,6 +132,22 @@ export const settingsSchema = z.object({
       message: "Escribí un porcentaje entre 0 y 99 (ej.: 21).",
     })
     .transform((v) => v as number),
+  // Precio contado = lista − este %. 0 = sin descuento (contado igual a lista).
+  cashDiscountPercent: z
+    .string()
+    .transform((v) => parseMoney(v.replace("%", "")))
+    .refine((v) => v !== null && !Number.isNaN(v) && v >= 0 && v <= CASH_DISCOUNT_MAX, {
+      message: `Escribí un porcentaje entre 0 y ${CASH_DISCOUNT_MAX} (ej.: 15). 0 = sin descuento.`,
+    })
+    .transform((v) => v as number),
+  installmentsEnabled: z.string().transform((v) => v === "true"),
+  installmentsMax: z
+    .string()
+    .transform((v) => Number(v))
+    .refine((v) => INSTALLMENT_OPTIONS.includes(v as InstallmentCount), {
+      message: "Elegí 3, 6, 9 o 12 cuotas.",
+    })
+    .transform((v) => v as InstallmentCount),
 });
 
 export type SettingsValues = z.output<typeof settingsSchema>;

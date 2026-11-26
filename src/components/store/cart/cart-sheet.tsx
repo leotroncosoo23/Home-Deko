@@ -8,8 +8,10 @@ import { getCartLines } from "@/app/(tienda)/actions";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { productCountLabel, type CartData, type CartItem, type CartLine } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
+import { cartTotals, DEFAULT_PRICING } from "@/lib/pricing";
 import { ALL_PRODUCTS_LINK, CHECKOUT_PATH, productHref } from "@/lib/store-nav";
 import { cn } from "@/lib/utils";
+import { installmentsText, showCashTag, showListPrice } from "../price-lines";
 import { getCartSnapshot, removeCartItem, replaceCart, setCartItemQty } from "./cart-store";
 
 /**
@@ -73,7 +75,12 @@ export function CartSheet({
     .filter((l) => l.status !== "unavailable" && qtyById.has(l.variantId))
     .map((l) => ({ ...l, qty: Math.min(qtyById.get(l.variantId) ?? l.qty, l.maxQty) }));
   const units = lines.reduce((s, l) => s + l.qty, 0);
-  const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+  // Totales con la misma función que los tests de monto (src/lib/pricing.ts)
+  const pricing = data?.pricing ?? DEFAULT_PRICING;
+  const totals = cartTotals(
+    lines.map((l) => ({ price: l.listPrice, finalPrice: l.offerPrice, qty: l.qty })),
+    pricing,
+  );
   const isEmpty = items.length === 0;
   const firstLoad = !isEmpty && !data && !failed;
 
@@ -123,11 +130,29 @@ export function CartSheet({
             <div className="flex shrink-0 flex-col gap-3 border-t bg-background px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               <dl className="flex flex-col gap-1.5 text-sm">
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-base font-semibold">Subtotal</dt>
-                  <dd className="text-lg font-semibold tabular-nums">
-                    {data ? formatPrice(subtotal) : <span className="inline-block h-5 w-24 animate-pulse rounded bg-muted" />}
+                  <dt className="text-base font-semibold">{showCashTag(pricing) ? "Total en 1 pago" : "Subtotal"}</dt>
+                  <dd className="text-lg font-bold tabular-nums">
+                    {data ? (
+                      formatPrice(totals.contado)
+                    ) : (
+                      <span className="inline-block h-5 w-24 animate-pulse rounded bg-muted" />
+                    )}
                   </dd>
                 </div>
+                {data && totals.cuotas !== null && (
+                  <div className="flex flex-col gap-0.5 text-muted-foreground">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <dt>Total en cuotas</dt>
+                      <dd className="tabular-nums">{formatPrice(totals.lista)}</dd>
+                    </div>
+                    <p className="text-xs tabular-nums">{installmentsText(totals)}</p>
+                  </div>
+                )}
+                {data && totals.cuotas === null && showListPrice(pricing) && (
+                  <p className="-mt-1 text-xs text-muted-foreground tabular-nums">
+                    Precio de lista {formatPrice(totals.lista)}
+                  </p>
+                )}
                 <div className="flex items-baseline justify-between gap-4 text-muted-foreground">
                   <dt>Envío</dt>
                   <dd className="text-right">
@@ -258,7 +283,7 @@ function CartLineRow({ line, onNavigate }: { line: CartLine; onNavigate: () => v
           </button>
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-3">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-1.5">
           <div className="flex flex-col gap-1">
             <div className="inline-flex h-9 items-center rounded-full border">
               <button
@@ -285,7 +310,7 @@ function CartLineRow({ line, onNavigate }: { line: CartLine; onNavigate: () => v
             </div>
             {atMax && line.maxQty > 1 && <p className="text-xs text-muted-foreground">No hay más unidades</p>}
           </div>
-          <p className="flex flex-col items-end tabular-nums">
+          <p className="ml-auto flex flex-col items-end whitespace-nowrap tabular-nums">
             <span className={cn("font-semibold", line.unitPriceBefore && "text-brand")}>
               {formatPrice(line.unitPrice * line.qty)}
             </span>

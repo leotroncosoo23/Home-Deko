@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCuit, formatMoneyInput } from "@/lib/format";
+import { formatCuit, formatMoneyInput, formatPrice, parseMoney } from "@/lib/format";
+import { cashPrice, INSTALLMENT_OPTIONS } from "@/lib/pricing";
 import { useUnsavedWarning } from "../../productos/_components/use-unsaved-warning";
 import { saveStoreSettings } from "../actions";
 import { SETTINGS_FIELDS, validateSettings, type SettingsField, type SettingsInput } from "../schema";
@@ -32,6 +33,9 @@ function toInput(s: AdminSettings): SettingsInput {
     contactEmail: s.contactEmail,
     showPriceWithoutTaxes: String(s.showPriceWithoutTaxes),
     nationalTaxPercent: formatMoneyInput(s.nationalTaxPercent),
+    cashDiscountPercent: formatMoneyInput(s.cashDiscountPercent),
+    installmentsEnabled: String(s.installmentsEnabled),
+    installmentsMax: String(s.installmentsMax),
   };
 }
 
@@ -232,9 +236,82 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
       <SectionCard
         icon={Receipt}
         title="Precios"
-        description="Cómo se muestran los precios en la página de cada producto."
+        description="Precio en 1 pago, cuotas e impuestos. El precio que cargás en cada producto es el precio de lista."
         contentClassName="grid gap-5"
       >
+        {/* Descuento en 1 pago */}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`${ids}-cashDiscountPercent`}>% de descuento en 1 pago</Label>
+          <div
+            className={cn(
+              "flex h-8 items-center overflow-hidden rounded-lg border border-input text-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20 sm:max-w-40",
+              errors.cashDiscountPercent && "border-destructive ring-3 ring-destructive/20",
+            )}
+          >
+            <input
+              {...fieldProps("cashDiscountPercent")}
+              inputMode="decimal"
+              placeholder="0"
+              autoComplete="off"
+              className="h-full min-w-0 flex-1 bg-transparent px-2.5 tabular-nums outline-none disabled:opacity-50"
+            />
+            <span className="flex h-full items-center border-l bg-muted px-2.5 text-muted-foreground">%</span>
+          </div>
+          <FieldHelp id={`${ids}-cashDiscountPercent-help`} error={errors.cashDiscountPercent}>
+            {cashExample(values.cashDiscountPercent)}
+          </FieldHelp>
+        </div>
+
+        {/* Cuotas sin interés */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${ids}-installmentsEnabled`}>Cuotas sin interés</Label>
+              <FieldHelp id={`${ids}-installmentsEnabled-help`} error={errors.installmentsEnabled}>
+                Muestra «hasta N cuotas sin interés de $ …» calculado sobre el precio de lista. Apagado, no
+                se muestra nada de cuotas.
+              </FieldHelp>
+            </div>
+            <Switch
+              id={`${ids}-installmentsEnabled`}
+              checked={values.installmentsEnabled === "true"}
+              onCheckedChange={(checked) => set("installmentsEnabled", String(checked === true))}
+              disabled={pending}
+              aria-describedby={`${ids}-installmentsEnabled-help`}
+              className="mt-0.5"
+            />
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Cantidad máxima de cuotas"
+            aria-describedby={`${ids}-installmentsMax-help`}
+            className="flex flex-wrap gap-2"
+          >
+            {INSTALLMENT_OPTIONS.map((n) => {
+              const selected = values.installmentsMax === String(n);
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={pending || values.installmentsEnabled !== "true"}
+                  onClick={() => set("installmentsMax", String(n))}
+                  className={cn(
+                    "h-8 min-w-20 rounded-lg border px-3 text-sm tabular-nums transition-colors disabled:opacity-50",
+                    selected ? "border-foreground bg-foreground font-semibold text-background" : "hover:bg-muted",
+                  )}
+                >
+                  {n} cuotas
+                </button>
+              );
+            })}
+          </div>
+          <FieldHelp id={`${ids}-installmentsMax-help`} error={errors.installmentsMax}>
+            Cantidad máxima que aceptás sin interés.
+          </FieldHelp>
+        </div>
+
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <Label htmlFor={`${ids}-showPriceWithoutTaxes`}>Mostrar precio sin impuestos nacionales</Label>
@@ -271,7 +348,7 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
             <span className="flex h-full items-center border-l bg-muted px-2.5 text-muted-foreground">%</span>
           </div>
           <FieldHelp id={`${ids}-nationalTaxPercent-help`} error={errors.nationalTaxPercent}>
-            Normalmente 21 (IVA). El precio sin impuestos se calcula como precio ÷ (1 + %/100), redondeado.
+            Normalmente 21 (IVA). Se calcula sobre el precio en 1 pago: precio ÷ (1 + %/100), redondeado.
           </FieldHelp>
         </div>
       </SectionCard>
@@ -288,6 +365,15 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
       </div>
     </form>
   );
+}
+
+/** Ayuda del % en 1 pago con un ejemplo en vivo ("Ej.: lista $ 10.000 → en 1 pago $ 8.500"). */
+function cashExample(text: string): string {
+  const pct = parseMoney(text.replace("%", ""));
+  if (pct === null || Number.isNaN(pct) || pct <= 0 || pct >= 100) {
+    return "Con 0, el precio en 1 pago es igual al de lista. Las ofertas de cada producto se aplican sobre el precio en 1 pago.";
+  }
+  return `Ej.: precio de lista $ 10.000 → en 1 pago ${formatPrice(cashPrice(10000, 10000, pct))}. Las ofertas de cada producto se aplican sobre el precio en 1 pago.`;
 }
 
 /** Texto de ayuda debajo de cada campo; si hay un error, muestra el error en su lugar. */

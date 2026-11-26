@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "cn";
 import { formatPrice } from "@/lib/format";
+import { getPrices, type PricingSettings } from "@/lib/pricing";
 import type { StoreProduct } from "@/lib/store-data";
 import { productHref } from "@/lib/store-nav";
 import { QuickAdd } from "./cart/quick-add";
+import { CashTag, ListAndInstallments, showCashTag } from "./price-lines";
 
 // ---------------------------------------------------------------------------
 // Grillas (las comparten el catálogo, el inicio y los esqueletos de carga)
@@ -25,8 +27,11 @@ export const HOME_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 2
  * Tarjeta de producto de la tienda (inicio, catálogo, categorías, búsqueda):
  * foto grande cuadrada, nombre (hasta 2 líneas), precio y botón rápido.
  *
+ *   - Precio grande = CONTADO (1 pago, src/lib/pricing.ts) con la etiqueta
+ *     "1 pago"; abajo, chico y gris, "Precio de lista" y las cuotas
+ *     (ver price-lines.tsx: cada texto aparece solo si corresponde).
  *   - Con descuento vigente: etiqueta "-10% OFF" (o "Hasta -20% OFF"), precio
- *     final en rojo y el anterior tachado.
+ *     contado en rojo y el contado sin oferta tachado.
  *   - Quedan 1 o 2 unidades en total: "¡Últimas unidades!" (nunca junto a "Sin stock").
  *   - Con variantes de distinto precio: "Desde $ …".
  *   - Sin stock: etiqueta "Sin stock", la foto un poco apagada y sin botón.
@@ -41,15 +46,19 @@ export const HOME_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 2
  */
 export function ProductCard({
   product,
+  pricing,
   priority,
   sizes = CATALOG_IMAGE_SIZES,
 }: {
   product: StoreProduct;
+  /** % de 1 pago y cuotas (pricingFrom(getStoreSettings())). */
+  pricing: PricingSettings;
   priority?: boolean;
   sizes?: string;
 }) {
   const p = product;
-  const discount = p.discountActive && p.finalPrice < p.price;
+  const prices = getPrices(p, pricing);
+  const discount = p.discountActive && prices.oferta;
   const href = productHref(p.slug);
   // Botón rápido: sin stock no hay; con una variante "Agregar"; con varias "Ver opciones".
   const quick =
@@ -112,23 +121,27 @@ export function ProductCard({
       </Link>
 
       <div className="-mt-1.5 flex flex-1 flex-col gap-2.5 px-0.5 md:gap-3">
-        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 tabular-nums">
-          {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
-          <span
-            className={cn(
-              "text-base font-semibold tracking-tight md:text-[17px]",
-              discount ? "text-brand" : "text-foreground",
-            )}
-          >
-            {formatPrice(p.finalPrice)}
-          </span>
-          {discount && (
-            <span className="text-sm text-muted-foreground line-through">
-              <span className="sr-only">Antes: </span>
-              {formatPrice(p.price)}
+        <div className="flex flex-col gap-1">
+          <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 tabular-nums">
+            {p.hasPriceRange && <span className="text-xs text-muted-foreground">Desde</span>}
+            <span
+              className={cn(
+                "text-base font-bold tracking-tight md:text-lg",
+                discount ? "text-brand" : "text-foreground",
+              )}
+            >
+              {formatPrice(prices.contado)}
             </span>
-          )}
-        </p>
+            {showCashTag(pricing) && <CashTag className="self-center" />}
+            {discount && (
+              <span className="text-sm text-muted-foreground line-through">
+                <span className="sr-only">Antes: </span>
+                {formatPrice(prices.contadoSinOferta)}
+              </span>
+            )}
+          </p>
+          <ListAndInstallments prices={prices} pricing={pricing} />
+        </div>
         {/* mt-auto: en una misma fila, los botones quedan alineados abajo */}
         {quick && (
           <div className="mt-auto">

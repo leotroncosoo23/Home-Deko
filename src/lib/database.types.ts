@@ -1235,6 +1235,7 @@ export type Database = {
       store_settings: {
         Row: {
           business_name: string
+          cash_discount_percent: number
           contact_email: string
           created_at: string
           cuit: string
@@ -1242,6 +1243,8 @@ export type Database = {
           exchange_days: number
           id: string
           instagram: string
+          installments_enabled: boolean
+          installments_max: number
           is_launched: boolean
           national_tax_percent: number
           shipping_cost: number
@@ -1255,6 +1258,7 @@ export type Database = {
         }
         Insert: {
           business_name?: string
+          cash_discount_percent?: number
           contact_email?: string
           created_at?: string
           cuit?: string
@@ -1262,6 +1266,8 @@ export type Database = {
           exchange_days?: number
           id?: string
           instagram?: string
+          installments_enabled?: boolean
+          installments_max?: number
           is_launched?: boolean
           national_tax_percent?: number
           shipping_cost?: number
@@ -1275,6 +1281,7 @@ export type Database = {
         }
         Update: {
           business_name?: string
+          cash_discount_percent?: number
           contact_email?: string
           created_at?: string
           cuit?: string
@@ -1282,6 +1289,8 @@ export type Database = {
           exchange_days?: number
           id?: string
           instagram?: string
+          installments_enabled?: boolean
+          installments_max?: number
           is_launched?: boolean
           national_tax_percent?: number
           shipping_cost?: number
@@ -1843,6 +1852,14 @@ export type Database = {
       can_manage_appearance: { Args: never; Returns: boolean }
       cancel_order: {
         Args: { p_order_id: string; p_reason?: string }
+        Returns: number
+      }
+      cash_price: {
+        Args: { p_final: number; p_price: number }
+        Returns: number
+      }
+      cash_price_at: {
+        Args: { p_final: number; p_pct: number; p_price: number }
         Returns: number
       }
       compute_role: {

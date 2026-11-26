@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { CreditCard, RefreshCcw, Store, Truck } from "lucide-react";
+import type { PricingSettings } from "@/lib/pricing";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { cn } from "@/lib/utils";
 
 /**
  * Barra de beneficios, debajo del banner del inicio.
  * Celular: 2 × 2 (nada se corta). Desde tablet: 4 en una fila.
- * Sin cuotas ni marcas de medios de pago.
+ * Sin marcas de medios de pago. Con las cuotas prendidas (Configuración →
+ * Precios), "Pago seguro con tarjeta" pasa a "Hasta N cuotas sin interés".
  */
 const BENEFITS = [
   { icon: Truck, text: "Envíos a todo el país" },
@@ -15,11 +17,16 @@ const BENEFITS = [
   { icon: RefreshCcw, text: "Cambios y devoluciones", href: "/cambios-y-devoluciones" },
 ] as const;
 
-export function StoreBenefits({ className }: { className?: string }) {
+export function StoreBenefits({ className, pricing }: { className?: string; pricing: PricingSettings }) {
+  const benefits = BENEFITS.map((b) =>
+    b.icon === CreditCard && pricing.installmentsEnabled
+      ? { ...b, text: `Hasta ${pricing.installmentsMax} cuotas sin interés` }
+      : b,
+  );
   return (
     <section aria-label="Beneficios de comprar en Home Deko" className={cn("border-b bg-background", className)}>
       <ul className={cn(STORE_CONTAINER, "grid grid-cols-2 gap-x-3 gap-y-4 py-5 md:grid-cols-4 md:gap-6 md:py-6")}>
-        {BENEFITS.map((b) => {
+        {benefits.map((b) => {
           const content = (
             <>
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft md:size-10">

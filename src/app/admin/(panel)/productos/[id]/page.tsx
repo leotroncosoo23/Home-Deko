@@ -6,6 +6,7 @@ import { Copy } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getStoreSettings } from "@/lib/store-settings";
 import { getCategoryChoices, getProductForEdit } from "../data";
 import { CodesCard } from "../_components/codes-card";
 import { BackToProducts } from "../_components/back-to-products";
@@ -41,7 +42,11 @@ export default function EditProductPage({ params }: PageProps<"/admin/productos/
 async function EditProduct({ id }: { id: string }) {
   if (!UUID_PATTERN.test(id)) notFound();
 
-  const [product, categories] = await Promise.all([getProductForEdit(id), getCategoryChoices()]);
+  const [product, categories, settings] = await Promise.all([
+    getProductForEdit(id),
+    getCategoryChoices(),
+    getStoreSettings(),
+  ]);
   if (!product) notFound();
 
   return (
@@ -64,6 +69,7 @@ async function EditProduct({ id }: { id: string }) {
         key={product.updatedAt}
         initialValues={product.values}
         categories={categories}
+        cashDiscountPercent={settings.cashDiscountPercent}
         aside={<CodesCard codes={product.codes} productId={id} productName={product.name} />}
         liveStock={Object.fromEntries(product.codes.map((c) => [c.id, c.stock]))}
       />

@@ -6,6 +6,7 @@ import { Breadcrumbs, type Crumb } from "@/components/store/catalog/breadcrumbs"
 import { HOME_GRID, HOME_IMAGE_SIZES, ProductCard } from "@/components/store/product-card";
 import { ProductPurchase } from "@/components/store/product/product-purchase";
 import { formatPrice } from "@/lib/format";
+import { getPrices, type PricingSettings } from "@/lib/pricing";
 import { siteUrl } from "@/lib/site-url";
 import {
   getPublishedProduct,
@@ -17,7 +18,7 @@ import { STORE_CONTAINER } from "@/lib/store-layout";
 import { ALL_PRODUCTS_LINK, categoryHref, productHref } from "@/lib/store-nav";
 import { WhatsAppIcon } from "@/components/store/whatsapp-icon";
 import { ProductViewTracker } from "@/components/store/visit-tracker";
-import { getStoreSettings, whatsappLink, type StoreSettings } from "@/lib/store-settings";
+import { getStoreSettings, pricingFrom, whatsappLink, type StoreSettings } from "@/lib/store-settings";
 import { getProductForViewer } from "@/lib/store-viewer";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +84,7 @@ async function ProductContent({ params }: Pick<PageProps<"/productos/[slug]">, "
   if (!product) notFound();
 
   const { card, category } = product;
+  const pricing = pricingFrom(settings);
   const crumbs: Crumb[] = [
     category ? { label: category.name, href: categoryHref(category.slug) } : ALL_PRODUCTS_LINK,
     { label: card.name, href: productHref(card.slug) },
@@ -96,14 +98,15 @@ async function ProductContent({ params }: Pick<PageProps<"/productos/[slug]">, "
         options={product.options}
         variants={product.variants}
         photos={product.photos}
+        pricing={pricing}
         nationalTaxPercent={settings.showPriceWithoutTaxes ? settings.nationalTaxPercent : null}
       >
         <ProductDetails product={product} settings={settings} />
       </ProductPurchase>
-      {!card.isDraft && <ProductJsonLd product={product} />}
+      {!card.isDraft && <ProductJsonLd product={product} pricing={pricing} />}
       {/* "Más vistos" del Inicio del panel (anónimo; los borradores solo los ven admins) */}
       {!card.isDraft && <ProductViewTracker productId={card.id} />}
-      {category && <RelatedProducts categoryId={category.id} productId={card.id} />}
+      {category && <RelatedProducts categoryId={category.id} productId={card.id} pricing={pricing} />}
     </>
   );
 }
@@ -168,12 +171,13 @@ function ProductDetails({ product, settings }: { product: ProductDetail; setting
  * Datos estructurados para Google ("Product"): nombre, fotos, precio y si
  * hay stock. Con eso Google puede mostrar el precio en el resultado.
  */
-function ProductJsonLd({ product }: { product: ProductDetail }) {
+function ProductJsonLd({ product, pricing }: { product: ProductDetail; pricing: PricingSettings }) {
   const base = siteUrl();
   if (!base) return null;
   const { card, variants } = product;
   const url = `${base}${productHref(card.slug)}`;
-  const prices = variants.map((v) => v.finalPrice);
+  // Precio CONTADO (el que se cobra: create_order usa cash_price con la misma regla)
+  const prices = variants.map((v) => getPrices(v, pricing).contado);
   const availability = card.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 
   const offers =
@@ -190,7 +194,7 @@ function ProductJsonLd({ product }: { product: ProductDetail }) {
       : {
           "@type": "Offer",
           priceCurrency: "ARS",
-          price: (prices[0] ?? card.finalPrice).toFixed(2),
+          price: (prices[0] ?? getPrices(card, pricing).contado).toFixed(2),
           availability,
           itemCondition: "https://schema.org/NewCondition",
           url,
@@ -217,7 +221,15 @@ function ProductJsonLd({ product }: { product: ProductDetail }) {
 }
 
 /** Otros productos de la misma categoría (si no hay, no aparece la sección). */
-async function RelatedProducts({ categoryId, productId }: { categoryId: string; productId: string }) {
+async function RelatedProducts({
+  categoryId,
+  productId,
+  pricing,
+}: {
+  categoryId: string;
+  productId: string;
+  pricing: PricingSettings;
+}) {
   const products = await getRelatedProducts(categoryId, productId);
   if (products.length === 0) return null;
 
@@ -229,7 +241,7 @@ async function RelatedProducts({ categoryId, productId }: { categoryId: string; 
       <ul className={HOME_GRID}>
         {products.map((p) => (
           <li key={p.id}>
-            <ProductCard product={p} sizes={HOME_IMAGE_SIZES} />
+            <ProductCard product={p} pricing={pricing} sizes={HOME_IMAGE_SIZES} />
           </li>
         ))}
       </ul>
