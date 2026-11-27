@@ -51,7 +51,7 @@ export function ProductCard({
   sizes = CATALOG_IMAGE_SIZES,
 }: {
   product: StoreProduct;
-  /** % de 1 pago y cuotas (pricingFrom(getStoreSettings())). */
+  /** Recargo de lista y cuotas (pricingFrom(getStoreSettings())). */
   pricing: PricingSettings;
   priority?: boolean;
   sizes?: string;

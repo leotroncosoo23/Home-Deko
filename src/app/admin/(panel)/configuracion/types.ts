@@ -21,7 +21,7 @@ export type AdminSettings = {
   dispatchTime: string;
   showPriceWithoutTaxes: boolean;
   nationalTaxPercent: number;
-  cashDiscountPercent: number;
+  listSurchargePercent: number;
   installmentsEnabled: boolean;
   installmentsMax: InstallmentCount;
 };

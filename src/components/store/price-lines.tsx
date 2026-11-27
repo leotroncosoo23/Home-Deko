@@ -5,20 +5,20 @@ import type { Prices, PricingSettings } from "@/lib/pricing";
 /**
  * Textos de precio que comparten la tarjeta, la página del producto y el carrito.
  *
- *   - "1 pago": solo cuando hay algo con qué compararlo (descuento en 1 pago o
+ *   - "1 pago": solo cuando hay algo con qué compararlo (recargo de lista o
  *     cuotas). Con 0 % y sin cuotas, la tienda se ve como siempre.
- *   - "Precio de lista": solo si es distinto del contado (descuento > 0).
+ *   - "Precio de lista": solo si es distinto del contado (recargo > 0).
  *   - "hasta N cuotas sin interés de $ X": solo con las cuotas prendidas.
  */
 export function showCashTag(s: PricingSettings): boolean {
-  return s.cashDiscountPercent > 0 || s.installmentsEnabled;
+  return s.listSurchargePercent > 0 || s.installmentsEnabled;
 }
 
 export function showListPrice(s: PricingSettings): boolean {
-  return s.cashDiscountPercent > 0;
+  return s.listSurchargePercent > 0;
 }
 
-/** "hasta 6 cuotas sin interés de $ 1.666,67" (o null). */
+/** "hasta 6 cuotas sin interés de $ 7.853,33" (o null). */
 export function installmentsText(prices: Pick<Prices, "cuotas" | "valorCuota">): string | null {
   if (!prices.cuotas || prices.valorCuota === null) return null;
   return `hasta ${prices.cuotas} cuotas sin interés de ${formatPrice(prices.valorCuota)}`;

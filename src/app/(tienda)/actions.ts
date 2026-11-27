@@ -133,8 +133,6 @@ export async function getCartLines(input: unknown): Promise<CartData> {
         variantLabel: null,
         imageUrl: null,
         unitPrice: 0,
-        listPrice: 0,
-        offerPrice: 0,
         unitPriceBefore: null,
         maxQty: 0,
       };
@@ -145,7 +143,7 @@ export async function getCartLines(input: unknown): Promise<CartData> {
     const imagePath = colorPhoto ?? p.primary_image_path;
     const price = Number(v.price ?? 0);
     const finalPrice = Number(v.final_price ?? price);
-    // Contado = lo que cobra create_order (misma regla: public.cash_price)
+    // Contado = precio cargado con la oferta = lo que cobra create_order (final_price)
     const prices = getPrices({ price, finalPrice }, pricing);
     const stock = v.stock ?? 0;
     const qty = Math.min(requested, stock);
@@ -159,8 +157,6 @@ export async function getCartLines(input: unknown): Promise<CartData> {
       variantLabel: values.length ? values.map((x) => x.value).join(" / ") : null,
       imageUrl: imagePath ? publicImageUrl(imagePath) : null,
       unitPrice: prices.contado,
-      listPrice: price,
-      offerPrice: finalPrice,
       unitPriceBefore: prices.oferta ? prices.contadoSinOferta : null,
       maxQty: stock,
     };

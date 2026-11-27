@@ -57,7 +57,7 @@ async function NewProductForm({ duplicateId }: { duplicateId: string | null }) {
       <ProductForm
         initialValues={copy?.values ?? emptyValues()}
         categories={categories}
-        cashDiscountPercent={settings.cashDiscountPercent}
+        listSurchargePercent={settings.listSurchargePercent}
       />
     </>
   );

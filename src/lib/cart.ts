@@ -37,14 +37,10 @@ export type CartLine = {
   /** "Rojo / 30 cm" (null si el producto no tiene opciones). */
   variantLabel: string | null;
   imageUrl: string | null;
-  /** Precio unitario a pagar hoy: CONTADO, en 1 pago (src/lib/pricing.ts). */
+  /** Precio unitario a pagar hoy: CONTADO (precio cargado con la oferta, src/lib/pricing.ts). */
   unitPrice: number;
-  /** Contado sin la oferta del producto, si hay oferta vigente. */
+  /** Precio cargado sin la oferta, si hay oferta vigente. */
   unitPriceBefore: number | null;
-  /** Precio de lista (el cargado; el de cuotas). */
-  listPrice: number;
-  /** Lista con la oferta (final_price de la base). Para cartTotals(). */
-  offerPrice: number;
   /** Tope de unidades (el stock). No se muestra. */
   maxQty: number;
 };
@@ -53,7 +49,7 @@ export type CartData = {
   lines: CartLine[];
   /** Costo del envío a domicilio (de Configuración). El retiro es gratis. */
   shippingCost: number;
-  /** % de 1 pago y cuotas, para los totales. */
+  /** Recargo de lista y cuotas, para los totales. */
   pricing: PricingSettings;
 };
 

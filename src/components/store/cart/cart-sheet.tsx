@@ -78,7 +78,7 @@ export function CartSheet({
   // Totales con la misma función que los tests de monto (src/lib/pricing.ts)
   const pricing = data?.pricing ?? DEFAULT_PRICING;
   const totals = cartTotals(
-    lines.map((l) => ({ price: l.listPrice, finalPrice: l.offerPrice, qty: l.qty })),
+    lines.map((l) => ({ price: l.unitPriceBefore ?? l.unitPrice, finalPrice: l.unitPrice, qty: l.qty })),
     pricing,
   );
   const isEmpty = items.length === 0;

@@ -176,7 +176,7 @@ function ProductJsonLd({ product, pricing }: { product: ProductDetail; pricing: 
   if (!base) return null;
   const { card, variants } = product;
   const url = `${base}${productHref(card.slug)}`;
-  // Precio CONTADO (el que se cobra: create_order usa cash_price con la misma regla)
+  // Precio CONTADO (el que se cobra: create_order cobra final_price, el mismo número)
   const prices = variants.map((v) => getPrices(v, pricing).contado);
   const availability = card.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 
