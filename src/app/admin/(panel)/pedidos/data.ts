@@ -3,6 +3,7 @@ import { cache } from "react";
 import { trackingFor, type Tracking } from "@/lib/carriers";
 import { getCurrentUser, requireAdmin } from "@/lib/auth";
 import { titleCase } from "@/lib/format";
+import { paymentPlanLabel } from "@/lib/pricing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { cleanSearch, PAGE_SIZE, searchNumber, type ListParams } from "./list-params";
@@ -29,6 +30,8 @@ export type OrderRow = {
   delivery: DeliveryMethod;
   place: string | null;
   total: number;
+  /** "1 pago" o "6 cuotas". */
+  paymentPlan: string;
   units: number;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
@@ -41,7 +44,7 @@ export type OrderRow = {
 export type OrdersPage = { items: OrderRow[]; total: number; page: number; pageCount: number };
 
 const LIST_COLUMNS =
-  "id, order_number, created_at, customer_name, customer_email, customer_phone, delivery_method, ship_city, ship_province, total, payment_status, fulfillment_status, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, order_items(quantity)";
+  "id, order_number, created_at, customer_name, customer_email, customer_phone, delivery_method, ship_city, ship_province, total, payment_plan, installments, payment_status, fulfillment_status, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, order_items(quantity)";
 
 export async function getOrders(params: ListParams): Promise<OrdersPage> {
   await requireAdmin();
@@ -128,6 +131,7 @@ export async function getOrders(params: ListParams): Promise<OrdersPage> {
       delivery: o.delivery_method,
       place: o.ship_city ? `${titleCase(o.ship_city)}, ${titleCase(o.ship_province)}` : null,
       total: Number(o.total),
+      paymentPlan: paymentPlanLabel(o.payment_plan, o.installments),
       units: o.order_items.reduce((sum, i) => sum + i.quantity, 0),
       paymentStatus: o.payment_status,
       fulfillmentStatus: o.fulfillment_status,
@@ -203,7 +207,7 @@ export async function getOrderDetail(id: string) {
     supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, customer_phone, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, mp_payment_id, mp_status, mp_status_detail, payment_provider, payment_intent_id, payment_id, provider_status, payment_status_detail, payment_notified_at, payment_expires_at, paid_at, stock_applied_at, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, shipped_at, cancelled_at, cancel_reason, stock_returned_at",
+        "id, order_number, created_at, payment_status, fulfillment_status, delivery_method, customer_name, customer_email, customer_phone, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, payment_plan, installments, mp_payment_id, mp_status, mp_status_detail, payment_provider, payment_intent_id, payment_id, provider_status, payment_status_detail, payment_notified_at, payment_expires_at, paid_at, stock_applied_at, stock_issue, needs_review, review_reason, carrier, carrier_name, tracking_code, tracking_url, shipped_at, cancelled_at, cancel_reason, stock_returned_at",
       )
       .eq("id", id)
       .maybeSingle(),

@@ -5,8 +5,10 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   billingFrom,
   checkoutSchemaFor,
+  COUPON_SINGLE_ONLY_MESSAGE,
   couponCodeSchema,
   fieldErrorsFrom,
+  INSTALLMENTS_UNAVAILABLE_MESSAGE,
   itemsSchema,
   PAYMENTS_UNAVAILABLE_MESSAGE,
   type CheckoutResult,
@@ -91,6 +93,7 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
   }
   const supabase = createAdminClient();
   const couponCode = data.couponCode || null;
+  const plan = data.paymentPlan ?? "single";
 
   // Con cupón, el pago también cuenta como intento: si no, se podrían
   // probar códigos al azar directo desde "Pagar".
@@ -120,6 +123,10 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
       items: data.items.map((i) => ({ variant_id: i.variantId, qty: i.qty })),
       // Solo el código: la base vuelve a validar el cupón y calcula el descuento.
       coupon_code: couponCode,
+      // Forma de pago: la base valida contra Configuración y calcula el total
+      // (1 pago = precio contado, cuotas = precio de lista). Nunca un monto del navegador.
+      payment_plan: plan,
+      installments: plan === "installments" ? (data.installments ?? null) : null,
       payment_provider: provider,
       customer_dni: billing?.dni ?? null,
       billing_street: billing?.street ?? null,
@@ -144,6 +151,17 @@ export async function startCheckout(input: unknown): Promise<CheckoutResult> {
             ? "Mientras completabas tus datos, se vendieron unidades de un producto. Actualizamos tu carrito: revisalo y volvé a intentar."
             : "Un producto de tu carrito ya no está disponible. Actualizamos tu carrito: revisalo y volvé a intentar.",
       };
+    }
+    if (error?.message === "cupon_solo_1_pago") {
+      return { ok: false, error: COUPON_SINGLE_ONLY_MESSAGE, fieldErrors: { installments: COUPON_SINGLE_ONLY_MESSAGE } };
+    }
+    if (
+      error?.message === "cuotas_no_disponibles" ||
+      error?.message === "cuotas_invalidas" ||
+      error?.message === "plan_invalido"
+    ) {
+      // La configuración cambió mientras completaba los datos (o un pedido armado a mano).
+      return { ok: false, planChanged: true, error: INSTALLMENTS_UNAVAILABLE_MESSAGE };
     }
     if (error?.message === "carrito_vacio") return { ok: false, cartChanged: true, error: "Tu carrito está vacío." };
     if (error?.message === "datos_pago") {
@@ -193,7 +211,9 @@ async function startGetnetPayment({
   data,
   billing,
 }: PaymentStart & { billing: NonNullable<ReturnType<typeof billingFrom>> }): Promise<CheckoutResult> {
-  // El total que se cobra es el GUARDADO en el pedido (lo calculó la base).
+  // El total que se cobra es el GUARDADO en el pedido (lo calculó la base):
+  // en cuotas ya es el precio de lista. La CANTIDAD de cuotas todavía no se
+  // manda: TODO(Getnet) installmentsForIntent() en src/lib/payments/getnet.ts.
   const { data: order } = await supabase.from("orders").select("total").eq("id", orderId).single();
   if (!order) {
     console.error("[checkout] no se pudo releer el pedido", orderId);

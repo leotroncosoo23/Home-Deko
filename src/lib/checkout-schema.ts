@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CART_MAX_ITEMS, CART_MAX_QTY } from "@/lib/cart";
 import { COUPON_CODE_RE, normalizeCouponCode } from "@/lib/coupons";
+import { INSTALLMENT_OPTIONS } from "@/lib/pricing";
 
 /**
  * Datos del formulario de /finalizar-compra. Se validan en el navegador
@@ -126,12 +127,24 @@ const checkoutObject = z.object({
   saveToAccount: z.boolean().optional(),
   /** Cupón aplicado (opcional). Solo el código: el descuento lo calcula la base. */
   couponCode: couponCodeSchema.optional(),
+  /** Forma de pago: 1 pago (contado) o cuotas (lista). La base valida contra Configuración y calcula el total. */
+  paymentPlan: z.enum(["single", "installments"]).optional(),
+  /** Cantidad de cuotas (solo con "installments"). */
+  installments: z.number().int().optional(),
   items: itemsSchema,
 });
 
 type CheckoutObject = z.output<typeof checkoutObject>;
 
 function refineCheckout(data: CheckoutObject, ctx: z.RefinementCtx, requireBilling: boolean) {
+  if (data.paymentPlan === "installments") {
+    if (!data.installments || !(INSTALLMENT_OPTIONS as readonly number[]).includes(data.installments)) {
+      ctx.addIssue({ code: "custom", path: ["installments"], message: "Elegí en cuántas cuotas querés pagar." });
+    }
+    if (data.couponCode) {
+      ctx.addIssue({ code: "custom", path: ["installments"], message: COUPON_SINGLE_ONLY_MESSAGE });
+    }
+  }
   if (data.delivery === "shipping") {
     if (!data.address || data.address.length < 4) {
       ctx.addIssue({ code: "custom", path: ["address"], message: "Escribí la calle y el número." });
@@ -230,7 +243,16 @@ export type CheckoutResult =
       couponError?: string;
       /** El medio de pago no está configurado: se ofrece WhatsApp. */
       paymentsUnavailable?: boolean;
+      /** Las cuotas elegidas ya no se pueden usar (cambió la configuración): se vuelve a 1 pago. */
+      planChanged?: boolean;
     };
+
+/** Los cupones son solo para 1 pago (create_order: cupon_solo_1_pago). */
+export const COUPON_SINGLE_ONLY_MESSAGE = "El cupón es solo para pagar en 1 pago. Quitalo para pagar en cuotas.";
+
+/** Las cuotas elegidas ya no están disponibles (create_order: cuotas_no_disponibles / cuotas_invalidas). */
+export const INSTALLMENTS_UNAVAILABLE_MESSAGE =
+  "Esa cantidad de cuotas ya no está disponible. Elegí otra forma de pago y volvé a intentar.";
 
 /** Lo que ve el cliente si el medio de pago no tiene credenciales. */
 export const PAYMENTS_UNAVAILABLE_MESSAGE =

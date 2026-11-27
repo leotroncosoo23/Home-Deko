@@ -476,6 +476,7 @@ export type Database = {
           discount_total: number
           fulfillment_status: Database["public"]["Enums"]["fulfillment_status"]
           id: string
+          installments: number | null
           mp_expires_at: string | null
           mp_payment_id: string | null
           mp_preference_id: string | null
@@ -489,6 +490,7 @@ export type Database = {
           payment_intent_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_notified_at: string | null
+          payment_plan: string
           payment_provider: string
           payment_redirect_url: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -541,6 +543,7 @@ export type Database = {
           discount_total?: number
           fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
           id?: string
+          installments?: number | null
           mp_expires_at?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -554,6 +557,7 @@ export type Database = {
           payment_intent_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_notified_at?: string | null
+          payment_plan?: string
           payment_provider?: string
           payment_redirect_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -606,6 +610,7 @@ export type Database = {
           discount_total?: number
           fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
           id?: string
+          installments?: number | null
           mp_expires_at?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -619,6 +624,7 @@ export type Database = {
           payment_intent_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_notified_at?: string | null
+          payment_plan?: string
           payment_provider?: string
           payment_redirect_url?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]

@@ -67,3 +67,28 @@ describe("DNI y facturación (Getnet)", () => {
     expect(splitStreetNumber("123")).toBeNull();
   });
 });
+
+describe("forma de pago (1 pago o cuotas)", () => {
+  const schema = checkoutSchemaFor(false);
+
+  it("sin forma de pago es 1 pago (como antes)", () => {
+    expect(schema.safeParse(pickup).success).toBe(true);
+    expect(schema.safeParse({ ...pickup, paymentPlan: "single" }).success).toBe(true);
+  });
+
+  it("cuotas exige una cantidad de 3, 6, 9 o 12", () => {
+    expect(schema.safeParse({ ...pickup, paymentPlan: "installments", installments: 6 }).success).toBe(true);
+    expect(schema.safeParse({ ...pickup, paymentPlan: "installments" }).success).toBe(false);
+    expect(schema.safeParse({ ...pickup, paymentPlan: "installments", installments: 5 }).success).toBe(false);
+  });
+
+  it("los cupones son solo para 1 pago", () => {
+    expect(schema.safeParse({ ...pickup, couponCode: "VERANO", paymentPlan: "single" }).success).toBe(true);
+    const r = schema.safeParse({ ...pickup, couponCode: "VERANO", paymentPlan: "installments", installments: 6 });
+    expect(r.success).toBe(false);
+  });
+
+  it("un plan inventado no pasa", () => {
+    expect(schema.safeParse({ ...pickup, paymentPlan: "otro" }).success).toBe(false);
+  });
+});

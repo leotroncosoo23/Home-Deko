@@ -100,7 +100,13 @@ export function OrdersTable({
               </span>
             </span>
           );
-          const total = <span className="font-semibold tabular-nums">{formatARS(o.total)}</span>;
+          // Total y forma de pago ("1 pago" / "6 cuotas")
+          const total = (
+            <span className="flex flex-col items-end">
+              <span className="font-semibold tabular-nums">{formatARS(o.total)}</span>
+              <span className="text-xs whitespace-nowrap text-muted-foreground">{o.paymentPlan}</span>
+            </span>
+          );
           const status = <OrderStatus order={o} />;
           const date = <span className="text-xs text-muted-foreground tabular-nums">{formatOrderDate(o.createdAt)}</span>;
 

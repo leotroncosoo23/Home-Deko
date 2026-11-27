@@ -383,17 +383,32 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
     y `unitPriceBefore` (precio cargado si hay oferta) + `pricing` para los totales del carrito. Tests de monto con los
     mismos números: `src/lib/pricing.test.ts` y `supabase/tests/precio_contado.sql` (begin…rollback; consume 1 número
     de pedido y 2 códigos de barras).
-  - **PENDIENTE (Getnet)**: el checkout tendrá que elegir **1 pago (precio contado) o cuotas (precio de lista)** antes
-    de crear el pago, y `create_order` calcular ese monto en el servidor según la elección (lista = contado sin oferta
-    + recargo, misma cuenta que `listPrice()`).
+  - **Forma de pago en el checkout** (rama `checkout-cuotas`, `20261209000001_checkout_cuotas.sql`): bloque "Forma de
+    pago" en el resumen (`src/components/store/checkout/payment-plan.tsx`), solo con las cuotas prendidas: "1 pago"
+    (contado, por defecto) o "Cuotas sin interés" (lista) con N = 3/6/9/12 hasta `installments_max`
+    (`installmentChoices()`). El total dice "Total en 1 pago" o "Total en N cuotas". **Cupones solo para 1 pago**: con
+    un cupón aplicado, la opción de cuotas queda deshabilitada con el aviso; aplicar un cupón vuelve a 1 pago.
+  - `orders.payment_plan` ('single' | 'installments', default 'single') + `orders.installments` (null en 1 pago).
+    `create_order(p jsonb)` (una sola función, misma firma) recibe `payment_plan` e `installments`, valida contra
+    Configuración (`cuotas_no_disponibles`, `cuotas_invalidas`, `plan_invalido`, `cupon_solo_1_pago`) y calcula:
+    1 pago = `final_price`; cuotas = `round(price × (1 + recargo/100), 2)` (= `listPrice()`; `unit_price_before` null).
+    El envío se suma igual (sin recargo). Sin `payment_plan` → 1 pago. Tests: `src/lib/pricing.test.ts`,
+    `src/lib/checkout-schema.test.ts` y `supabase/tests/checkout_cuotas.sql` (begin…rollback; consume 3 números de
+    pedido y 2 códigos de barras).
+  - Panel → Pedidos: "1 pago" / "N cuotas" en la lista (debajo del total) y en el detalle (Pago → Forma de pago y
+    "Total en …"). Mails: fila "Forma de pago" ("6 cuotas sin interés de $ …") en el detalle del pedido.
+  - **PENDIENTE (Getnet)**: el intent manda SOLO `orders.total` (en cuotas ya es el precio de lista). Para fijar la
+    cantidad de cuotas falta confirmar el formato con Getnet: `installmentsForIntent()` en
+    `src/lib/payments/getnet.ts` (TODO, hoy devuelve `{}`). **Hasta entonces, "Cuotas sin interés" APAGADO en
+    Configuración.**
   - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("$ lista en N cuotas
-    sin interés de $ lista/N", sin "hasta": el máximo es global); todavía no cambian el cobro.
+    sin interés de $ lista/N", sin "hasta": el máximo es global). En el checkout el cliente elige 1 pago o cuotas.
   - **Bloque de precio único**: `<PriceBlock variant="card" | "product" | "cart" | "total">` en
     `src/components/store/price-block.tsx` (con `getPrices()`), en tarjeta, página de producto, carrito y checkout.
     Línea 1: contado grande (rojo con oferta) + contado sin oferta tachado al lado (+ "-X% OFF" en la página). Línea 2,
     chica y gris: con cuotas "$ {lista} en {N} cuotas sin interés de $ {cuota}"; sin cuotas y recargo > 0 "Precio de
-    lista $ {lista}"; si no, nada. Carrito y checkout: "Total" con el contado y, con cuotas, debajo "o $ {total lista}
-    en {N} cuotas…" (en el checkout incluye el envío sin recargo; se oculta con un cupón de productos). "Precio sin
+    lista $ {lista}"; si no, nada. Carrito: "Total" con el contado y, con cuotas, debajo "o $ {total lista} en {N}
+    cuotas…". Checkout: el selector "Forma de pago" (ver arriba). "Precio sin
     impuestos nacionales" y JSON-LD usan el contado. El filtro de precio del catálogo es en contado, sin conversión.
   - Ver la tienda con otro recargo **en local sin tocar producción**: `PRICING_PREVIEW=24,6` en `.env.local` (24 % y 6
     cuotas; `pricingFrom()` en `store-settings.ts`, se ignora en producción). Solo cambia lo que se MUESTRA.
