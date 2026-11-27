@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, LayoutGrid, Menu, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutGrid, Menu, Undo2 } from "lucide-react";
+import { cn } from "cn";
 import { Logo } from "@/components/brand/logo";
 import { SocialLinks } from "@/components/social-links";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import type { StoreCategory } from "@/lib/store-data";
+import type { StoreCategoryNode } from "@/lib/store-data";
 import { ALL_PRODUCTS_LINK, categoryHref, HELP_LINKS, LEGAL_LINKS, WITHDRAWAL_LINK } from "@/lib/store-nav";
 import type { RedSocial } from "@/lib/store-settings";
 
 /**
  * Menú hamburguesa de la tienda (panel que entra desde la izquierda):
- * todos los productos, categorías con su foto, ayuda (con el Botón de
+ * todos los productos, categorías con su foto (las que tienen subcategorías
+ * abren un acordeón con sus subcategorías y "Ver todo"), ayuda (con el Botón de
  * arrepentimiento destacado), legales y redes.
  * Se cierra solo al tocar un link.
  */
@@ -22,7 +24,8 @@ export function StoreMenu({
   redes,
   account,
 }: {
-  categories: StoreCategory[];
+  /** Principales con sus subcategorías (getCategoryTree). */
+  categories: StoreCategoryNode[];
   redes: RedSocial[];
   /** "Mi cuenta" o "Panel" (lo arma el servidor, que lee la sesión). */
   account: React.ReactNode;
@@ -63,22 +66,22 @@ export function StoreMenu({
 
           {categories.length > 0 && (
             <MenuGroup title="Categorías">
-              {categories.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    href={categoryHref(c.slug)}
-                    onClick={close}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-muted"
-                  >
-                    <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      {c.imageUrl && (
-                        <Image src={c.imageUrl} alt="" fill sizes="40px" className="object-cover" />
-                      )}
-                    </span>
-                    {c.name}
-                  </Link>
-                </li>
-              ))}
+              {categories.map((c) =>
+                c.children.length > 0 ? (
+                  <CategoryAccordion key={c.id} category={c} onNavigate={close} />
+                ) : (
+                  <li key={c.id}>
+                    <Link
+                      href={categoryHref(c.slug)}
+                      onClick={close}
+                      className="flex min-h-14 items-center gap-3 rounded-xl px-3 py-2 font-medium transition-colors hover:bg-muted"
+                    >
+                      <CategoryThumb imageUrl={c.imageUrl} />
+                      {c.name}
+                    </Link>
+                  </li>
+                ),
+              )}
             </MenuGroup>
           )}
 
@@ -132,6 +135,74 @@ export function StoreMenu({
         </nav>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function CategoryThumb({ imageUrl }: { imageUrl: string | null }) {
+  return (
+    <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+      {imageUrl && <Image src={imageUrl} alt="" fill sizes="40px" className="object-cover" />}
+    </span>
+  );
+}
+
+/**
+ * Principal con subcategorías: la fila abre y cierra la lista (flecha ▾ que
+ * gira) con las subcategorías y "Ver todo Cocina". Filas de 44 px o más.
+ */
+function CategoryAccordion({ category, onNavigate }: { category: StoreCategoryNode; onNavigate: () => void }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  return (
+    <li>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((o) => !o)}
+        className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2 text-left font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none"
+      >
+        <CategoryThumb imageUrl={category.imageUrl} />
+        {category.name}
+        <ChevronDown
+          aria-hidden
+          className={cn("ml-auto size-4 text-muted-foreground transition-transform duration-200", open && "rotate-180")}
+        />
+      </button>
+      {/* Altura animada con grid (0fr → 1fr); cerrada, no se puede tabular */}
+      <div
+        id={panelId}
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+        inert={!open}
+      >
+        <ul className="ml-6.5 min-h-0 divide-y divide-border/60 overflow-hidden border-l border-border/80 pl-3">
+          {category.children.map((s) => (
+            <li key={s.id}>
+              <Link
+                href={categoryHref(category.slug, s.slug)}
+                onClick={onNavigate}
+                className="flex min-h-11 items-center rounded-lg px-3 text-[15px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {s.name}
+              </Link>
+            </li>
+          ))}
+          <li>
+            <Link
+              href={categoryHref(category.slug)}
+              onClick={onNavigate}
+              className="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] font-semibold text-brand transition-colors hover:bg-brand-soft"
+            >
+              Ver todo {category.name}
+              <ChevronRight aria-hidden className="size-4" />
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </li>
   );
 }
 

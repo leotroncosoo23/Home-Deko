@@ -9,6 +9,8 @@ export type Category = {
   id: string;
   name: string;
   slug: string;
+  /** null = principal; si no, el id de su principal (un solo nivel). */
+  parentId: string | null;
   isVisible: boolean;
   imagePath: string | null;
   /** URL pública de la imagen (o null si no tiene). */
@@ -19,7 +21,7 @@ export type Category = {
 };
 
 /** Campos del formulario que pueden tener un error para mostrar. */
-export type CategoryField = "name" | "slug" | "image";
+export type CategoryField = "name" | "slug" | "image" | "parent";
 
 /** Lo que devuelve cada Server Action: o salió bien, o un mensaje claro. */
 export type ActionResult =
@@ -28,6 +30,6 @@ export type ActionResult =
       ok: false;
       error: string;
       fieldErrors?: Partial<Record<CategoryField, string>>;
-      /** Al eliminar: la categoría tiene productos (hay que ocultarla). */
+      /** Al eliminar: la categoría tiene productos (hay que moverlos o elegir qué hacer). */
       productCount?: number;
     };

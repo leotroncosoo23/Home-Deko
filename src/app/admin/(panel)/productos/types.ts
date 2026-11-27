@@ -110,7 +110,8 @@ export type ProductFormValues = {
 };
 
 /** Una categoría para el selector. */
-export type CategoryChoice = { id: string; name: string; isVisible: boolean };
+/** parentId: null = principal; si no, su principal (Cocina › Utensilios). */
+export type CategoryChoice = { id: string; name: string; parentId: string | null; isVisible: boolean };
 
 /** Fila de la lista mínima de productos. */
 export type StockStatus = "ok" | "low" | "out";

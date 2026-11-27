@@ -2,7 +2,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PriceFilter } from "./price-filter";
 
-export type FilterCategory = { slug: string; name: string; href: string; active: boolean };
+/** sub = subcategoría de la principal elegida (va indentada debajo). */
+export type FilterCategory = { slug: string; name: string; href: string; active: boolean; sub?: boolean };
 
 /**
  * Filtros del catálogo: categoría y precio. El mismo contenido va en la
@@ -40,7 +41,7 @@ export function CatalogFilters({
               Todas
             </CategoryLink>
             {categories.map((c) => (
-              <CategoryLink key={c.slug} href={c.href} active={c.active}>
+              <CategoryLink key={c.slug} href={c.href} active={c.active} sub={c.sub}>
                 {c.name}
               </CategoryLink>
             ))}
@@ -76,7 +77,17 @@ function FilterTitle({ id, children }: { id: string; children: React.ReactNode }
   );
 }
 
-function CategoryLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+function CategoryLink({
+  href,
+  active,
+  sub = false,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  sub?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <li>
       <Link
@@ -85,6 +96,8 @@ function CategoryLink({ href, active, children }: { href: string; active: boolea
         className={cn(
           // 40 px de alto en el celular (fácil de tocar), 32 px en PC
           "flex min-h-10 items-center border-l-2 pl-3 text-[15px] transition-colors lg:min-h-8 lg:text-sm",
+          // Subcategoría: más adentro y un poco más chica
+          sub && "pl-6 text-sm lg:text-[13px]",
           active
             ? "border-brand font-semibold text-foreground"
             : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",

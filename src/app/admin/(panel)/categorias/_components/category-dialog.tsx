@@ -16,40 +16,63 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { slugify, SLUG_MAX_LENGTH } from "@/lib/slug";
 import { saveCategory } from "../actions";
 import type { Category, CategoryField } from "../types";
 import { ImageField, type ImageValue } from "@/components/admin/image-field";
 
+const NO_PARENT = "__principal__";
+
 /**
- * Diálogo para crear (sin `category`) o editar (con `category`).
+ * Diálogo para crear (sin `category`) o editar (con `category`) una
+ * categoría principal o una subcategoría.
+ * `defaultParentId`: "+ Subcategoría" de una principal la deja elegida.
  * El formulario se arma de cero cada vez que se abre.
  */
 export function CategoryDialog({
   open,
   onOpenChange,
   category,
+  categories,
+  defaultParentId = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category?: Category;
+  /** Todas las categorías (para "Pertenece a" y saber si tiene subcategorías). */
+  categories: Category[];
+  defaultParentId?: string | null;
 }) {
+  const isSub = category ? category.parentId !== null : defaultParentId !== null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{category ? "Editar categoría" : "Nueva categoría"}</DialogTitle>
+          <DialogTitle>
+            {category
+              ? isSub
+                ? "Editar subcategoría"
+                : "Editar categoría"
+              : isSub
+                ? "Nueva subcategoría"
+                : "Nueva categoría"}
+          </DialogTitle>
           <DialogDescription>
             {category
               ? "Los cambios se ven en la tienda apenas los guardás."
-              : "Agrupá tus productos para que sea fácil encontrarlos en la tienda."}
+              : isSub
+                ? "Separá los productos de una categoría en grupos más chicos (ej.: Cocina › Utensilios)."
+                : "Agrupá tus productos para que sea fácil encontrarlos en la tienda."}
           </DialogDescription>
         </DialogHeader>
         {/* key: si se abre para otra categoría, el formulario arranca limpio */}
         <CategoryForm
-          key={category?.id ?? "new"}
+          key={category?.id ?? `new-${defaultParentId ?? ""}`}
           category={category}
+          categories={categories}
+          defaultParentId={defaultParentId}
           onDone={() => onOpenChange(false)}
         />
       </DialogContent>
@@ -57,7 +80,17 @@ export function CategoryDialog({
   );
 }
 
-function CategoryForm({ category, onDone }: { category?: Category; onDone: () => void }) {
+function CategoryForm({
+  category,
+  categories,
+  defaultParentId,
+  onDone,
+}: {
+  category?: Category;
+  categories: Category[];
+  defaultParentId: string | null;
+  onDone: () => void;
+}) {
   const isEdit = Boolean(category);
   const ids = useId();
 
@@ -66,10 +99,20 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
   // Al crear, el slug se escribe solo mientras no lo toques a mano.
   // Al editar, nunca cambia solo (las URLs viejas dejarían de andar).
   const [slugTouched, setSlugTouched] = useState(isEdit);
+  const [parentId, setParentId] = useState<string | null>(category ? category.parentId : defaultParentId);
   const [isVisible, setIsVisible] = useState(category?.isVisible ?? true);
   const [image, setImage] = useState<ImageValue>({ file: null, removed: false });
   const [errors, setErrors] = useState<Partial<Record<CategoryField, string>>>({});
   const [pending, startTransition] = useTransition();
+
+  // Con subcategorías propias, sigue siendo principal (un solo nivel).
+  const subCount = category ? categories.filter((c) => c.parentId === category.id).length : 0;
+  const mains = categories.filter((c) => c.parentId === null && c.id !== category?.id);
+  const parent = parentId ? (categories.find((c) => c.id === parentId) ?? null) : null;
+  const parentItems = [
+    { value: NO_PARENT, label: "Ninguna (categoría principal)" },
+    ...mains.map((c) => ({ value: c.id, label: c.isVisible ? c.name : `${c.name} (oculta)` })),
+  ];
 
   const slugChanged = isEdit && slug !== category?.slug;
 
@@ -95,15 +138,18 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
     if (category) formData.set("id", category.id);
     formData.set("name", name.trim());
     formData.set("slug", cleanSlug);
+    // Sin tocar el slug, si ya existe se usa uno libre (utensilios-2).
+    if (!isEdit && !slugTouched) formData.set("slugAuto", "true");
+    formData.set("parentId", parentId ?? "");
     formData.set("isVisible", String(isVisible));
-    if (image.file) formData.set("image", image.file);
+    if (!parentId && image.file) formData.set("image", image.file);
     if (image.removed) formData.set("removeImage", "true");
 
     startTransition(async () => {
       try {
         const result = await saveCategory(formData);
         if (result.ok) {
-          toast.success(isEdit ? "Cambios guardados" : "Categoría creada");
+          toast.success(isEdit ? "Cambios guardados" : parentId ? "Subcategoría creada" : "Categoría creada");
           onDone();
         } else {
           setErrors(result.fieldErrors ?? {});
@@ -115,6 +161,15 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
     });
   }
 
+  let parentHelp: string;
+  if (subCount > 0) {
+    parentHelp = `Tiene ${subCount === 1 ? "1 subcategoría" : `${subCount} subcategorías`}: sigue siendo una categoría principal.`;
+  } else if (parent) {
+    parentHelp = `En la tienda se ve como ${parent.name} › ${name.trim() || "…"}.`;
+  } else {
+    parentHelp = "Principal: aparece en el menú de la tienda.";
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
       {/* Nombre */}
@@ -124,7 +179,7 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
           id={`${ids}-name`}
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
-          placeholder="Ej.: Cocina"
+          placeholder={parent ? "Ej.: Utensilios" : "Ej.: Cocina"}
           maxLength={80}
           autoComplete="off"
           autoFocus
@@ -139,6 +194,39 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         )}
       </div>
 
+      {/* Pertenece a (ninguna = principal) */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${ids}-parent`}>Pertenece a</Label>
+        <Select
+          items={parentItems}
+          value={parentId ?? NO_PARENT}
+          onValueChange={(value) => {
+            setParentId(!value || value === NO_PARENT ? null : String(value));
+            if (errors.parent) setErrors((er) => ({ ...er, parent: undefined }));
+          }}
+          disabled={pending || subCount > 0}
+        >
+          <SelectTrigger
+            id={`${ids}-parent`}
+            className="w-full"
+            aria-invalid={Boolean(errors.parent) || undefined}
+            aria-describedby={`${ids}-parent-help`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {parentItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p id={`${ids}-parent-help`} className={cn("text-xs", errors.parent ? "text-destructive" : "text-muted-foreground")}>
+          {errors.parent ?? parentHelp}
+        </p>
+      </div>
+
       {/* Slug */}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-slug`}>Slug (dirección en la tienda)</Label>
@@ -148,8 +236,8 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
             errors.slug && "border-destructive ring-3 ring-destructive/20",
           )}
         >
-          <span className="flex h-full items-center border-r bg-muted px-2.5 text-muted-foreground">
-            /categoria/
+          <span className="flex h-full max-w-[55%] items-center truncate border-r bg-muted px-2.5 text-muted-foreground">
+            {parent ? `/categorias/${parent.slug}/` : "/categorias/"}
           </span>
           <input
             id={`${ids}-slug`}
@@ -160,7 +248,7 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
               if (errors.slug) setErrors((er) => ({ ...er, slug: undefined }));
             }}
             onBlur={() => setSlug(slugify(slug))}
-            placeholder="cocina"
+            placeholder={parent ? "utensilios" : "cocina"}
             maxLength={SLUG_MAX_LENGTH}
             autoComplete="off"
             spellCheck={false}
@@ -193,7 +281,9 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         <div className="flex flex-col gap-0.5">
           <Label htmlFor={`${ids}-visible`}>Visible en la tienda</Label>
           <p className="text-xs text-muted-foreground">
-            Si la ocultás, ni la categoría ni sus productos aparecen en la tienda, pero no se pierde nada.
+            {parent
+              ? "Si la ocultás, ni la subcategoría ni sus productos aparecen en la tienda, pero no se pierde nada."
+              : "Si la ocultás, ni la categoría (con sus subcategorías) ni sus productos aparecen en la tienda, pero no se pierde nada."}
           </p>
         </div>
         <Switch
@@ -204,25 +294,33 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         />
       </div>
 
-      {/* Foto de portada (fondo de la tarjeta de la categoría en el inicio de la tienda) */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">
-          Foto de portada <span className="font-normal text-muted-foreground">(opcional)</span>
-        </span>
-        <span className="text-[13px] text-muted-foreground">
-          Se ve de fondo en la tarjeta de la categoría, en el inicio de la tienda. Mejor una foto horizontal.
-        </span>
-        <ImageField
-          currentUrl={category?.imageUrl ?? null}
-          value={image}
-          onChange={(value) => {
-            setImage(value);
-            if (errors.image) setErrors((er) => ({ ...er, image: undefined }));
-          }}
-          error={errors.image}
-          disabled={pending}
-        />
-      </div>
+      {/* Foto de portada: solo principales (tarjeta del inicio y mega menú de la tienda) */}
+      {!parentId ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">
+            Foto de portada <span className="font-normal text-muted-foreground">(opcional)</span>
+          </span>
+          <span className="text-[13px] text-muted-foreground">
+            Se ve en la tarjeta de la categoría en el inicio y en el menú de la tienda (PC). Mejor una foto horizontal.
+          </span>
+          <ImageField
+            currentUrl={category?.imageUrl ?? null}
+            value={image}
+            onChange={(value) => {
+              setImage(value);
+              if (errors.image) setErrors((er) => ({ ...er, image: undefined }));
+            }}
+            error={errors.image}
+            disabled={pending}
+          />
+        </div>
+      ) : (
+        category?.imageUrl && (
+          <p className="text-xs text-muted-foreground">
+            Las subcategorías no llevan foto de portada: al guardar, se quita la que tenía.
+          </p>
+        )
+      )}
 
       <DialogFooter>
         <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>
@@ -230,7 +328,13 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         </DialogClose>
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="animate-spin" />}
-          {pending ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear categoría"}
+          {pending
+            ? "Guardando…"
+            : isEdit
+              ? "Guardar cambios"
+              : parentId
+                ? "Crear subcategoría"
+                : "Crear categoría"}
         </Button>
       </DialogFooter>
     </form>

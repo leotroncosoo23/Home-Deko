@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
-import { getVisibleCategories } from "@/lib/store-data";
+import { getCategoryTree } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { getStoreSettings, redesSociales } from "@/lib/store-settings";
 import { AccountLink, AccountLinkFallback } from "./account-link";
@@ -22,15 +22,16 @@ import { StoreMenu } from "./store-menu";
  *   Escritorio (desde 1024 px), estilo de las tiendas que toman de referencia:
  *     Home ♥ Deko   [ 🔍 ¿Qué estás buscando? ]   👤 Ingresá   🛍 Carrito (0)
  *     ─────────────────────────────────────────────────────────────────────
- *     Todos los productos  Cocina  Baño  …  Todas las categorías ▾   Ayuda ▾  ↶ Botón de arrepentimiento
+ *     Todos los productos  Cocina ▾  Baño  …  Todas las categorías ▾   Ayuda ▾  ↶ Botón de arrepentimiento
+ *     (Cocina ▾ = principal con subcategorías: abre el mega menú)
  *
  * Estático (categorías y redes llegan de la caché), salvo "Ingresá / Mi
  * cuenta / Panel", que lee la sesión en su propio <Suspense>.
  */
 export async function StoreHeader() {
-  const [categories, settings] = await Promise.all([getVisibleCategories(), getStoreSettings()]);
-  // Menú del celular y barra de escritorio: solo categorías con algún producto publicado.
-  const withProducts = categories.filter((c) => c.productCount > 0);
+  // Menú del celular (acordeón) y barra de escritorio (mega menú): principales con
+  // algún producto publicado y, debajo, sus subcategorías con productos.
+  const [withProducts, settings] = await Promise.all([getCategoryTree(), getStoreSettings()]);
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/85">

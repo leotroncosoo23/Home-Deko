@@ -53,7 +53,7 @@ export function BulkActionsBar({
         </>
       )}
       <BarButton onClick={onCategory} disabled={disabled}>
-        <FolderTree /> Cambiar categoría
+        <FolderTree /> Mover a…
       </BarButton>
       {anyNotArchived && (
         <BarButton onClick={onArchive} disabled={disabled}>

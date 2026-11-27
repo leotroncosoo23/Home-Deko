@@ -6,6 +6,7 @@ import type { CatalogSort } from "@/lib/catalog-params";
 import type { Database } from "@/lib/database.types";
 import { STORE_ANNOUNCEMENTS_TAG, STORE_BANNERS_TAG, STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { BEST_SELLERS_MIN, pickBestSellersOrFeatured, rankBestSellers } from "@/lib/best-sellers";
+import { storeTree, type CategoryTreeNode } from "@/lib/categories";
 import { publicImageUrl } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -32,6 +33,8 @@ export type StoreCategory = {
   id: string;
   name: string;
   slug: string;
+  /** null = principal; si no, el id de su principal (src/lib/categories.ts). */
+  parentId: string | null;
   /** La que cargan en el panel (o null). Se usa como descripción para Google. */
   description: string | null;
   imageUrl: string | null;
@@ -43,7 +46,11 @@ export type StoreCategory = {
   productCount: number;
 };
 
-/** Categorías visibles, en el orden que eligieron en el panel. */
+/**
+ * Categorías visibles (principales y subcategorías, lista plana), en el
+ * orden que eligieron en el panel. Una subcategoría cuya principal está
+ * oculta no se incluye. Para el árbol del menú: getCategoryTree().
+ */
 export async function getVisibleCategories(): Promise<StoreCategory[]> {
   "use cache";
   cacheTag(STORE_CATEGORIES_TAG);
@@ -51,16 +58,20 @@ export async function getVisibleCategories(): Promise<StoreCategory[]> {
 
   const { data, error } = await createPublicClient()
     .from("categories")
-    .select("id, name, slug, description, image_path, products(count)")
+    .select("id, name, slug, parent_id, description, image_path, products(count)")
     .eq("is_visible", true)
     .order("sort_order")
     .order("name");
   if (error) throw new Error("No se pudieron leer las categorías.");
 
-  return data.map((c) => ({
+  const visibleIds = new Set(data.map((c) => c.id));
+  return data
+    .filter((c) => c.parent_id === null || visibleIds.has(c.parent_id))
+    .map((c) => ({
     id: c.id,
     name: c.name,
     slug: c.slug,
+    parentId: c.parent_id,
     description: c.description?.trim() || null,
     imageUrl: c.image_path ? publicImageUrl(c.image_path) : null,
     productCount: c.products[0]?.count ?? 0,
@@ -314,7 +325,8 @@ async function getFeaturedInStock(): Promise<StoreProduct[]> {
 // ---------------------------------------------------------------------------
 
 export type CatalogQuery = {
-  categoryId: string | null;
+  /** La categoría y, si es principal, sus subcategorías (categoryIdsFor). null = todas. */
+  categoryIds: string[] | null;
   /** Ya normalizada con normalizeSearch() (minúsculas, sin tildes). Vacía = sin búsqueda. */
   search: string;
   orden: CatalogSort;
@@ -348,7 +360,7 @@ export async function queryCatalog(
 ): Promise<CatalogResult> {
   let query = supabase.from("store_products").select(STORE_PRODUCT_COLUMNS, { count: "exact" });
 
-  if (q.categoryId) query = query.eq("category_id", q.categoryId);
+  if (q.categoryIds?.length) query = query.in("category_id", q.categoryIds);
   if (q.min !== null) query = query.gte("final_min_price", q.min);
   if (q.max !== null) query = query.lte("final_min_price", q.max);
   if (q.onSale) query = query.eq("discount_active", true);
@@ -392,10 +404,22 @@ export async function getPublishedCatalog(q: CatalogQuery): Promise<CatalogResul
   return queryCatalog(createPublicClient(), q);
 }
 
-/** Una categoría visible por su slug (o null si no existe o está oculta). */
+/** Una categoría visible por su slug (principal o subcategoría; null si no existe o está oculta). */
 export async function getVisibleCategoryBySlug(slug: string): Promise<StoreCategory | null> {
   const categories = await getVisibleCategories();
   return categories.find((c) => c.slug === slug) ?? null;
+}
+
+export type StoreCategoryNode = CategoryTreeNode<StoreCategory & { totalCount: number }>;
+
+/**
+ * El árbol de la tienda (mega menú, acordeón del celular, chips, inicio):
+ * principales con algún producto publicado (propio o de sus subcategorías)
+ * y, debajo, solo las subcategorías con productos. Misma caché que
+ * getVisibleCategories (STORE_CATEGORIES_TAG + STORE_PRODUCTS_TAG).
+ */
+export async function getCategoryTree(): Promise<StoreCategoryNode[]> {
+  return storeTree(await getVisibleCategories());
 }
 
 // ---------------------------------------------------------------------------
@@ -432,6 +456,8 @@ export type ProductDetail = {
   card: StoreProduct;
   description: string | null;
   category: { id: string; name: string; slug: string } | null;
+  /** Si la categoría es una subcategoría: su principal (para las migas). */
+  mainCategory: { id: string; name: string; slug: string } | null;
   /** Solo las opciones y valores que usa alguna variante activa. */
   options: ProductOption[];
   variants: ProductVariant[];
@@ -460,7 +486,7 @@ export async function queryProduct(
   const [product, category, options, variants, images] = await Promise.all([
     supabase.from("products").select("description").eq("id", productId).single(),
     row.category_id
-      ? supabase.from("categories").select("id, name, slug").eq("id", row.category_id).maybeSingle()
+      ? supabase.from("categories").select("id, name, slug, parent_id").eq("id", row.category_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     supabase
       .from("product_options")
@@ -483,6 +509,13 @@ export async function queryProduct(
     throw new Error("No se pudo leer el producto.");
   }
 
+  // Subcategoría: también su principal (migas Inicio › Cocina › Utensilios)
+  const parentId = category.data?.parent_id ?? null;
+  const main = parentId
+    ? await supabase.from("categories").select("id, name, slug").eq("id", parentId).maybeSingle()
+    : { data: null, error: null };
+  if (main.error) throw new Error("No se pudo leer el producto.");
+
   const variantIds = variants.data.flatMap((v) => (v.variant_id ? [v.variant_id] : []));
   const links = variantIds.length
     ? await supabase.from("variant_option_values").select("variant_id, option_value_id").in("variant_id", variantIds)
@@ -498,7 +531,8 @@ export async function queryProduct(
   return {
     card: toStoreProduct(row),
     description: product.data.description?.trim() || null,
-    category: category.data,
+    category: category.data ? { id: category.data.id, name: category.data.name, slug: category.data.slug } : null,
+    mainCategory: main.data,
     options: options.data
       .map((o) => ({
         id: o.id,
