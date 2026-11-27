@@ -36,11 +36,11 @@ export async function getCategoryChoices(): Promise<CategoryChoice[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, is_visible")
+    .select("id, name, parent_id, is_visible")
     .order("sort_order")
     .order("name");
   if (error) throw new Error("No se pudieron cargar las categorías.");
-  return data.map((c) => ({ id: c.id, name: c.name, isVisible: c.is_visible }));
+  return data.map((c) => ({ id: c.id, name: c.name, parentId: c.parent_id, isVisible: c.is_visible }));
 }
 
 // ---------------------------------------------------------------------
@@ -66,6 +66,13 @@ export async function getProductList(params: ListParams): Promise<ProductListPag
   await requireAdmin();
   const supabase = await createClient();
 
+  // Filtro por categoría: una principal incluye sus subcategorías.
+  let categoryIds: string[] | null = null;
+  if (params.cat && params.cat !== NO_CATEGORY) {
+    const { data: subs } = await supabase.from("categories").select("id").eq("parent_id", params.cat);
+    categoryIds = [params.cat, ...(subs ?? []).map((s) => s.id)];
+  }
+
   // Arma la consulta con los filtros. "countOnly": solo contar (sin traer filas).
   const filtered = (countOnly: boolean) => {
     // head: true = solo contar, sin traer las filas
@@ -77,9 +84,9 @@ export async function getProductList(params: ListParams): Promise<ProductListPag
     else if (params.estado === "borradores") query = query.eq("status", "draft");
     else if (params.estado === "archivados") query = query.eq("status", "archived");
 
-    // Categoría ("sin" = sin categoría)
+    // Categoría ("sin" = sin categoría; una principal incluye sus subcategorías)
     if (params.cat === NO_CATEGORY) query = query.is("category_id", null);
-    else if (params.cat) query = query.eq("category_id", params.cat);
+    else if (categoryIds) query = query.in("category_id", categoryIds);
 
     // Stock
     if (params.stock === "bajo") query = query.eq("stock_status", "low");

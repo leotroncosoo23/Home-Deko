@@ -13,7 +13,7 @@ import {
 import type { StoreCategory } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { cn } from "@/lib/utils";
-import { categoryHref } from "@/lib/store-nav";
+import { categoryIdsFor, hrefForCategory, mainCategoryOf, storeTree } from "@/lib/categories";
 import { getStoreSettings, pricingFrom } from "@/lib/store-settings";
 import { getCatalogForViewer } from "@/lib/store-viewer";
 import { ProductGridSkeleton } from "../product-card";
@@ -56,10 +56,11 @@ export async function CatalogView({
 }: {
   scope: CatalogScope;
   params: CatalogParams;
-  /** Categorías visibles (para el filtro). */
+  /** Categorías visibles, lista plana con subcategorías (para el filtro y las subcategorías). */
   categories: StoreCategory[];
 }) {
-  const basePath = scope.kind === "all" ? "/productos" : scope.kind === "search" ? "/buscar" : categoryHref(scope.category.slug);
+  const basePath =
+    scope.kind === "all" ? "/productos" : scope.kind === "search" ? "/buscar" : hrefForCategory(scope.category, categories);
 
   // En /buscar la categoría es un filtro (?categoria=); en el resto es la
   // página misma. Un slug que no existe (o una categoría oculta) se ignora.
@@ -73,7 +74,13 @@ export async function CatalogView({
 
   const pricing = pricingFrom(await getStoreSettings());
   const { products, total } = await getCatalogForViewer({
-    categoryId: scope.kind === "category" ? scope.category.id : (searchCategory?.id ?? null),
+    // Una principal incluye sus subcategorías (src/lib/categories.ts)
+    categoryIds:
+      scope.kind === "category"
+        ? categoryIdsFor(scope.category, categories)
+        : searchCategory
+          ? categoryIdsFor(searchCategory, categories)
+          : null,
     search: normalizeSearch(p.q),
     orden: p.orden,
     min: p.min,
@@ -84,17 +91,23 @@ export async function CatalogView({
 
   // --- Links de los filtros (conservan lo demás y vuelven a la 1.ª tanda) ---
   const keepForCategory = { orden: p.orden, min: p.min, max: p.max, ofertas: p.ofertas };
-  const filterCategories: FilterCategory[] = categories
-    .filter((c) => c.productCount > 0)
-    .map((c) => ({
-      slug: c.slug,
-      name: c.name,
-      href:
-        scope.kind === "search"
-          ? catalogHref(basePath, { ...keepForCategory, q: p.q, categoria: c.slug })
-          : catalogHref(categoryHref(c.slug), keepForCategory),
-      active: scope.kind === "search" ? p.categoria === c.slug : scope.kind === "category" && scope.category.slug === c.slug,
-    }));
+  // Principales con productos y, debajo de la elegida, sus subcategorías.
+  const current = scope.kind === "category" ? scope.category : searchCategory;
+  const currentMain = current ? mainCategoryOf(current, categories) : null;
+  const toFilter = (c: StoreCategory, sub: boolean): FilterCategory => ({
+    slug: c.slug,
+    name: c.name,
+    sub,
+    href:
+      scope.kind === "search"
+        ? catalogHref(basePath, { ...keepForCategory, q: p.q, categoria: c.slug })
+        : catalogHref(hrefForCategory(c, categories), keepForCategory),
+    active: scope.kind === "search" ? p.categoria === c.slug : scope.kind === "category" && scope.category.slug === c.slug,
+  });
+  const filterCategories: FilterCategory[] = storeTree(categories).flatMap((m) => [
+    toFilter(m, false),
+    ...(currentMain?.id === m.id ? m.children.map((c) => toFilter(c, true)) : []),
+  ]);
   const allHref =
     scope.kind === "search" ? catalogHref(basePath, { ...keepForCategory, q: p.q }) : catalogHref("/productos", keepForCategory);
 

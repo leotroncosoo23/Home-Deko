@@ -12,10 +12,10 @@ export function EmptyState() {
         <h2 className="text-base font-semibold">Creá tu primera categoría</h2>
         <p className="max-w-sm text-sm text-muted-foreground">
           Las categorías ordenan los productos en la tienda, por ejemplo: Cocina, Baño o
-          Decoración. Después podés cambiarles el orden arrastrándolas.
+          Decoración. Después podés sumarles subcategorías (ej.: Cocina › Utensilios) y cambiarles el orden arrastrándolas.
         </p>
       </div>
-      <NewCategoryButton size="lg" />
+      <NewCategoryButton size="lg" categories={[]} />
     </div>
   );
 }

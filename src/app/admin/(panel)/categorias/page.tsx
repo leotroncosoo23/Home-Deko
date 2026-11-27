@@ -16,8 +16,8 @@ export const metadata: Metadata = { title: "Categorías" };
 /**
  * /admin/categorias
  *
- * El encabezado (título + botón "Nueva categoría") es estático: aparece
- * al instante. El listado lee la base (con requireAdmin, dentro de
+ * El encabezado (título + botón "Nueva categoría") aparece al instante;
+ * el botón se habilita apenas llegan las categorías (para "Pertenece a"). El listado lee la base (con requireAdmin, dentro de
  * getCategories), así que va dentro de <Suspense> con un esqueleto.
  */
 export default function CategoriesPage() {
@@ -30,7 +30,10 @@ export default function CategoriesPage() {
         actions={
           <>
             <HelpSheet guia="categorias" />
-            <NewCategoryButton />
+            {/* Lee las categorías (para "Pertenece a"): mientras tanto, el botón deshabilitado */}
+            <Suspense fallback={<NewCategoryButton categories={[]} disabled />}>
+              <NewCategoryButtonWithData />
+            </Suspense>
           </>
         }
       />
@@ -42,6 +45,11 @@ export default function CategoriesPage() {
       </div>
     </>
   );
+}
+
+/** getCategories() está en cache(): el encabezado y el listado la leen una sola vez. */
+async function NewCategoryButtonWithData() {
+  return <NewCategoryButton categories={await getCategories()} />;
 }
 
 async function CategoriesList() {

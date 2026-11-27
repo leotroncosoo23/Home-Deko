@@ -345,17 +345,41 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
     `HowToBuyCompact` (store-highlights.tsx) con "Home Deko" escrito en el texto visible. No quitarlos.
   - Barra de beneficios: con "Cuotas sin interés" prendido (Configuración → Precios) muestra "N cuotas sin
     interés" en lugar de "Pago seguro con tarjeta"; apagado, queda como siempre.
-- Menú hamburguesa con categorías e información (envíos, cómo comprar, contacto…).
+- Menú hamburguesa con categorías (acordeón con subcategorías) e información (envíos, cómo comprar, contacto…).
 
 ### Catálogo y producto
 - Catálogo por categorías, con buscador, filtros y orden. Cada color o medida con su propio stock.
 - **Sin stock, sin venta**: una variante en 0 no se puede comprar. En los listados, los sin stock van siempre al final.
 - **Categoría oculta → sus productos no se ven en la tienda** (catálogo, búsqueda, inicio y página de producto).
   Lo resuelve la vista `store_products`: toda lectura pública de productos pasa por ahí. Sin categoría = se ve.
-- Catálogo (paso 2, implementado): `/productos`, `/categorias/[slug]` y `/buscar?q=` comparten `CatalogView`
+- **Subcategorías** (rama `subcategorias`, `20261210000001_subcategorias.sql`): un solo nivel.
+  - `categories.parent_id` (null = principal). Trigger `categories_check_level`: la principal tiene que ser principal
+    (`subcategoria_anidada`) y una categoría con hijas no puede pasar a ser subcategoría (`categoria_con_hijas`);
+    check `parent_id <> id`; `on delete restrict`. `sort_order` se ordena por grupo (principales entre sí,
+    subcategorías dentro de su principal); `reorder_categories(ids)` recibe un grupo.
+  - Reglas puras en `src/lib/categories.ts` (+ tests): `buildCategoryTree`, `categoryIdsFor` (la principal incluye
+    sus subcategorías), `storeTree` (la tienda: subcategorías con productos publicados; principales con algún
+    producto propio o de sus hijas), `parentError` (misma regla que el trigger), `categoryLabel` ("Cocina › Utensilios").
+  - `store_products`: subcategoría visible con principal oculta → sus productos no se ven; `search_text` suma el
+    nombre de la principal. Se recrea con `create or replace` (mantiene `security_invoker` y los permisos).
+    Test SQL: `supabase/tests/subcategorias.sql` (begin…rollback; no crea pedidos).
+  - Tienda: `getCategoryTree()` (store-data.ts) alimenta el mega menú de PC (`category-bar.tsx` + `mega-menu.tsx`:
+    hover con 150 ms de demora o clic, Escape devuelve el foco, clic afuera, `aria-expanded`/`aria-controls`; una
+    principal sin subcategorías es un link directo), el acordeón del menú ☰ (`store-menu.tsx`), los chips
+    (`catalog/category-chips.tsx`) y el inicio (solo principales).
+  - URLs: `/categorias/cocina` (principal + sus subcategorías) y `/categorias/cocina/utensilios` (canonical propio).
+    `/categorias/utensilios` → **308** a la anidada (`permanentRedirect`; va antes de cualquier `<Suspense>` para que
+    sea un 308 real). Slugs únicos en toda la tabla (si choca: `utensilios-2`). `/sitemap.xml` (src/app/sitemap.ts)
+    lista principales, subcategorías anidadas, productos y páginas de ayuda.
+  - Panel: árbol con arrastrar (⠿) y ↑ ↓ en el celular; "+ Subcategoría en …"; diálogo con "Pertenece a" (la foto de
+    portada solo en principales); eliminar con productos/subcategorías → elegir a dónde moverlos. Productos:
+    `CategoryPicker` (src/components/admin/category-picker.tsx) con buscador agrupado y "+ Crear 'X' en Cocina"
+    (`createSubcategory`); filtro del listado (una principal incluye sus subcategorías) y "Mover a…".
+  - Caché: toda acción de categorías llama a `updateTag(STORE_CATEGORIES_TAG)` y `updateTag(STORE_PRODUCTS_TAG)`.
+- Catálogo (paso 2, implementado): `/productos`, `/categorias/[slug]`, `/categorias/[slug]/[sub]` y `/buscar?q=` comparten `CatalogView`
   (`src/components/store/catalog/`). Estado en la URL (`?orden=&min=&max=&pagina=`, + `q` y `categoria` en
   `/buscar`), parseado en `src/lib/catalog-params.ts`. 24 por tanda; "Ver más" es un link a `?pagina=N`.
-  Búsqueda sobre `store_products.search_text` (nombre + categoría + códigos de barras, sin tildes).
+  Búsqueda sobre `store_products.search_text` (nombre + categoría + principal + códigos de barras, sin tildes).
 - Tarjeta de producto (`product-card.tsx`): descuento como "-10% OFF" (redondeado) o "Hasta -20% OFF" si las variantes
   ahorran distinto (`discount_percent_max/min` de la vista); "¡Últimas unidades!" si quedan 1 o 2 en total
   (`few_left`, un sí/no: la tienda nunca muestra el número de unidades). Lo que cambie el stock (también las

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ScanBarcode, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CategoryPicker } from "@/components/admin/category-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { findProductByCode } from "../actions";
 import {
@@ -92,11 +93,6 @@ export function ProductsToolbar({
     send(code);
   }
 
-  const categoryItems = [
-    { value: ALL, label: "Todas las categorías" },
-    { value: NO_CATEGORY, label: "Sin categoría" },
-    ...categories.map((c) => ({ value: c.id, label: c.name })),
-  ];
   const statusItems = Object.entries(STATUS_FILTERS).map(([value, label]) => ({ value, label }));
   const stockItems = Object.entries(STOCK_FILTERS).map(([value, label]) => ({ value, label }));
   const sortItems = Object.entries(SORTS).map(([value, label]) => ({ value, label }));
@@ -148,11 +144,16 @@ export function ProductsToolbar({
 
       {/* Filtros y orden */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
-        <FilterSelect
-          label="Categoría"
-          items={categoryItems}
+        {/* Categoría o subcategoría (una principal incluye sus subcategorías) */}
+        <CategoryPicker
+          categories={categories}
+          extraOptions={[
+            { value: ALL, label: "Todas las categorías" },
+            { value: NO_CATEGORY, label: "Sin categoría" },
+          ]}
           value={params.cat ?? ALL}
-          onChange={(value) => navigate({ cat: value === ALL ? null : value, pagina: 1 })}
+          onChange={(value) => navigate({ cat: !value || value === ALL ? null : value, pagina: 1 })}
+          className="col-span-2 sm:w-56 [&>button]:h-9 [&>button]:bg-background"
         />
         <FilterSelect
           label="Estado"

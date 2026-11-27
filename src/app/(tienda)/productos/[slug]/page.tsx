@@ -83,10 +83,18 @@ async function ProductContent({ params }: Pick<PageProps<"/productos/[slug]">, "
   const [product, settings] = await Promise.all([getProductForViewer(slug), getStoreSettings()]);
   if (!product) notFound();
 
-  const { card, category } = product;
+  const { card, category, mainCategory } = product;
   const pricing = pricingFrom(settings);
+  // Inicio › Cocina › Utensilios › Producto (o Inicio › Cocina › Producto)
   const crumbs: Crumb[] = [
-    category ? { label: category.name, href: categoryHref(category.slug) } : ALL_PRODUCTS_LINK,
+    ...(category && mainCategory
+      ? [
+          { label: mainCategory.name, href: categoryHref(mainCategory.slug) },
+          { label: category.name, href: categoryHref(mainCategory.slug, category.slug) },
+        ]
+      : category
+        ? [{ label: category.name, href: categoryHref(category.slug) }]
+        : [ALL_PRODUCTS_LINK]),
     { label: card.name, href: productHref(card.slug) },
   ];
 

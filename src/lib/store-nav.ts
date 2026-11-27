@@ -8,9 +8,9 @@ export type StoreLink = { label: string; href: string };
 /** Catálogo completo. */
 export const ALL_PRODUCTS_LINK: StoreLink = { label: "Todos los productos", href: "/productos" };
 
-/** Página de una categoría. */
-export function categoryHref(slug: string): string {
-  return `/categorias/${slug}`;
+/** Página de una categoría: /categorias/cocina, o /categorias/cocina/utensilios para una subcategoría. */
+export function categoryHref(slug: string, subSlug?: string | null): string {
+  return subSlug ? `/categorias/${slug}/${subSlug}` : `/categorias/${slug}`;
 }
 
 /** Página de un producto. */

@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CategoryPicker } from "@/components/admin/category-picker";
 import type { CategoryChoice, ProductListItem } from "../types";
 
 /**
@@ -80,7 +80,7 @@ export function ArchiveDialog({
 }
 
 // ---------------------------------------------------------------------
-// Cambiar categoría (en masa)
+// Mover a… (cambiar la categoría en masa)
 // ---------------------------------------------------------------------
 const NONE = "ninguna";
 
@@ -99,10 +99,6 @@ export function ChangeCategoryDialog({
 }) {
   const [value, setValue] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const items = [
-    { value: NONE, label: "Sin categoría" },
-    ...categories.map((c) => ({ value: c.id, label: c.isVisible ? c.name : `${c.name} (oculta)` })),
-  ];
 
   return (
     <Dialog
@@ -114,25 +110,22 @@ export function ChangeCategoryDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cambiar categoría</DialogTitle>
+          <DialogTitle>Mover a…</DialogTitle>
           <DialogDescription>
-            Se va a cambiar en {count === 1 ? "1 producto" : `${count} productos`}.
+            {count === 1 ? "1 producto" : `${count} productos`} pasan a la categoría o subcategoría que elijas.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="bulk-category">Nueva categoría</Label>
-          <Select items={items} value={value} onValueChange={(v) => setValue(v ? String(v) : null)}>
-            <SelectTrigger id="bulk-category" className="w-full">
-              <SelectValue placeholder="Elegí una categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {items.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="bulk-category">Mover a</Label>
+          <CategoryPicker
+            id="bulk-category"
+            categories={categories}
+            extraOptions={[{ value: NONE, label: "Sin categoría" }]}
+            value={value}
+            onChange={setValue}
+            placeholder="Elegí una categoría o subcategoría"
+            disabled={pending}
+          />
         </div>
         <DialogFooter>
           <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>Cancelar</DialogClose>
@@ -142,7 +135,7 @@ export function ChangeCategoryDialog({
             onClick={() => startTransition(() => onConfirm(value === NONE ? null : value))}
           >
             {pending && <Loader2 className="animate-spin" />}
-            Cambiar categoría
+            Mover
           </Button>
         </DialogFooter>
       </DialogContent>

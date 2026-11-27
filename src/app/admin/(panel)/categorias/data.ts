@@ -1,16 +1,20 @@
 import "server-only";
+import { cache } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { publicImageUrl } from "@/lib/storage";
 import type { Category } from "./types";
 
 /**
- * Todas las categorías, en el orden de la tienda, con su cantidad de
- * productos. Solo para el panel: arranca con requireAdmin().
+ * Todas las categorías (principales y subcategorías, lista plana), en el
+ * orden de la tienda, con su cantidad de productos. Solo para el panel:
+ * arranca con requireAdmin(). Para el árbol: buildCategoryTree()
+ * (src/lib/categories.ts). cache(): el encabezado y el listado la piden
+ * en el mismo pedido y se lee una sola vez.
  *
  * Llamarla dentro de <Suspense> (lee la sesión del usuario).
  */
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async function getCategories(): Promise<Category[]> {
   await requireAdmin();
   const supabase = await createClient();
 
@@ -18,7 +22,7 @@ export async function getCategories(): Promise<Category[]> {
   // categoría en la misma consulta (sin traerlos).
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, slug, is_visible, image_path, sort_order, products(count)")
+    .select("id, name, slug, parent_id, is_visible, image_path, sort_order, products(count)")
     .order("sort_order")
     .order("name");
 
@@ -28,10 +32,11 @@ export async function getCategories(): Promise<Category[]> {
     id: c.id,
     name: c.name,
     slug: c.slug,
+    parentId: c.parent_id,
     isVisible: c.is_visible,
     imagePath: c.image_path,
     imageUrl: c.image_path ? publicImageUrl(c.image_path) : null,
     sortOrder: c.sort_order,
     productCount: c.products[0]?.count ?? 0,
   }));
-}
+});

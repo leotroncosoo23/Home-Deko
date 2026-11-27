@@ -12,7 +12,7 @@ import {
   getBestSellersStrip,
   getNewArrivals,
   getOnSaleProducts,
-  getVisibleCategories,
+  getCategoryTree,
   type StoreProduct,
 } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
@@ -57,14 +57,14 @@ const STRIP_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 24vw, 4
 export default async function TiendaHomePage() {
   const [banners, categories, settings, newArrivals, onSale, bestSellers] = await Promise.all([
     getActiveBanners(),
-    getVisibleCategories(),
+    getCategoryTree(),
     getStoreSettings(),
     getNewArrivals(),
     getOnSaleProducts(),
     getBestSellersStrip(),
   ]);
-  // Solo categorías con algún producto publicado (igual que el menú y la barra).
-  const categoriesWithProducts = categories.filter((c) => c.productCount > 0);
+  // Solo PRINCIPALES con algún producto publicado (propio o de sus subcategorías), igual que el menú.
+  const categoriesWithProducts = categories;
   const tienda = datosTienda(settings);
   const pricing = pricingFrom(settings);
   const hasLocation = Boolean(tienda.direccion || tienda.horarios || tienda.instagram);

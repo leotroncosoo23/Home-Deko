@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { FolderTree } from "lucide-react";
+import { toast } from "sonner";
+import { CategoryPicker } from "@/components/admin/category-picker";
 import { SectionCard } from "@/components/admin/section-card";
+import { createSubcategory } from "../../categorias/actions";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { CategoryChoice, FormCardProps, ProductStatus } from "../types";
 import { Field } from "./field";
@@ -32,10 +34,16 @@ export function OrganizationCard({
       : STATUS_CHOICES;
   const current = choices.find((c) => c.value === values.status);
 
-  const items = [
-    { value: NO_CATEGORY, label: "Sin categoría" },
-    ...categories.map((c) => ({ value: c.id, label: c.isVisible ? c.name : `${c.name} (oculta)` })),
-  ];
+  /** "+ Crear 'Termos' en Cocina": crea la subcategoría sin salir del producto. */
+  async function handleCreate(name: string, parentId: string) {
+    const result = await createSubcategory(name, parentId).catch(() => null);
+    if (!result?.ok) {
+      toast.error(result?.error ?? "No se pudo crear. Revisá tu conexión.");
+      return null;
+    }
+    toast.success(`Subcategoría «${result.category.name}» creada`);
+    return result.category;
+  }
 
   return (
     <SectionCard
@@ -97,30 +105,21 @@ export function OrganizationCard({
                 Crear una
               </Link>
             </>
-          ) : undefined
+          ) : (
+            "Una categoría o una subcategoría (ej.: Cocina › Utensilios). Escribí para buscar o crear una subcategoría."
+          )
         }
       >
-        <Select
-          items={items}
+        <CategoryPicker
+          id="product-category"
+          categories={categories}
+          extraOptions={[{ value: NO_CATEGORY, label: "Sin categoría" }]}
           value={values.categoryId ?? NO_CATEGORY}
-          onValueChange={(value) => update({ categoryId: !value || value === NO_CATEGORY ? null : String(value) })}
+          onChange={(value) => update({ categoryId: !value || value === NO_CATEGORY ? null : value })}
+          onCreate={categories.some((c) => c.parentId === null) ? handleCreate : undefined}
           disabled={disabled}
-        >
-          <SelectTrigger
-            id="product-category"
-            className="w-full"
-            aria-invalid={Boolean(errors.categoryId) || undefined}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          invalid={Boolean(errors.categoryId)}
+        />
       </Field>
 
       {/* Destacado */}

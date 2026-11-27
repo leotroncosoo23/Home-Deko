@@ -3,20 +3,23 @@
 import { refresh, updateTag } from "next/cache";
 import { STORE_CATEGORIES_TAG, STORE_PRODUCTS_TAG } from "@/lib/store-cache";
 import { requireAdmin } from "@/lib/auth";
+import { uniqueSlug } from "@/lib/categories";
 import { createClient } from "@/lib/supabase/server";
-import { SLUG_MAX_LENGTH, SLUG_PATTERN } from "@/lib/slug";
+import { slugify, SLUG_MAX_LENGTH, SLUG_PATTERN } from "@/lib/slug";
 import { IMAGES_BUCKET } from "@/lib/storage";
 import type { ActionResult, CategoryField } from "./types";
 
 /**
- * Server Actions de Categorías.
+ * Server Actions de Categorías (principales y subcategorías).
  *
  * Reglas para TODAS:
  *   1. Arrancan con requireAdmin() (rol leído de la base en el momento).
  *   2. No confían en el navegador: vuelven a validar todo acá.
- *   3. Terminan con refresh(), que vuelve a pedir la página para que el
- *      listado muestre los datos nuevos.
- * Por debajo, el RLS de la base es la última barrera.
+ *   3. Invalidan la caché de la tienda (menú, mega menú, acordeón, chips,
+ *      inicio y catálogo) con updateTag y terminan con refresh(), que
+ *      vuelve a pedir la página para que el listado muestre lo nuevo.
+ * Por debajo, el RLS de la base es la última barrera, y el trigger
+ * categories_check_level garantiza un solo nivel de subcategorías.
  */
 
 const NAME_MAX_LENGTH = 80;
@@ -30,6 +33,31 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 const GENERIC_ERROR = "No se pudo guardar. Intentá de nuevo en unos segundos.";
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** La tienda (menú, árbol, chips, catálogo) vuelve a leer las categorías. */
+function invalidateStore() {
+  updateTag(STORE_CATEGORIES_TAG);
+  // El nombre de la categoría está en el buscador, y ocultarla o moverla
+  // cambia qué productos se ven: el catálogo también se actualiza.
+  updateTag(STORE_PRODUCTS_TAG);
+}
+
+/** Errores del trigger de un solo nivel (23514) → mensaje para el diálogo. */
+function levelError(message: string | undefined): string | null {
+  if (message === "subcategoria_anidada") return "Elegí una categoría principal: las subcategorías no pueden tener subcategorías.";
+  if (message === "categoria_con_hijas") return "Tiene subcategorías: no puede pasar a ser una subcategoría. Movelas primero.";
+  return null;
+}
+
+/** Próximo sort_order dentro de su grupo (principales, o subcategorías de una principal). */
+async function nextSortOrder(supabase: Supabase, parentId: string | null): Promise<number> {
+  let query = supabase.from("categories").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+  query = parentId ? query.eq("parent_id", parentId) : query.is("parent_id", null);
+  const { data } = await query.maybeSingle();
+  return (data?.sort_order ?? 0) + 1;
+}
+
 // ---------------------------------------------------------------------
 // Crear o editar
 // ---------------------------------------------------------------------
@@ -37,8 +65,13 @@ const GENERIC_ERROR = "No se pudo guardar. Intentá de nuevo en unos segundos.";
 /**
  * Crea (sin "id") o edita (con "id") una categoría.
  *
- * FormData: id?, name, slug, isVisible ("true"/"false"),
- *           image? (archivo ya comprimido), removeImage? ("true")
+ * FormData: id?, name, slug, slugAuto ("true" si no lo tocaron: si ya
+ *           existe, se usa slug-2, slug-3…), parentId ("" = principal),
+ *           isVisible ("true"/"false"), image? (archivo ya comprimido),
+ *           removeImage? ("true")
+ *
+ * La foto de portada es solo para principales: si pasa a ser subcategoría,
+ * la foto se quita.
  */
 export async function saveCategory(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
@@ -46,11 +79,13 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
   // --- 1. Leer y validar ---------------------------------------------
   const id = String(formData.get("id") ?? "").trim() || null;
   const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+  let slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+  const slugAuto = formData.get("slugAuto") === "true";
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
   const isVisible = formData.get("isVisible") === "true";
   const removeImage = formData.get("removeImage") === "true";
   const imageEntry = formData.get("image");
-  const image = imageEntry instanceof File && imageEntry.size > 0 ? imageEntry : null;
+  const image = parentId ? null : imageEntry instanceof File && imageEntry.size > 0 ? imageEntry : null;
 
   const fieldErrors: Partial<Record<CategoryField, string>> = {};
   if (!name) fieldErrors.name = "Escribí un nombre.";
@@ -67,26 +102,36 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
   }
 
   if (id && !UUID_PATTERN.test(id)) return { ok: false, error: "Categoría inválida." };
+  if (parentId && !UUID_PATTERN.test(parentId)) return { ok: false, error: "Categoría principal inválida." };
+  if (id && parentId === id) fieldErrors.parent = "Una categoría no puede pertenecer a sí misma.";
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, error: "Revisá los datos marcados.", fieldErrors };
   }
 
   const supabase = await createClient();
 
-  // --- 2. Si es edición, traer la categoría actual (para la imagen vieja)
+  // --- 2. Si es edición, traer la categoría actual ---------------------
   let previousImagePath: string | null = null;
+  let previousParentId: string | null = null;
   if (id) {
     const { data: current, error } = await supabase
       .from("categories")
-      .select("image_path")
+      .select("image_path, parent_id")
       .eq("id", id)
       .maybeSingle();
     if (error) return { ok: false, error: GENERIC_ERROR };
     if (!current) return { ok: false, error: "Esta categoría ya no existe. Recargá la página." };
     previousImagePath = current.image_path;
+    previousParentId = current.parent_id;
   }
 
-  // --- 3. Subir la imagen nueva (si hay) ------------------------------
+  // Slug automático (al crear, sin tocarlo): si ya existe, uno libre.
+  if (!id && slugAuto) {
+    const { data: taken } = await supabase.from("categories").select("slug").like("slug", `${slug}%`);
+    slug = uniqueSlug(slug, (taken ?? []).map((t) => t.slug));
+  }
+
+  // --- 3. Subir la imagen nueva (si hay; solo principales) -------------
   let uploadedPath: string | null = null;
   if (image) {
     // Nombre al azar: nunca pisa otro archivo y evita caché vieja.
@@ -103,29 +148,31 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
     }
   }
 
-  const imagePath = uploadedPath ?? (removeImage ? null : previousImagePath);
+  // Subcategoría → sin foto de portada.
+  const imagePath = parentId ? null : (uploadedPath ?? (removeImage ? null : previousImagePath));
 
   // --- 4. Guardar en la base ------------------------------------------
-  let dbError: { code: string } | null;
+  let dbError: { code: string; message: string } | null;
   if (id) {
-    ({ error: dbError } = await supabase
-      .from("categories")
-      .update({ name, slug, is_visible: isVisible, image_path: imagePath })
-      .eq("id", id));
+    const update: {
+      name: string;
+      slug: string;
+      parent_id: string | null;
+      is_visible: boolean;
+      image_path: string | null;
+      sort_order?: number;
+    } = { name, slug, parent_id: parentId, is_visible: isVisible, image_path: imagePath };
+    // Cambió de grupo: va al final de su grupo nuevo.
+    if (parentId !== previousParentId) update.sort_order = await nextSortOrder(supabase, parentId);
+    ({ error: dbError } = await supabase.from("categories").update(update).eq("id", id));
   } else {
-    // Las nuevas van al final de la lista.
-    const { data: last } = await supabase
-      .from("categories")
-      .select("sort_order")
-      .order("sort_order", { ascending: false })
-      .limit(1)
-      .maybeSingle();
     ({ error: dbError } = await supabase.from("categories").insert({
       name,
       slug,
+      parent_id: parentId,
       is_visible: isVisible,
       image_path: imagePath,
-      sort_order: (last?.sort_order ?? 0) + 1,
+      sort_order: await nextSortOrder(supabase, parentId),
     }));
   }
 
@@ -140,6 +187,8 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
         fieldErrors: { slug: "Ya existe una categoría con ese slug." },
       };
     }
+    const level = levelError(dbError.message);
+    if (level) return { ok: false, error: "Revisá los datos marcados.", fieldErrors: { parent: level } };
     return { ok: false, error: GENERIC_ERROR };
   }
 
@@ -148,12 +197,52 @@ export async function saveCategory(formData: FormData): Promise<ActionResult> {
     await removeImageFile(previousImagePath);
   }
 
-  updateTag(STORE_CATEGORIES_TAG);
-  // El nombre de la categoría está en el buscador, y ocultarla esconde sus
-  // productos: el catálogo también se actualiza.
-  updateTag(STORE_PRODUCTS_TAG);
+  invalidateStore();
   refresh();
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+// Crear una subcategoría desde el selector del producto
+// ---------------------------------------------------------------------
+
+export type QuickCategoryResult =
+  | { ok: true; category: { id: string; name: string; parentId: string | null; isVisible: boolean } }
+  | { ok: false; error: string };
+
+/**
+ * "+ Crear 'Termos' en Cocina" (selector de categoría del producto): crea
+ * la subcategoría visible, con slug automático, al final de su principal.
+ * No hace refresh(): el formulario del producto sigue abierto y no se pierde nada.
+ */
+export async function createSubcategory(name: string, parentId: string): Promise<QuickCategoryResult> {
+  await requireAdmin();
+  const clean = String(name ?? "").trim().replace(/\s+/g, " ");
+  if (!clean) return { ok: false, error: "Escribí un nombre." };
+  if (clean.length > NAME_MAX_LENGTH) return { ok: false, error: `Máximo ${NAME_MAX_LENGTH} caracteres.` };
+  if (!UUID_PATTERN.test(String(parentId))) return { ok: false, error: "Elegí una categoría principal." };
+  const base = slugify(clean);
+  if (!base) return { ok: false, error: "Usá letras o números en el nombre." };
+
+  const supabase = await createClient();
+  const { data: parent } = await supabase.from("categories").select("id, parent_id").eq("id", parentId).maybeSingle();
+  if (!parent) return { ok: false, error: "Esa categoría ya no existe. Recargá la página." };
+  if (parent.parent_id) return { ok: false, error: "Elegí una categoría principal." };
+
+  const { data: taken } = await supabase.from("categories").select("slug").like("slug", `${base}%`);
+  const slug = uniqueSlug(base, (taken ?? []).map((t) => t.slug));
+
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({ name: clean, slug, parent_id: parentId, is_visible: true, sort_order: await nextSortOrder(supabase, parentId) })
+    .select("id, name, parent_id, is_visible")
+    .single();
+  if (error || !data) {
+    return { ok: false, error: levelError(error?.message) ?? "No se pudo crear. Intentá de nuevo en unos segundos." };
+  }
+
+  invalidateStore();
+  return { ok: true, category: { id: data.id, name: data.name, parentId: data.parent_id, isVisible: data.is_visible } };
 }
 
 // ---------------------------------------------------------------------
@@ -174,17 +263,28 @@ export async function setCategoryVisibility(id: string, isVisible: boolean): Pro
   if (error) return { ok: false, error: GENERIC_ERROR };
   if (data.length === 0) return { ok: false, error: "Esta categoría ya no existe. Recargá la página." };
 
-  updateTag(STORE_CATEGORIES_TAG);
-  updateTag(STORE_PRODUCTS_TAG); // ocultar la categoría esconde sus productos de la tienda
+  invalidateStore(); // ocultar la categoría esconde sus productos (y los de sus subcategorías)
   refresh();
   return { ok: true };
 }
 
 // ---------------------------------------------------------------------
-// Eliminar (solo si no tiene productos)
+// Eliminar (moviendo antes productos y subcategorías, si hay)
 // ---------------------------------------------------------------------
 
-export async function deleteCategory(id: string): Promise<ActionResult> {
+export type DeletePlan = {
+  /** A dónde van sus productos: id de otra categoría, o null = "Sin categoría". */
+  productsTo: string | null;
+  /** Sus subcategorías: "main" = pasan a ser principales, o el id de otra principal. */
+  subcategoriesTo: "main" | string;
+};
+
+/**
+ * Elimina una categoría. Si tiene productos o subcategorías, primero los
+ * mueve según `plan` (si no hay plan y tiene algo, no borra nada y avisa
+ * cuántos tiene).
+ */
+export async function deleteCategory(id: string, plan?: DeletePlan): Promise<ActionResult> {
   await requireAdmin();
   if (!UUID_PATTERN.test(id)) return { ok: false, error: "Categoría inválida." };
 
@@ -199,39 +299,72 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
   if (!category) return { ok: false, error: "Esta categoría ya no existe. Recargá la página." };
 
   const productCount = category.products[0]?.count ?? 0;
-  if (productCount > 0) return hasProductsError(productCount);
+  const { data: subs, error: subsError } = await supabase.from("categories").select("id").eq("parent_id", id);
+  if (subsError) return { ok: false, error: GENERIC_ERROR };
+
+  if ((productCount > 0 || subs.length > 0) && !plan) {
+    return {
+      ok: false,
+      error: "Tiene productos o subcategorías: elegí a dónde moverlos antes de eliminarla.",
+      productCount,
+    };
+  }
+
+  // --- Mover productos ---------------------------------------------------
+  if (productCount > 0 && plan) {
+    const target = plan.productsTo;
+    if (target !== null && (!UUID_PATTERN.test(target) || target === id || subs.some((s) => s.id === target))) {
+      return { ok: false, error: "Elegí otra categoría para los productos." };
+    }
+    const { error } = await supabase.from("products").update({ category_id: target }).eq("category_id", id);
+    if (error) return { ok: false, error: "No se pudieron mover los productos. Intentá de nuevo." };
+  }
+
+  // --- Mover subcategorías --------------------------------------------------
+  if (subs.length > 0 && plan) {
+    const target = plan.subcategoriesTo === "main" ? null : plan.subcategoriesTo;
+    if (target !== null && (!UUID_PATTERN.test(target) || target === id)) {
+      return { ok: false, error: "Elegí otra categoría principal para las subcategorías." };
+    }
+    const start = await nextSortOrder(supabase, target);
+    for (const [i, s] of subs.entries()) {
+      const { error } = await supabase
+        .from("categories")
+        .update({ parent_id: target, sort_order: start + i })
+        .eq("id", s.id);
+      if (error) {
+        return { ok: false, error: levelError(error.message) ?? "No se pudieron mover las subcategorías. Intentá de nuevo." };
+      }
+    }
+  }
 
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) {
-    // 23503 = la base frenó el borrado porque hay productos (on delete
-    // restrict). Pasa si alguien cargó un producto justo en este momento.
-    if (error.code === "23503") return hasProductsError(1);
+    // 23503 = la base frenó el borrado: entró un producto o una subcategoría
+    // justo en este momento. No se borra nada; se vuelve a intentar.
+    if (error.code === "23503") {
+      invalidateStore();
+      refresh();
+      return { ok: false, error: "Justo se agregó algo a esta categoría. Volvé a intentar.", productCount: 1 };
+    }
     return { ok: false, error: "No se pudo eliminar. Intentá de nuevo en unos segundos." };
   }
 
   if (category.image_path) await removeImageFile(category.image_path);
 
-  updateTag(STORE_CATEGORIES_TAG);
+  invalidateStore();
   refresh();
   return { ok: true };
-}
-
-function hasProductsError(productCount: number): ActionResult {
-  return {
-    ok: false,
-    error:
-      productCount === 1
-        ? "No se puede eliminar porque tiene un producto. Podés ocultarla."
-        : `No se puede eliminar porque tiene ${productCount} productos. Podés ocultarla.`,
-    productCount,
-  };
 }
 
 // ---------------------------------------------------------------------
 // Reordenar
 // ---------------------------------------------------------------------
 
-/** Recibe TODOS los ids en el orden nuevo (el primero va arriba). */
+/**
+ * Recibe los ids de UN grupo en el orden nuevo (el primero va arriba):
+ * todas las principales, o las subcategorías de una principal.
+ */
 export async function reorderCategories(ids: string[]): Promise<ActionResult> {
   await requireAdmin();
   if (
@@ -248,7 +381,7 @@ export async function reorderCategories(ids: string[]): Promise<ActionResult> {
   const { error } = await supabase.rpc("reorder_categories", { p_ids: ids });
   if (error) return { ok: false, error: "No se pudo guardar el orden. Intentá de nuevo." };
 
-  updateTag(STORE_CATEGORIES_TAG);
+  invalidateStore();
   refresh();
   return { ok: true };
 }

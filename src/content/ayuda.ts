@@ -298,7 +298,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Publicar, ocultar y archivar",
         texto:
-          "\"Borrador\" no lo ven los clientes. \"Publicado\" se ve y se puede comprar. Desde el listado podés seleccionar varios productos y publicarlos, ocultarlos, cambiarles la categoría o archivarlos de una vez.",
+          "\"Borrador\" no lo ven los clientes. \"Publicado\" se ve y se puede comprar. En \"Categoría\" podés elegir una categoría o una subcategoría (Cocina › Utensilios): escribí para buscarla, o para crear una subcategoría nueva sin salir del producto (\"+ Crear … en Cocina\"). Desde el listado podés filtrar por categoría o subcategoría, seleccionar varios productos y publicarlos, ocultarlos, moverlos a otra categoría (\"Mover a…\") o archivarlos de una vez.",
       },
       {
         titulo: "Ver cómo queda en la tienda antes de publicar",
@@ -321,28 +321,34 @@ export const GUIAS: Record<GuiaId, Guia> = {
   categorias: {
     id: "categorias",
     titulo: "Categorías",
-    resumen: "Agrupá los productos (Cocina, Baño, Deco…) para que sea fácil encontrarlos en la tienda.",
+    resumen:
+      "Agrupá los productos en categorías (Cocina, Baño, Deco…) y, si hace falta, en subcategorías (Cocina › Utensilios) para que sea fácil encontrarlos en la tienda.",
     pasosRapidos: [
       "Tocá \"Nueva categoría\", escribí el nombre y, si querés, elegí una foto de portada.",
-      "Tocá \"Crear categoría\".",
-      "Para cambiar el orden, arrastrá cada fila desde la manija (⠿).",
-      "Para editar o eliminar, usá el menú de los tres puntos de cada fila.",
+      "Para una subcategoría, tocá \"+ Subcategoría en …\" debajo de la categoría (o elegí \"Pertenece a\" en el diálogo).",
+      "Para cambiar el orden, arrastrá cada fila desde la manija (⠿). En el celular, usá las flechas ↑ ↓.",
+      "Para editar, ocultar o eliminar, usá el menú de los tres puntos de cada fila.",
     ],
     pasos: [
       {
         titulo: "Crear una categoría",
         texto:
-          "Tocá \"Nueva categoría\" y escribí el nombre. El \"slug\" (la dirección en la tienda) se completa solo. Podés agregar una \"Foto de portada\": se ve de fondo en la tarjeta de la categoría, en el inicio de la tienda (mejor una foto horizontal). Si no tiene, la tarjeta se ve con un fondo de la marca. Tocá \"Crear categoría\".",
+          "Tocá \"Nueva categoría\" y escribí el nombre. El \"slug\" (la dirección en la tienda) se completa solo. Podés agregar una \"Foto de portada\": se ve de fondo en la tarjeta de la categoría en el inicio de la tienda y, en la computadora, en el menú desplegable de la categoría (mejor una foto horizontal). Si no tiene, la tarjeta se ve con un fondo de la marca. Tocá \"Crear categoría\".",
+      },
+      {
+        titulo: "Subcategorías",
+        texto:
+          "Sirven para separar una categoría grande en grupos más chicos, por ejemplo Cocina › Ollas y sartenes, Utensilios, Vajilla. Tocá \"+ Subcategoría en Cocina\" debajo de la categoría, o en \"Nueva categoría\" elegí en \"Pertenece a\" la categoría principal. Hay un solo nivel: una subcategoría no puede tener subcategorías. Las subcategorías no llevan foto de portada. En la tienda, la categoría principal muestra sus productos y los de todas sus subcategorías; al pasar el mouse por la categoría en la computadora se abre un menú con sus subcategorías, y en el celular se despliegan en el menú ☰. Una subcategoría sin productos publicados no aparece en la tienda.",
       },
       {
         titulo: "Ordenarlas",
         texto:
-          "Arrastrá cada fila desde la manija (⠿) hasta donde quieras. El orden se guarda solo y es el mismo que se ve en la tienda.",
+          "Arrastrá cada fila desde la manija (⠿) hasta donde quieras; en el celular, usá las flechas ↑ ↓. Las categorías principales se mueven con sus subcategorías, y cada subcategoría se ordena dentro de su categoría. Para pasar una subcategoría a otra categoría, tocá \"Editar\" y cambiá \"Pertenece a\". El orden se guarda solo y es el mismo que se ve en la tienda.",
       },
       {
         titulo: "Editar, ocultar o eliminar",
         texto:
-          "En el menú de cada fila elegí \"Editar\" o \"Eliminar\". Solo se puede eliminar una categoría vacía: si tiene productos, editala y apagá \"Visible\" para que no aparezca en la tienda. Al ocultar una categoría, sus productos tampoco se ven en la tienda (siguen en el panel, sin perder nada); vuelven a aparecer cuando la mostrás de nuevo.",
+          "En el menú de cada fila elegí \"Editar\", \"Ocultar\" o \"Eliminar\". Si la categoría tiene productos o subcategorías, al eliminarla te dice cuántos y te deja elegir a dónde moverlos (otra categoría, \"Sin categoría\", o pasar las subcategorías a principales) antes de borrarla. Si preferís que solo no se vea, ocultala: sus productos (y los de sus subcategorías) tampoco se ven en la tienda, pero no se pierde nada; vuelven a aparecer cuando la mostrás de nuevo.",
       },
     ],
   },
@@ -638,9 +644,9 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
       "Los productos no se borran, se archivan. Así no se pierden las ventas ni los movimientos de stock. Si lo archivaste por error, abrilo y cambiale el estado.",
   },
   {
-    pregunta: "No me deja eliminar una categoría, ¿por qué?",
+    pregunta: "¿Puedo eliminar una categoría que tiene productos o subcategorías?",
     respuesta:
-      "Porque todavía tiene productos. Para que no se vea en la tienda, editala y apagá \"Visible\". Si igual querés eliminarla, primero pasá sus productos a otra categoría.",
+      "Sí: si tiene productos o subcategorías, al tocar \"Eliminar\" te dice cuántos y te pide elegir a dónde moverlos antes de borrarla. Si solo querés que no se vea en la tienda, ocultala: no se pierde nada.",
   },
   {
     pregunta: "¿El código de barras cambia si edito el producto?",

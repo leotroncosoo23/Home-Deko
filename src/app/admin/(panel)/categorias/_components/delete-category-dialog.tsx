@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { EyeOff, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { CategoryPicker } from "@/components/admin/category-picker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,31 +15,41 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 import { deleteCategory, setCategoryVisibility } from "../actions";
 import type { Category } from "../types";
 
+const NO_CATEGORY = "__sin_categoria__";
+const AS_MAIN = "__principales__";
+
 /**
  * Confirmación antes de eliminar.
- *   - Sin productos → "¿Eliminar?" con el botón Eliminar.
- *   - Con productos → explica por qué no se puede y ofrece ocultarla.
+ *   - Sin productos ni subcategorías → "¿Eliminar?".
+ *   - Con productos y/o subcategorías → dice cuántos y ofrece moverlos antes:
+ *       productos → otra categoría (o "Sin categoría");
+ *       subcategorías → pasan a ser principales, o a otra principal.
+ *     También se puede ocultar en lugar de eliminar.
  */
 export function DeleteCategoryDialog({
   category,
+  categories,
   open,
   onOpenChange,
 }: {
   /** La categoría a eliminar. Se conserva al cerrar, para la animación. */
   category: Category | null;
+  categories: Category[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-md">
         {category && (
           <DeleteContent
             key={category.id}
             category={category}
+            categories={categories}
             onDone={() => onOpenChange(false)}
           />
         )}
@@ -47,23 +58,45 @@ export function DeleteCategoryDialog({
   );
 }
 
-function DeleteContent({ category, onDone }: { category: Category; onDone: () => void }) {
+const count = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
+
+function DeleteContent({
+  category,
+  categories,
+  onDone,
+}: {
+  category: Category;
+  categories: Category[];
+  onDone: () => void;
+}) {
   const [pending, startTransition] = useTransition();
+  const subs = categories.filter((c) => c.parentId === category.id);
   const hasProducts = category.productCount > 0;
-  const productsText =
-    category.productCount === 1 ? "1 producto" : `${category.productCount} productos`;
+  const hasSubs = subs.length > 0;
+  const kind = category.parentId ? "subcategoría" : "categoría";
+
+  // Destino de los productos: por defecto, la principal (si es subcategoría).
+  const [productsTo, setProductsTo] = useState<string | null>(category.parentId ?? null);
+  const [subsTo, setSubsTo] = useState<string>(AS_MAIN);
+  const excluded = [category.id, ...subs.map((s) => s.id)];
 
   function handleDelete() {
     startTransition(async () => {
       try {
-        const result = await deleteCategory(category.id);
+        const result = await deleteCategory(
+          category.id,
+          hasProducts || hasSubs
+            ? {
+                productsTo: productsTo === NO_CATEGORY ? null : productsTo,
+                subcategoriesTo: subsTo === AS_MAIN ? "main" : subsTo,
+              }
+            : undefined,
+        );
         if (result.ok) {
-          toast.success("Categoría eliminada");
+          toast.success(category.parentId ? "Subcategoría eliminada" : "Categoría eliminada");
           onDone();
         } else {
           toast.error(result.error);
-          // Si resultó que sí tenía productos, cerrar: el listado se
-          // actualiza y la próxima vez se ofrece ocultarla.
           if (result.productCount) onDone();
         }
       } catch {
@@ -88,38 +121,13 @@ function DeleteContent({ category, onDone }: { category: Category; onDone: () =>
     });
   }
 
-  if (hasProducts) {
-    return (
-      <>
-        <AlertDialogHeader>
-          <AlertDialogMedia>
-            <EyeOff className="text-muted-foreground" />
-          </AlertDialogMedia>
-          <AlertDialogTitle>No se puede eliminar «{category.name}»</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tiene {productsText} (contando borradores y archivados). Para eliminarla, primero
-            pasá esos productos a otra categoría.
-            {category.isVisible
-              ? " Si solo querés que no se vea, podés ocultarla: sus productos tampoco se ven en la tienda, pero no se borra nada."
-              : " Ya está oculta, así que ni ella ni sus productos aparecen en la tienda."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          {category.isVisible ? (
-            <>
-              <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleHide} disabled={pending}>
-                {pending ? <Loader2 className="animate-spin" /> : <EyeOff />}
-                Ocultar categoría
-              </AlertDialogAction>
-            </>
-          ) : (
-            <AlertDialogCancel>Entendido</AlertDialogCancel>
-          )}
-        </AlertDialogFooter>
-      </>
-    );
-  }
+  const needsMove = hasProducts || hasSubs;
+  const contents = [
+    hasProducts && count(category.productCount, "producto", "productos"),
+    hasSubs && count(subs.length, "subcategoría", "subcategorías"),
+  ]
+    .filter(Boolean)
+    .join(" y ");
 
   return (
     <>
@@ -127,24 +135,74 @@ function DeleteContent({ category, onDone }: { category: Category; onDone: () =>
         <AlertDialogMedia className="bg-destructive/10">
           <Trash2 className="text-destructive" />
         </AlertDialogMedia>
-        <AlertDialogTitle>¿Eliminar «{category.name}»?</AlertDialogTitle>
+        <AlertDialogTitle>
+          ¿Eliminar {kind} «{category.name}»?
+        </AlertDialogTitle>
         <AlertDialogDescription>
-          La categoría se borra definitivamente{category.imageUrl ? ", junto con su imagen" : ""}.
-          Esto no se puede deshacer.
+          {needsMove
+            ? `Tiene ${contents} (contando borradores y archivados). Elegí a dónde moverlos antes de eliminarla.`
+            : `La ${kind} se borra definitivamente${category.imageUrl ? ", junto con su imagen" : ""}. Esto no se puede deshacer.`}
         </AlertDialogDescription>
       </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
-        {/* Acción destructiva: botón con borde rojo (ver CLAUDE.md) */}
-        <AlertDialogAction
-          variant="outline"
-          onClick={handleDelete}
-          disabled={pending}
-          className="border-destructive/40 text-destructive hover:bg-destructive/5 hover:text-destructive"
-        >
-          {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-          {pending ? "Eliminando…" : "Eliminar"}
-        </AlertDialogAction>
+
+      {needsMove && (
+        <div className="flex flex-col gap-4">
+          {hasProducts && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="delete-products-to">Mover {count(category.productCount, "producto", "productos")} a</Label>
+              <CategoryPicker
+                id="delete-products-to"
+                categories={categories}
+                exclude={excluded}
+                extraOptions={[{ value: NO_CATEGORY, label: "Sin categoría" }]}
+                value={productsTo ?? NO_CATEGORY}
+                onChange={(v) => setProductsTo(v)}
+                disabled={pending}
+              />
+            </div>
+          )}
+          {hasSubs && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="delete-subs-to">Sus {count(subs.length, "subcategoría", "subcategorías")}</Label>
+              <CategoryPicker
+                id="delete-subs-to"
+                categories={categories}
+                onlyMains
+                exclude={[category.id]}
+                extraOptions={[{ value: AS_MAIN, label: "Pasan a ser categorías principales" }]}
+                value={subsTo}
+                onChange={(v) => setSubsTo(v ?? AS_MAIN)}
+                disabled={pending}
+              />
+              <p className="text-xs text-muted-foreground">
+                {subs.map((s) => s.name).join(", ")} — con sus productos.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <AlertDialogFooter className="sm:justify-between">
+        {needsMove && category.isVisible ? (
+          <AlertDialogAction variant="ghost" onClick={handleHide} disabled={pending} className="text-muted-foreground">
+            <EyeOff /> Mejor ocultarla
+          </AlertDialogAction>
+        ) : (
+          <span className="hidden sm:block" />
+        )}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
+          {/* Acción destructiva: botón con borde rojo (ver CLAUDE.md) */}
+          <AlertDialogAction
+            variant="outline"
+            onClick={handleDelete}
+            disabled={pending}
+            className="border-destructive/40 text-destructive hover:bg-destructive/5 hover:text-destructive"
+          >
+            {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            {pending ? "Eliminando…" : needsMove ? "Mover y eliminar" : "Eliminar"}
+          </AlertDialogAction>
+        </div>
       </AlertDialogFooter>
     </>
   );
