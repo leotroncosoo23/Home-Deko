@@ -8,17 +8,19 @@ import { DEFAULT_PRICING, getPrices, type Prices, type PricingSettings } from "@
  *
  *   card     tarjeta de producto (catálogo, inicio, relacionados, búsqueda)
  *              $ 34.200  ̶$̶ ̶3̶8̶.̶0̶0̶0̶
- *              $ 47.120 en 12 cuotas sin interés de $ 3.926,67
+ *              Precio de lista $ 47.120
+ *              Hasta 12 cuotas sin interés de $ 3.926,67
  *   product  página del producto: lo mismo, más grande, con "-10% OFF" (badge)
  *   cart     línea del carrito / resumen del checkout: contado × cantidad y,
  *            si hay oferta, el tachado debajo. Sin segunda línea.
- *   total    debajo del total: "o $ 59.520 en 6 cuotas sin interés de $ 9.920"
+ *   total    debajo del total: "o hasta 6 cuotas sin interés de $ 9.920"
  *
- * Segunda línea (card, product y total):
- *   - cuotas prendidas → "$ {lista} en {N} cuotas sin interés de $ {cuota}"
- *   - cuotas apagadas y recargo > 0 → "Precio de lista $ {lista}" (no en total)
+ * Debajo del precio (card y product), chico y gris:
+ *   - recargo > 0 → "Precio de lista $ {lista}"
+ *   - cuotas prendidas → además, en su propio renglón,
+ *     "Hasta {N} cuotas sin interés de $ {cuota}" (la cuota es lista / N)
  *   - recargo 0 y cuotas apagadas → nada
- * Con un máximo de cuotas global se dice "12 cuotas" a secas (sin "hasta").
+ * "Hasta": N es el máximo global de Configuración (el banco puede ofrecer menos).
  * Los montos nunca se cortan por la mitad (whitespace-nowrap).
  */
 export type PriceBlockVariant = "card" | "product" | "cart" | "total";
@@ -45,7 +47,7 @@ export function PriceBlock({
   className?: string;
 }) {
   if (variant === "total") {
-    return <SecondLine prices={prices} pricing={pricing} total className={cn("text-xs", className)} />;
+    return <SecondLine prices={prices} pricing={pricing} total className={cn("text-xs leading-snug", className)} />;
   }
 
   if (variant === "cart") {
@@ -64,7 +66,8 @@ export function PriceBlock({
 
   const product = variant === "product";
   return (
-    <div className={cn("flex min-w-0 flex-col", product ? "gap-1.5" : "gap-1", className)}>
+    // Tarjeta: 2 px entre el precio y la línea de lista (gap-0.5), compacta.
+    <div className={cn("flex min-w-0 flex-col", product ? "gap-1.5" : "gap-0.5", className)}>
       <p
         className={cn(
           "flex min-w-0 flex-wrap items-baseline tabular-nums",
@@ -94,12 +97,20 @@ export function PriceBlock({
         )}
         {product && prices.oferta && badge}
       </p>
-      <SecondLine prices={prices} pricing={pricing} className={product ? "text-sm" : "text-xs"} />
+      <SecondLine
+        prices={prices}
+        pricing={pricing}
+        className={product ? "text-sm leading-snug" : "text-xs leading-tight"}
+      />
     </div>
   );
 }
 
-/** "$ 47.120 en 12 cuotas sin interés de $ 3.926,67" / "Precio de lista $ 47.120" / nada. */
+/**
+ * Debajo del precio: "Precio de lista $ 47.120" y/o "Hasta 12 cuotas sin interés
+ * de $ 3.926,67" (un renglón cada uno), o nada. Debajo de un total: solo
+ * "o hasta 6 cuotas sin interés de $ 9.920".
+ */
 function SecondLine({
   prices,
   pricing,
@@ -112,28 +123,35 @@ function SecondLine({
   total?: boolean;
   className?: string;
 }) {
-  const base = cn("leading-snug text-muted-foreground tabular-nums", className);
+  // El interlineado lo pone quien llama (tarjeta: leading-tight, compacto).
+  const base = cn("text-muted-foreground tabular-nums", className);
   const amount = (n: number) => (
     <span className="font-semibold whitespace-nowrap text-foreground/70">{formatPrice(n)}</span>
   );
 
-  if (prices.cuotas && prices.valorCuota !== null) {
-    return (
-      // Dos bloques que no se parten: si no entra en una línea, corta entre
-      // "… en 12 cuotas" y "sin interés de $ …" (y nunca dentro de un número).
-      <p className={base}>
+  const installments =
+    prices.cuotas && prices.valorCuota !== null ? (
+      // Dos bloques que no se parten: si no entra en un renglón (tarjeta angosta
+      // del celular), corta entre "Hasta 12 cuotas" y "sin interés de $ …",
+      // y nunca dentro de un número.
+      <>
         <span className="whitespace-nowrap">
-          {total && "o "}
-          {amount(prices.lista)} en {prices.cuotas} cuotas
+          {total ? "o hasta" : "Hasta"} {prices.cuotas} cuotas
         </span>{" "}
         <span className="whitespace-nowrap">sin interés de {formatPrice(prices.valorCuota)}</span>
-      </p>
-    );
-  }
-  if (!total && pricing.listSurchargePercent > 0) {
-    return <p className={base}>Precio de lista {amount(prices.lista)}</p>;
-  }
-  return null;
+      </>
+    ) : null;
+
+  if (total) return installments && <p className={base}>{installments}</p>;
+
+  const list = pricing.listSurchargePercent > 0 ? <>Precio de lista {amount(prices.lista)}</> : null;
+  if (!list && !installments) return null;
+  return (
+    <div className={base}>
+      {list && <p>{list}</p>}
+      {installments && <p>{installments}</p>}
+    </div>
+  );
 }
 
 /** Una línea del carrito (unitPrice = contado, unitPriceBefore = sin oferta) para <PriceBlock variant="cart">. */
