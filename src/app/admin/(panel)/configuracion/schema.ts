@@ -30,7 +30,7 @@ export const SETTINGS_FIELDS = [
   "contactEmail",
   "showPriceWithoutTaxes",
   "nationalTaxPercent",
-  "cashDiscountPercent",
+  "listSurchargePercent",
   "installmentsEnabled",
   "installmentsMax",
 ] as const;
@@ -44,8 +44,8 @@ export const SHIPPING_MAX = 10_000_000;
 export const EXCHANGE_DAYS_MAX = 365;
 /** El % de impuestos nacionales tiene que ser menor a 100 (igual que en la base). */
 export const TAX_PERCENT_MAX = 99.99;
-/** Descuento en 1 pago: hasta 90 % (la base acepta menos de 100; más de 90 es casi seguro un error de tipeo). */
-export const CASH_DISCOUNT_MAX = 90;
+/** Recargo para el precio de lista: hasta 999 % (la base acepta menos de 1000). */
+export const LIST_SURCHARGE_MAX = 999;
 
 /** Saca el link, la "@" y espacios: queda solo el nombre de usuario. */
 function cleanHandle(value: string) {
@@ -132,12 +132,12 @@ export const settingsSchema = z.object({
       message: "Escribí un porcentaje entre 0 y 99 (ej.: 21).",
     })
     .transform((v) => v as number),
-  // Precio contado = lista − este %. 0 = sin descuento (contado igual a lista).
-  cashDiscountPercent: z
+  // Precio de lista (cuotas) = contado + este %. 0 = sin recargo (lista igual a contado).
+  listSurchargePercent: z
     .string()
     .transform((v) => parseMoney(v.replace("%", "")))
-    .refine((v) => v !== null && !Number.isNaN(v) && v >= 0 && v <= CASH_DISCOUNT_MAX, {
-      message: `Escribí un porcentaje entre 0 y ${CASH_DISCOUNT_MAX} (ej.: 15). 0 = sin descuento.`,
+    .refine((v) => v !== null && !Number.isNaN(v) && v >= 0 && v <= LIST_SURCHARGE_MAX, {
+      message: `Escribí un porcentaje entre 0 y ${LIST_SURCHARGE_MAX} (ej.: 24). 0 = sin recargo.`,
     })
     .transform((v) => v as number),
   installmentsEnabled: z.string().transform((v) => v === "true"),

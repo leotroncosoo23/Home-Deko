@@ -1246,6 +1246,7 @@ export type Database = {
           installments_enabled: boolean
           installments_max: number
           is_launched: boolean
+          list_surcharge_percent: number
           national_tax_percent: number
           shipping_cost: number
           show_price_without_taxes: boolean
@@ -1269,6 +1270,7 @@ export type Database = {
           installments_enabled?: boolean
           installments_max?: number
           is_launched?: boolean
+          list_surcharge_percent?: number
           national_tax_percent?: number
           shipping_cost?: number
           show_price_without_taxes?: boolean
@@ -1292,6 +1294,7 @@ export type Database = {
           installments_enabled?: boolean
           installments_max?: number
           is_launched?: boolean
+          list_surcharge_percent?: number
           national_tax_percent?: number
           shipping_cost?: number
           show_price_without_taxes?: boolean

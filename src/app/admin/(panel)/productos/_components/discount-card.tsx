@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatARS, parseMoney } from "@/lib/format";
-import { cashPrice } from "@/lib/pricing";
 import { isoToArgentinaDay } from "../form-state";
 import type { FormCardProps, FormDiscount } from "../types";
 import { Field, fieldProps } from "./field";
@@ -19,13 +18,7 @@ import { MoneyInput } from "./number-inputs";
  * Descuento opcional: porcentaje o monto fijo, con fechas opcionales.
  * Solo aparece si lo agregan (botón "Agregar descuento").
  */
-export function DiscountCard({
-  values,
-  update,
-  errors,
-  disabled,
-  cashDiscountPercent = 0,
-}: FormCardProps & { cashDiscountPercent?: number }) {
+export function DiscountCard({ values, update, errors, disabled }: FormCardProps) {
   const ids = useId();
   const discount = values.discount;
 
@@ -55,15 +48,13 @@ export function DiscountCard({
 
   const change = (patch: Partial<FormDiscount>) => update({ discount: { ...discount, ...patch } });
 
-  // Vista previa: la oferta se aplica sobre el precio en 1 pago (src/lib/pricing.ts)
+  // Vista previa sobre el precio en 1 pago (el cargado)
   const price = parseMoney(values.basePrice);
   const amount = parseMoney(discount.value);
   const canPreview = price !== null && price > 0 && amount !== null && amount > 0 && !Number.isNaN(price) && !Number.isNaN(amount);
-  const offer = canPreview
-    ? Math.round(Math.max(0, discount.type === "percent" ? price * (1 - amount / 100) : price - amount) * 100) / 100
+  const final = canPreview
+    ? Math.max(0, discount.type === "percent" ? price * (1 - amount / 100) : price - amount)
     : null;
-  const before = price !== null && offer !== null ? cashPrice(price, price, cashDiscountPercent) : null;
-  const final = price !== null && offer !== null ? cashPrice(price, offer, cashDiscountPercent) : null;
 
   const status = discountStatus(discount);
 
@@ -166,16 +157,15 @@ export function DiscountCard({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {final !== null && before !== null ? (
+        {final !== null && price !== null ? (
           <p className="text-sm">
-            {cashDiscountPercent > 0 && <span className="mr-1.5 text-muted-foreground">En 1 pago:</span>}
-            <span className="text-muted-foreground line-through tabular-nums">{formatARS(before)}</span>
+            <span className="text-muted-foreground line-through tabular-nums">{formatARS(price)}</span>
             <span className="mx-1.5 text-muted-foreground">→</span>
             <span className="font-semibold tabular-nums">{formatARS(final)}</span>
-            <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">(ahorran {formatARS(before - final)})</span>
+            <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">(ahorran {formatARS(price - final)})</span>
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">Cargá el precio de lista y el valor para ver el precio final.</p>
+          <p className="text-xs text-muted-foreground">Cargá el precio en 1 pago y el valor para ver el precio final.</p>
         )}
         <Button
           type="button"

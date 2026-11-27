@@ -38,7 +38,7 @@ export function ProductPurchase({
   options: ProductOption[];
   variants: ProductVariant[];
   photos: ProductPhoto[];
-  /** % de 1 pago y cuotas (pricingFrom(getStoreSettings())). */
+  /** Recargo de lista y cuotas (pricingFrom(getStoreSettings())). */
   pricing: PricingSettings;
   /**
    * Configuración "Mostrar precio sin impuestos nacionales": el % (ej.: 21)

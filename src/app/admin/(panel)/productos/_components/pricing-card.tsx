@@ -3,7 +3,7 @@
 import { Banknote, Lock } from "lucide-react";
 import { SectionCard } from "@/components/admin/section-card";
 import { formatARS, formatMoneyInput, parseMoney } from "@/lib/format";
-import { cashPrice } from "@/lib/pricing";
+import { listPrice } from "@/lib/pricing";
 import type { FormCardProps } from "../types";
 import { Field, fieldProps } from "./field";
 import { MoneyInput } from "./number-inputs";
@@ -12,24 +12,24 @@ import { MoneyInput } from "./number-inputs";
 const formatPercent = (n: number) => formatMoneyInput(n);
 
 /**
- * Precio de lista y precio de costo (+ cuánto se gana).
- * El precio cargado es el DE LISTA (el de cuotas); debajo se ve en vivo cuánto
- * queda en 1 pago con el "% descuento en 1 pago" de Configuración.
+ * Precio en 1 pago (contado) y precio de costo (+ cuánto se gana).
+ * El precio cargado es el EN 1 PAGO (contado); debajo se ve en vivo el precio
+ * de lista (cuotas) con el "% recargo para precio de lista" de Configuración.
  */
 export function PricingCard({
   values,
   update,
   errors,
   disabled,
-  cashDiscountPercent = 0,
-}: FormCardProps & { cashDiscountPercent?: number }) {
+  listSurchargePercent = 0,
+}: FormCardProps & { listSurchargePercent?: number }) {
   const price = parseMoney(values.basePrice);
   const validPrice = price !== null && !Number.isNaN(price) && price > 0;
-  const cashHelp =
-    cashDiscountPercent > 0
+  const listHelp =
+    listSurchargePercent > 0
       ? validPrice
-        ? `En 1 pago: ${formatARS(cashPrice(price, price, cashDiscountPercent))} (${formatPercent(cashDiscountPercent)} % menos).`
-        : `En 1 pago se cobra ${formatPercent(cashDiscountPercent)} % menos (Configuración → Precios).`
+        ? `Precio de lista (cuotas): ${formatARS(listPrice(price, listSurchargePercent))} (${formatPercent(listSurchargePercent)} % más).`
+        : `El precio de lista (cuotas) es ${formatPercent(listSurchargePercent)} % más (Configuración → Precios).`
       : null;
   const variantsHelp = values.hasVariants ? "Cada combinación puede tener su propio precio." : null;
   const cost = parseMoney(values.costPrice);
@@ -42,18 +42,18 @@ export function PricingCard({
     <SectionCard
       icon={Banknote}
       title="Precio"
-      description="Precio de lista (el que se paga en cuotas) y costo de cada unidad."
+      description="Precio en 1 pago (el que se cobra hoy) y costo de cada unidad."
       contentClassName="flex flex-col gap-4"
     >
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
           id="product-price"
-          label="Precio de lista"
+          label="Precio en 1 pago (contado)"
           error={errors.basePrice}
           help={
-            cashHelp || variantsHelp ? (
+            listHelp || variantsHelp ? (
               <span className="flex flex-col gap-0.5">
-                {cashHelp && <span className="tabular-nums">{cashHelp}</span>}
+                {listHelp && <span className="tabular-nums">{listHelp}</span>}
                 {variantsHelp && <span>{variantsHelp}</span>}
               </span>
             ) : undefined

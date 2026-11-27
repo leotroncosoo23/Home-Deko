@@ -291,9 +291,9 @@ export const GUIAS: Record<GuiaId, Guia> = {
           "Si una variante cuesta distinto, escribí su precio en la tabla. Si lo dejás vacío, usa el precio del producto.",
       },
       {
-        titulo: "Precio de lista y precio en 1 pago",
+        titulo: "Precio en 1 pago y precio de lista",
         texto:
-          "El precio que cargás es el precio de lista: el que se paga en cuotas. Si en Configuración → Precios pusieron un \"% de descuento en 1 pago\", la tienda muestra grande el precio en 1 pago (más barato) y abajo, chico, el de lista. Debajo del campo \"Precio de lista\" ves en vivo cuánto queda en 1 pago. Los descuentos del producto (la tarjeta \"Descuento\") se aplican solo sobre el precio en 1 pago; el de lista no cambia nunca.",
+          "El precio que cargás es el precio en 1 pago (contado): el que se cobra hoy en la tienda. Si en Configuración → Precios pusieron un \"% recargo para precio de lista\", la tienda muestra grande el precio en 1 pago y abajo, chico, el de lista (el de cuotas). Debajo del campo \"Precio en 1 pago (contado)\" ves en vivo cuánto queda el precio de lista. Los descuentos del producto (la tarjeta \"Descuento\") se aplican sobre el precio en 1 pago; el de lista no cambia con la oferta.",
       },
       {
         titulo: "Publicar, ocultar y archivar",
@@ -473,7 +473,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
     pasosRapidos: [
       "Completá los \"Datos del comercio\": nombre o razón social, CUIT y email de contacto.",
       "Cargá WhatsApp, Instagram y TikTok, el costo del envío, el plazo de despacho, la dirección y horarios del local y el plazo para cambios.",
-      "En \"Precios\", poné el % de descuento en 1 pago y, si querés, prendé las cuotas sin interés.",
+      "En \"Precios\", poné el % de recargo para el precio de lista (cuotas) y, si querés, prendé las cuotas sin interés.",
       "Tocá \"Guardar cambios\": se ven al instante en la tienda, el pie, las páginas de ayuda y las legales.",
       "El día del lanzamiento, prendé \"Tienda lanzada\" y confirmá (antes tienen que estar los datos del comercio y el WhatsApp).",
     ],
@@ -496,7 +496,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Precios: 1 pago y cuotas",
         texto:
-          "El precio cargado en cada producto es el precio de lista. En \"% de descuento en 1 pago\" ponés cuánto más barato sale pagando en 1 pago con tarjeta (por ejemplo 15: lista $ 10.000 → 1 pago $ 8.500). Con 0, los dos precios son iguales y la tienda se ve como siempre. Las compras de la tienda online se cobran al precio en 1 pago. \"Cuotas sin interés\" muestra \"hasta 6 cuotas sin interés de $ …\" (calculado sobre el precio de lista) en los productos, el carrito y la barra del inicio; apagado, no aparece nada de cuotas. Elegí la cantidad máxima: 3, 6, 9 o 12.",
+          "El precio cargado en cada producto es el precio en 1 pago (contado). En \"% recargo para precio de lista (cuotas)\" ponés cuánto más caro es el precio de lista (por ejemplo 24: 1 pago $ 38.000 → lista $ 47.120). Con 0, los dos precios son iguales, no se muestra \"Precio de lista\" y la tienda se ve como siempre. Las compras de la tienda online se cobran al precio en 1 pago. \"Cuotas sin interés\" muestra \"hasta 6 cuotas sin interés de $ …\" (calculado sobre el precio de lista) en los productos, el carrito y la barra del inicio; apagado, no aparece nada de cuotas. Elegí la cantidad máxima: 3, 6, 9 o 12.",
       },
       {
         titulo: "Plazo de despacho",
@@ -545,7 +545,7 @@ export const PREGUNTAS_FRECUENTES: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: "¿Qué precio cargo en cada producto: el de contado o el de lista?",
     respuesta:
-      "El de lista (el de cuotas). El precio en 1 pago lo calcula la tienda sola con el \"% de descuento en 1 pago\" de Configuración → Precios. Si cambian ese %, cambian todos los precios en 1 pago a la vez, sin tocar ningún producto.",
+      "El de contado (el precio en 1 pago). El precio de lista (cuotas) lo calcula la tienda sola con el \"% recargo para precio de lista\" de Configuración → Precios. Si cambian ese %, cambian todos los precios de lista a la vez, sin tocar ningún producto.",
   },
   {
     pregunta: "¿Cómo se cuentan las visitas? ¿Se guardan datos de los clientes?",

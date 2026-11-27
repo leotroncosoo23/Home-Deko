@@ -24,7 +24,7 @@ export const STORE_SETTINGS_TAG = "store-settings";
 
 /** Columnas que se pueden leer desde la tienda (ver el grant en la migración). */
 export const STORE_SETTINGS_COLUMNS =
-  "id, is_launched, whatsapp, instagram, tiktok, shipping_cost, store_address, store_hours, exchange_days, business_name, cuit, contact_email, dispatch_time, show_price_without_taxes, national_tax_percent, cash_discount_percent, installments_enabled, installments_max";
+  "id, is_launched, whatsapp, instagram, tiktok, shipping_cost, store_address, store_hours, exchange_days, business_name, cuit, contact_email, dispatch_time, show_price_without_taxes, national_tax_percent, list_surcharge_percent, installments_enabled, installments_max";
 
 export type StoreSettings = {
   id: string;
@@ -50,8 +50,8 @@ export type StoreSettings = {
   showPriceWithoutTaxes: boolean;
   /** % de impuestos nacionales para ese cálculo (21 por defecto). */
   nationalTaxPercent: number;
-  /** % de descuento por pagar en 1 pago (0 = contado igual a lista). Ver src/lib/pricing.ts. */
-  cashDiscountPercent: number;
+  /** % de recargo para el precio de lista (cuotas). 0 = lista igual a contado. Ver src/lib/pricing.ts. */
+  listSurchargePercent: number;
   /** Mostrar "hasta N cuotas sin interés" (apagado por defecto). */
   installmentsEnabled: boolean;
   installmentsMax: InstallmentCount;
@@ -73,7 +73,7 @@ type Row = {
   dispatch_time: string;
   show_price_without_taxes: boolean;
   national_tax_percent: number;
-  cash_discount_percent: number;
+  list_surcharge_percent: number;
   installments_enabled: boolean;
   installments_max: number;
 };
@@ -96,7 +96,7 @@ export function mapStoreSettings(row: Row): StoreSettings {
     dispatchTime: row.dispatch_time,
     showPriceWithoutTaxes: row.show_price_without_taxes,
     nationalTaxPercent: Number(row.national_tax_percent),
-    cashDiscountPercent: Number(row.cash_discount_percent),
+    listSurchargePercent: Number(row.list_surcharge_percent),
     installmentsEnabled: row.installments_enabled,
     installmentsMax: toInstallmentCount(row.installments_max),
   };
@@ -126,15 +126,15 @@ export function toInstallmentCount(n: number): InstallmentCount {
 /**
  * Lo que necesita getPrices() (src/lib/pricing.ts).
  *
- * Solo en desarrollo: PRICING_PREVIEW="15,6" en .env.local pisa el % y las
+ * Solo en desarrollo: PRICING_PREVIEW="24,6" en .env.local pisa el recargo y las
  * cuotas para ver la tienda sin tocar la configuración real. En producción se
- * ignora siempre. OJO: el cobro (create_order) usa siempre la configuración real.
+ * ignora siempre. El cobro (create_order) no depende del recargo: es el precio cargado.
  */
 export function pricingFrom(s: StoreSettings): PricingSettings {
   const preview = pricingPreview();
   if (preview) return preview;
   return {
-    cashDiscountPercent: s.cashDiscountPercent,
+    listSurchargePercent: s.listSurchargePercent,
     installmentsEnabled: s.installmentsEnabled,
     installmentsMax: s.installmentsMax,
   };

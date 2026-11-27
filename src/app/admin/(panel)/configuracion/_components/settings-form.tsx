@@ -11,10 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCuit, formatMoneyInput, formatPrice, parseMoney } from "@/lib/format";
-import { cashPrice, INSTALLMENT_OPTIONS } from "@/lib/pricing";
+import { INSTALLMENT_OPTIONS, listPrice } from "@/lib/pricing";
 import { useUnsavedWarning } from "../../productos/_components/use-unsaved-warning";
 import { saveStoreSettings } from "../actions";
-import { SETTINGS_FIELDS, validateSettings, type SettingsField, type SettingsInput } from "../schema";
+import {
+  LIST_SURCHARGE_MAX,
+  SETTINGS_FIELDS,
+  validateSettings,
+  type SettingsField,
+  type SettingsInput,
+} from "../schema";
 import type { AdminSettings } from "../types";
 
 /** Datos guardados → texto de cada campo. */
@@ -33,7 +39,7 @@ function toInput(s: AdminSettings): SettingsInput {
     contactEmail: s.contactEmail,
     showPriceWithoutTaxes: String(s.showPriceWithoutTaxes),
     nationalTaxPercent: formatMoneyInput(s.nationalTaxPercent),
-    cashDiscountPercent: formatMoneyInput(s.cashDiscountPercent),
+    listSurchargePercent: formatMoneyInput(s.listSurchargePercent),
     installmentsEnabled: String(s.installmentsEnabled),
     installmentsMax: String(s.installmentsMax),
   };
@@ -236,20 +242,20 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
       <SectionCard
         icon={Receipt}
         title="Precios"
-        description="Precio en 1 pago, cuotas e impuestos. El precio que cargás en cada producto es el precio de lista."
+        description="Precio de lista, cuotas e impuestos. El precio que cargás en cada producto es el precio en 1 pago (contado)."
         contentClassName="grid gap-5"
       >
-        {/* Descuento en 1 pago */}
+        {/* Recargo para el precio de lista */}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${ids}-cashDiscountPercent`}>% de descuento en 1 pago</Label>
+          <Label htmlFor={`${ids}-listSurchargePercent`}>% recargo para precio de lista (cuotas)</Label>
           <div
             className={cn(
               "flex h-8 items-center overflow-hidden rounded-lg border border-input text-sm focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20 sm:max-w-40",
-              errors.cashDiscountPercent && "border-destructive ring-3 ring-destructive/20",
+              errors.listSurchargePercent && "border-destructive ring-3 ring-destructive/20",
             )}
           >
             <input
-              {...fieldProps("cashDiscountPercent")}
+              {...fieldProps("listSurchargePercent")}
               inputMode="decimal"
               placeholder="0"
               autoComplete="off"
@@ -257,8 +263,8 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
             />
             <span className="flex h-full items-center border-l bg-muted px-2.5 text-muted-foreground">%</span>
           </div>
-          <FieldHelp id={`${ids}-cashDiscountPercent-help`} error={errors.cashDiscountPercent}>
-            {cashExample(values.cashDiscountPercent)}
+          <FieldHelp id={`${ids}-listSurchargePercent-help`} error={errors.listSurchargePercent}>
+            {listExample(values.listSurchargePercent)}
           </FieldHelp>
         </div>
 
@@ -367,13 +373,13 @@ export function SettingsForm({ settings }: { settings: AdminSettings }) {
   );
 }
 
-/** Ayuda del % en 1 pago con un ejemplo en vivo ("Ej.: lista $ 10.000 → en 1 pago $ 8.500"). */
-function cashExample(text: string): string {
+/** Ayuda del recargo con un ejemplo en vivo ("Ej.: en 1 pago $ 38.000 → precio de lista $ 47.120"). */
+function listExample(text: string): string {
   const pct = parseMoney(text.replace("%", ""));
-  if (pct === null || Number.isNaN(pct) || pct <= 0 || pct >= 100) {
-    return "Con 0, el precio en 1 pago es igual al de lista. Las ofertas de cada producto se aplican sobre el precio en 1 pago.";
+  if (pct === null || Number.isNaN(pct) || pct <= 0 || pct > LIST_SURCHARGE_MAX) {
+    return "Con 0, el precio de lista es igual al precio en 1 pago y no se muestra. Las ofertas se aplican sobre el precio en 1 pago.";
   }
-  return `Ej.: precio de lista $ 10.000 → en 1 pago ${formatPrice(cashPrice(10000, 10000, pct))}. Las ofertas de cada producto se aplican sobre el precio en 1 pago.`;
+  return `Ej.: en 1 pago $ 38.000 → precio de lista (cuotas) ${formatPrice(listPrice(38000, pct))}. Las ofertas se aplican sobre el precio en 1 pago; el de lista no cambia.`;
 }
 
 /** Texto de ayuda debajo de cada campo; si hay un error, muestra el error en su lugar. */

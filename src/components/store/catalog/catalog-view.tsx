@@ -14,7 +14,6 @@ import type { StoreCategory } from "@/lib/store-data";
 import { STORE_CONTAINER } from "@/lib/store-layout";
 import { cn } from "@/lib/utils";
 import { categoryHref } from "@/lib/store-nav";
-import { finalBoundForCash } from "@/lib/pricing";
 import { getStoreSettings, pricingFrom } from "@/lib/store-settings";
 import { getCatalogForViewer } from "@/lib/store-viewer";
 import { ProductGridSkeleton } from "../product-card";
@@ -72,15 +71,13 @@ export async function CatalogView({
     categoria: searchCategory?.slug ?? null,
   };
 
-  // El filtro de precio se escribe en precio CONTADO; la base filtra por
-  // precio con oferta (final_min_price): se pasan los límites a esa escala.
   const pricing = pricingFrom(await getStoreSettings());
   const { products, total } = await getCatalogForViewer({
     categoryId: scope.kind === "category" ? scope.category.id : (searchCategory?.id ?? null),
     search: normalizeSearch(p.q),
     orden: p.orden,
-    min: finalBoundForCash(p.min, pricing.cashDiscountPercent, "min"),
-    max: finalBoundForCash(p.max, pricing.cashDiscountPercent, "max"),
+    min: p.min,
+    max: p.max,
     onSale: p.ofertas,
     limit: PAGE_SIZE * p.pagina,
   });

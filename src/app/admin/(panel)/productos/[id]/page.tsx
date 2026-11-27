@@ -69,7 +69,7 @@ async function EditProduct({ id }: { id: string }) {
         key={product.updatedAt}
         initialValues={product.values}
         categories={categories}
-        cashDiscountPercent={settings.cashDiscountPercent}
+        listSurchargePercent={settings.listSurchargePercent}
         aside={<CodesCard codes={product.codes} productId={id} productName={product.name} />}
         liveStock={Object.fromEntries(product.codes.map((c) => [c.id, c.stock]))}
       />
