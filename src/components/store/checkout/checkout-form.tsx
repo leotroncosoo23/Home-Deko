@@ -20,7 +20,9 @@ import {
 } from "@/lib/checkout-schema";
 import type { AppliedCoupon } from "@/lib/coupons";
 import { formatPrice } from "@/lib/format";
+import { cartTotals, type PricingSettings } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { linePrices, PriceBlock, totalPrices } from "../price-block";
 import { CouponField } from "./coupon-field";
 import { WhatsAppIcon } from "../whatsapp-icon";
 import { ErrorText, Field } from "../form-field";
@@ -132,12 +134,15 @@ const GENERIC_ERROR = "No pudimos iniciar el pago. Probá de nuevo en unos minut
 export function CheckoutForm({
   lines,
   shippingCost,
+  pricing,
   store,
   account,
   onCartChanged,
 }: {
   lines: CartLine[];
   shippingCost: number;
+  /** Recargo de lista y cuotas (getCartLines). */
+  pricing: PricingSettings;
   store: StoreInfo;
   /** null = compra como invitado. */
   account: CheckoutAccount | null;
@@ -269,6 +274,16 @@ export function CheckoutForm({
   const freeShipping = coupon?.kind === "free_shipping" && values.delivery === "shipping";
   const discount = coupon ? (coupon.kind === "free_shipping" ? (freeShipping ? shipping : 0) : coupon.discount) : 0;
   const total = Math.max(subtotal - discount + shipping, 0);
+  // "o $ … en N cuotas": lista de los productos + envío (src/lib/pricing.ts).
+  // Con un cupón de productos no se muestra: el cupón es para el pago en 1 pago.
+  const installments =
+    coupon && coupon.kind !== "free_shipping"
+      ? null
+      : cartTotals(
+          lines.map((l) => ({ price: l.unitPriceBefore ?? l.unitPrice, finalPrice: l.unitPrice, qty: l.qty })),
+          pricing,
+          freeShipping ? 0 : shipping,
+        );
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
@@ -565,6 +580,9 @@ export function CheckoutForm({
               <dt className="text-base font-semibold">Total</dt>
               <dd className="text-xl font-semibold tabular-nums">{formatPrice(total)}</dd>
             </div>
+            {installments && (
+              <PriceBlock variant="total" prices={totalPrices(installments)} pricing={pricing} className="-mt-1 text-right" />
+            )}
           </dl>
 
           <CouponField
@@ -746,15 +764,7 @@ function SummaryLine({ line }: { line: CartLine }) {
         <span className="line-clamp-2 font-medium">{line.name}</span>
         {line.variantLabel && <span className="text-muted-foreground">{line.variantLabel}</span>}
       </span>
-      <span className="flex flex-col items-end text-sm tabular-nums">
-        <span className={cn("font-semibold", line.unitPriceBefore && "text-brand")}>{formatPrice(line.unitPrice * line.qty)}</span>
-        {line.unitPriceBefore && (
-          <span className="text-xs text-muted-foreground line-through">
-            <span className="sr-only">Antes: </span>
-            {formatPrice(line.unitPriceBefore * line.qty)}
-          </span>
-        )}
-      </span>
+      <PriceBlock variant="cart" prices={linePrices(line)} qty={line.qty} className="text-sm" />
     </li>
   );
 }

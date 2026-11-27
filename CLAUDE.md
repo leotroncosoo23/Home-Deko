@@ -343,7 +343,7 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
     sin foto = fondo cálido con el corazón. Celular carrusel, PC grilla de 2/3.
   - Google: `<h1>` "Home Deko – Bazar, blanquería y deco en Trevelin" solo para lectores (`sr-only`) y
     `HowToBuyCompact` (store-highlights.tsx) con "Home Deko" escrito en el texto visible. No quitarlos.
-  - Barra de beneficios: con "Cuotas sin interés" prendido (Configuración → Precios) muestra "Hasta N cuotas sin
+  - Barra de beneficios: con "Cuotas sin interés" prendido (Configuración → Precios) muestra "N cuotas sin
     interés" en lugar de "Pago seguro con tarjeta"; apagado, queda como siempre.
 - Menú hamburguesa con categorías e información (envíos, cómo comprar, contacto…).
 
@@ -386,12 +386,15 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - **PENDIENTE (Getnet)**: el checkout tendrá que elegir **1 pago (precio contado) o cuotas (precio de lista)** antes
     de crear el pago, y `create_order` calcular ese monto en el servidor según la elección (lista = contado sin oferta
     + recargo, misma cuenta que `listPrice()`).
-  - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("hasta N cuotas sin
-    interés de $ lista/N"); todavía no cambian el cobro.
-  - Tienda: tarjeta y página con el contado grande + "1 pago", "Precio de lista" chico (solo si el recargo > 0) y las
-    cuotas (si están prendidas); textos en `src/components/store/price-lines.tsx`. Carrito: "Total en 1 pago" y, con
-    cuotas, "Total en cuotas". "Precio sin impuestos nacionales" y JSON-LD usan el contado. El filtro de precio del
-    catálogo es en contado, sin conversión.
+  - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("$ lista en N cuotas
+    sin interés de $ lista/N", sin "hasta": el máximo es global); todavía no cambian el cobro.
+  - **Bloque de precio único**: `<PriceBlock variant="card" | "product" | "cart" | "total">` en
+    `src/components/store/price-block.tsx` (con `getPrices()`), en tarjeta, página de producto, carrito y checkout.
+    Línea 1: contado grande (rojo con oferta) + contado sin oferta tachado al lado (+ "-X% OFF" en la página). Línea 2,
+    chica y gris: con cuotas "$ {lista} en {N} cuotas sin interés de $ {cuota}"; sin cuotas y recargo > 0 "Precio de
+    lista $ {lista}"; si no, nada. Carrito y checkout: "Total" con el contado y, con cuotas, debajo "o $ {total lista}
+    en {N} cuotas…" (en el checkout incluye el envío sin recargo; se oculta con un cupón de productos). "Precio sin
+    impuestos nacionales" y JSON-LD usan el contado. El filtro de precio del catálogo es en contado, sin conversión.
   - Ver la tienda con otro recargo **en local sin tocar producción**: `PRICING_PREVIEW=24,6` en `.env.local` (24 % y 6
     cuotas; `pricingFrom()` en `store-settings.ts`, se ignora en producción). Solo cambia lo que se MUESTRA.
 

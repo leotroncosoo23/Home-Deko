@@ -96,13 +96,17 @@ export function getPrices(p: { price: number; finalPrice: number }, s: PricingSe
   return { lista, contadoSinOferta, contado, oferta, ofertaPercent, cuotas, valorCuota };
 }
 
-/** Totales del carrito: en 1 pago (contado) y en cuotas (lista). */
+/**
+ * Totales del carrito: en 1 pago (contado) y en cuotas (lista).
+ * `shipping` (checkout) se suma igual a los dos: el envío no lleva recargo.
+ */
 export function cartTotals(
   lines: { price: number; finalPrice: number; qty: number }[],
   s: PricingSettings,
+  shipping = 0,
 ): { contado: number; lista: number; cuotas: number | null; valorCuota: number | null } {
-  let contadoC = ZERO;
-  let listaC = ZERO;
+  let contadoC = toCents(shipping);
+  let listaC = toCents(shipping);
   for (const l of lines) {
     const q = BigInt(l.qty);
     contadoC += toCents(l.finalPrice) * q;

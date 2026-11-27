@@ -496,7 +496,7 @@ export const GUIAS: Record<GuiaId, Guia> = {
       {
         titulo: "Precios: 1 pago y cuotas",
         texto:
-          "El precio cargado en cada producto es el precio en 1 pago (contado). En \"% recargo para precio de lista (cuotas)\" ponés cuánto más caro es el precio de lista (por ejemplo 24: 1 pago $ 38.000 → lista $ 47.120). Con 0, los dos precios son iguales, no se muestra \"Precio de lista\" y la tienda se ve como siempre. Las compras de la tienda online se cobran al precio en 1 pago. \"Cuotas sin interés\" muestra \"hasta 6 cuotas sin interés de $ …\" (calculado sobre el precio de lista) en los productos, el carrito y la barra del inicio; apagado, no aparece nada de cuotas. Elegí la cantidad máxima: 3, 6, 9 o 12.",
+          "El precio cargado en cada producto es el precio en 1 pago (contado). En \"% recargo para precio de lista (cuotas)\" ponés cuánto más caro es el precio de lista (por ejemplo 24: 1 pago $ 38.000 → lista $ 47.120). Con 0, los dos precios son iguales, no se muestra \"Precio de lista\" y la tienda se ve como siempre. Las compras de la tienda online se cobran al precio en 1 pago. \"Cuotas sin interés\" muestra \"$ … en 6 cuotas sin interés de $ …\" (calculado sobre el precio de lista) en los productos, el carrito y la barra del inicio; apagado, no aparece nada de cuotas. Elegí la cantidad máxima: 3, 6, 9 o 12.",
       },
       {
         titulo: "Plazo de despacho",

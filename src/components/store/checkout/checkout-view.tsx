@@ -80,6 +80,7 @@ export function CheckoutView({ store, account }: { store: StoreInfo; account: Ch
       <CheckoutForm
         lines={lines}
         shippingCost={data.shippingCost}
+        pricing={data.pricing}
         store={store}
         account={account}
         onCartChanged={() => setReload((n) => n + 1)}
