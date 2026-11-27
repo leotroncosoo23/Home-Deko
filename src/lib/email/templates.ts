@@ -33,6 +33,8 @@ export type EmailOrder = {
   /** Código del cupón (si se usó uno). */
   couponCode: string | null;
   total: number;
+  /** Forma de pago: "1 pago" o "6 cuotas sin interés de $ 11.986,67". */
+  paymentPlan: string;
   stockIssue: boolean;
   reviewReason: string | null;
   tracking: Tracking | null;
@@ -119,6 +121,7 @@ ${total("Subtotal", formatPrice(o.subtotal))}
 ${o.discount > 0 ? total(discountLabel(o), `− ${formatPrice(o.discount)}`) : ""}
 ${total(o.pickup ? "Retiro en el local" : "Envío a domicilio", o.pickup ? "Gratis" : formatPrice(o.shippingCost))}
 ${total("Total", formatPrice(o.total), true)}
+${total("Forma de pago", o.paymentPlan)}
 </table>`;
 }
 
@@ -181,6 +184,7 @@ function textItems(o: EmailOrder): string {
     ...o.items.map((i) => `- ${i.name}${i.variant ? ` (${i.variant})` : ""} × ${i.quantity}: ${formatPrice(i.lineTotal)}`),
     ...(o.discount > 0 ? [`${discountLabel(o)}: − ${formatPrice(o.discount)}`] : []),
     `Total: ${formatPrice(o.total)}`,
+    `Forma de pago: ${o.paymentPlan}`,
   ].join("\n");
 }
 

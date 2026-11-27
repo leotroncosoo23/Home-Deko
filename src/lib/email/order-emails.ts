@@ -1,6 +1,7 @@
 import "server-only";
 import { trackingFor } from "@/lib/carriers";
-import { titleCase } from "@/lib/format";
+import { formatPrice, titleCase } from "@/lib/format";
+import { installmentValue } from "@/lib/pricing";
 import { customerOrderUrl } from "@/lib/order-token";
 import { siteUrl } from "@/lib/site-url";
 import { getStoreSettings, ownersEmail, whatsappLink } from "@/lib/store-settings";
@@ -39,7 +40,7 @@ export async function sendOrderEmails(orderId: string, event: OrderEmailEvent): 
       supabase
         .from("orders")
         .select(
-          "id, order_number, customer_name, customer_email, customer_phone, delivery_method, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, stock_issue, review_reason, carrier, carrier_name, tracking_code, tracking_url",
+          "id, order_number, customer_name, customer_email, customer_phone, delivery_method, ship_address, ship_apartment, ship_city, ship_province, ship_postal_code, ship_notes, pickup_address, pickup_hours, subtotal, shipping_cost, discount_total, coupon_code, total, payment_plan, installments, stock_issue, review_reason, carrier, carrier_name, tracking_code, tracking_url",
         )
         .eq("id", orderId)
         .maybeSingle(),
@@ -82,6 +83,10 @@ export async function sendOrderEmails(orderId: string, event: OrderEmailEvent): 
       discount: Number(row.discount_total),
       couponCode: row.coupon_code,
       total: Number(row.total),
+      paymentPlan:
+        row.payment_plan === "installments" && row.installments
+          ? `${row.installments} cuotas sin interés de ${formatPrice(installmentValue(Number(row.total), row.installments))}`
+          : "1 pago",
       stockIssue: row.stock_issue,
       reviewReason: row.review_reason,
       tracking: trackingFor(row),

@@ -25,6 +25,7 @@ import { formatARS } from "@/lib/format";
 import { customerMessage, whatsappToCustomer } from "@/lib/order-messages";
 import { customerOrderUrl } from "@/lib/order-token";
 import { paymentCopy } from "@/lib/payments/config";
+import { paymentPlanLabel } from "@/lib/pricing";
 import { publicImageUrl } from "@/lib/storage";
 import { getOrderDetail, type OrderDetail, type OrderEvent } from "../data";
 import {
@@ -284,6 +285,10 @@ async function OrderDetailContent({ id }: { id: string }) {
               <span className="text-muted-foreground">Medio</span>
               <span>{copy.name}</span>
             </p>
+            <p className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Forma de pago</span>
+              <span className="font-medium">{paymentPlanLabel(order.payment_plan, order.installments)}</span>
+            </p>
             {order.paid_at && (
               <p className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Fecha</span>
@@ -437,7 +442,7 @@ function ItemsCard({ order }: { order: OrderDetail }) {
           </dd>
         </div>
         <div className="flex justify-between gap-4 border-t pt-2 font-semibold">
-          <dt>Total</dt>
+          <dt>Total en {paymentPlanLabel(order.payment_plan, order.installments)}</dt>
           <dd className="tabular-nums">{formatARS(Number(order.total))}</dd>
         </div>
       </dl>

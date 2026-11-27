@@ -4,7 +4,12 @@ import {
   cartTotals,
   DEFAULT_PRICING,
   getPrices,
+  installmentChoices,
+  installmentValue,
+  isAllowedPlan,
   listPrice,
+  paymentPlanLabel,
+  planTotal,
   parsePricingPreview,
   type PricingSettings,
 } from "./pricing";
@@ -126,6 +131,54 @@ describe("monto de punta a punta (carrito = create_order = lo que se manda a pag
 
   it("con centavos el total no se redondea", () => {
     expect(cartTotals([{ price: 12345.67, finalPrice: 11111.1, qty: 1 }], S24).contado).toBe(11111.1);
+  });
+});
+
+describe("forma de pago (checkout-cuotas)", () => {
+  // MISMOS números que supabase/tests/checkout_cuotas.sql
+  const lines = [
+    { price: 38000, finalPrice: 38000, qty: 1 },
+    { price: 10000, finalPrice: 8000, qty: 2 },
+  ];
+  const S6: PricingSettings = { listSurchargePercent: 24, installmentsEnabled: true, installmentsMax: 6 };
+
+  it("cuotas que se pueden elegir: 3/6/9/12 hasta el máximo", () => {
+    expect(installmentChoices(S6)).toEqual([3, 6]);
+    expect(installmentChoices({ ...S6, installmentsMax: 12 })).toEqual([3, 6, 9, 12]);
+    expect(installmentChoices({ ...S6, installmentsEnabled: false })).toEqual([]);
+  });
+
+  it("1 pago cobra el contado y cuotas el precio de lista", () => {
+    const t = cartTotals(lines, S6);
+    expect(planTotal(t, "single")).toBe(54000);
+    expect(planTotal(t, "installments")).toBe(71920);
+  });
+
+  it("con envío, se suma igual a los dos planes", () => {
+    const t = cartTotals(lines, S6, 20000);
+    expect(planTotal(t, "single")).toBe(74000);
+    expect(planTotal(t, "installments")).toBe(91920);
+  });
+
+  it("valor de la cuota: total / N a centavos", () => {
+    expect(installmentValue(71920, 6)).toBe(11986.67);
+    expect(installmentValue(71920, 3)).toBe(23973.33);
+    expect(installmentValue(47120, 12)).toBe(3926.67);
+  });
+
+  it("rótulo de la forma de pago", () => {
+    expect(paymentPlanLabel("single", null)).toBe("1 pago");
+    expect(paymentPlanLabel("installments", 6)).toBe("6 cuotas");
+    expect(paymentPlanLabel(undefined, undefined)).toBe("1 pago");
+  });
+
+  it("valida el plan como create_order", () => {
+    expect(isAllowedPlan("single", null, S6)).toBe(true);
+    expect(isAllowedPlan("installments", 6, S6)).toBe(true);
+    expect(isAllowedPlan("installments", 9, S6)).toBe(false); // más que el máximo
+    expect(isAllowedPlan("installments", 5, S6)).toBe(false); // no está en 3/6/9/12
+    expect(isAllowedPlan("installments", null, S6)).toBe(false);
+    expect(isAllowedPlan("installments", 6, { ...S6, installmentsEnabled: false })).toBe(false); // apagadas
   });
 });
 

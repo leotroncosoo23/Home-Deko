@@ -121,6 +121,46 @@ export function cartTotals(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Forma de pago del checkout: 1 pago (contado) o N cuotas (lista)
+// ---------------------------------------------------------------------------
+
+export type PaymentPlan = "single" | "installments";
+
+/** Cantidades de cuotas que se pueden elegir (3/6/9/12 hasta el máximo); [] si están apagadas. */
+export function installmentChoices(s: PricingSettings): InstallmentCount[] {
+  if (!s.installmentsEnabled) return [];
+  return INSTALLMENT_OPTIONS.filter((n) => n <= s.installmentsMax);
+}
+
+/** ¿Se puede pagar así? Misma regla que create_order (la que vale es la de la base). */
+export function isAllowedPlan(plan: PaymentPlan, installments: number | null, s: PricingSettings): boolean {
+  if (plan === "single") return installments === null;
+  return installments !== null && installmentChoices(s).includes(installments as InstallmentCount);
+}
+
+/** "1 pago" o "6 cuotas" (panel de pedidos y mails). Un plan desconocido se toma como 1 pago. */
+export function paymentPlanLabel(plan: string | null | undefined, installments: number | null | undefined): string {
+  return plan === "installments" && installments ? `${installments} cuotas` : "1 pago";
+}
+
+/** Valor de cada cuota: total / N, a centavos (mitad hacia arriba). */
+export function installmentValue(total: number, installments: number): number {
+  return fromCents(divRound(toCents(total), BigInt(installments)));
+}
+
+/**
+ * Total que se cobra según la forma de pago, con el mismo carrito que
+ * cartTotals(): 1 pago → contado; cuotas → lista. El envío ya viene sumado.
+ * Igual que create_order (supabase/migrations/20261209000001_checkout_cuotas.sql).
+ */
+export function planTotal(
+  totals: { contado: number; lista: number },
+  plan: PaymentPlan,
+): number {
+  return plan === "installments" ? totals.lista : totals.contado;
+}
+
 /**
  * Lee "24,6" (PRICING_PREVIEW, solo en desarrollo) → 24 % de recargo y 6
  * cuotas. "24" = solo el recargo, cuotas apagadas. Inválido → null.

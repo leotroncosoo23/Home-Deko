@@ -20,9 +20,19 @@ import {
 } from "@/lib/checkout-schema";
 import type { AppliedCoupon } from "@/lib/coupons";
 import { formatPrice } from "@/lib/format";
-import { cartTotals, type PricingSettings } from "@/lib/pricing";
+import {
+  cartTotals,
+  getPrices,
+  installmentChoices,
+  installmentValue,
+  planTotal,
+  type InstallmentCount,
+  type PaymentPlan,
+  type PricingSettings,
+} from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { linePrices, PriceBlock, totalPrices } from "../price-block";
+import { linePrices, PriceBlock } from "../price-block";
+import { PaymentPlanPicker } from "./payment-plan";
 import { CouponField } from "./coupon-field";
 import { WhatsAppIcon } from "../whatsapp-icon";
 import { ErrorText, Field } from "../form-field";
@@ -117,6 +127,7 @@ const FIELD_ORDER: CheckoutFieldName[] = [
   "billingStreet",
   "billingNumber",
   "billingPostalCode",
+  "installments",
   "acceptTerms",
 ];
 
@@ -166,6 +177,10 @@ export function CheckoutForm({
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+  // Forma de pago: 1 pago (por defecto) o cuotas, con la cantidad más alta permitida.
+  const choices = installmentChoices(pricing);
+  const [plan, setPlan] = useState<PaymentPlan>("single");
+  const [installments, setInstallments] = useState<InstallmentCount>(choices.at(-1) ?? 6);
 
   async function runCouponCheck(code: string, delivery: SavedCustomer["delivery"]) {
     setCouponBusy(true);
@@ -183,6 +198,8 @@ export function CheckoutForm({
     if (result.ok) {
       setCoupon({ code: result.code, kind: result.kind, discount: result.discount });
       setCouponError(null);
+      // Los cupones son solo para 1 pago.
+      setPlan("single");
     } else {
       setCoupon(null);
       setCouponError(result.error);
@@ -217,6 +234,9 @@ export function CheckoutForm({
       acceptTerms,
       saveToAccount: Boolean(account) && saveToAccount,
       couponCode: coupon?.code ?? "",
+      // Solo la elección: el total lo calcula la base (create_order).
+      paymentPlan: onInstallments ? ("installments" as const) : ("single" as const),
+      installments: onInstallments ? installments : undefined,
       items: getCartSnapshot(),
     };
     // Primero en el navegador, para avisar rápido. El servidor valida otra vez.
@@ -249,6 +269,12 @@ export function CheckoutForm({
         setFormError(null);
         return;
       }
+      if (result.planChanged) {
+        // Las cuotas elegidas ya no se pueden usar: vuelve a 1 pago y avisa.
+        setPlan("single");
+        showErrors({ installments: result.error }, result.error);
+        return;
+      }
       if (result.couponError) {
         // El cupón dejó de valer: se quita, y el motivo queda junto al campo.
         setCoupon(null);
@@ -273,17 +299,15 @@ export function CheckoutForm({
   // Envío gratis: el descuento es el envío (solo con envío a domicilio).
   const freeShipping = coupon?.kind === "free_shipping" && values.delivery === "shipping";
   const discount = coupon ? (coupon.kind === "free_shipping" ? (freeShipping ? shipping : 0) : coupon.discount) : 0;
-  const total = Math.max(subtotal - discount + shipping, 0);
-  // "o $ … en N cuotas": lista de los productos + envío (src/lib/pricing.ts).
-  // Con un cupón de productos no se muestra: el cupón es para el pago en 1 pago.
-  const installments =
-    coupon && coupon.kind !== "free_shipping"
-      ? null
-      : cartTotals(
-          lines.map((l) => ({ price: l.unitPriceBefore ?? l.unitPrice, finalPrice: l.unitPrice, qty: l.qty })),
-          pricing,
-          freeShipping ? 0 : shipping,
-        );
+  const singleTotal = Math.max(subtotal - discount + shipping, 0);
+  // Cuotas (precio de lista + envío, sin cupón): misma cuenta que create_order (src/lib/pricing.ts).
+  const listTotals = cartTotals(
+    lines.map((l) => ({ price: l.unitPriceBefore ?? l.unitPrice, finalPrice: l.unitPrice, qty: l.qty })),
+    pricing,
+  );
+  const installmentsTotal = planTotal(listTotals, "installments") + shipping;
+  const onInstallments = choices.length > 0 && plan === "installments" && !coupon;
+  const total = onInstallments ? installmentsTotal : singleTotal;
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
@@ -533,14 +557,32 @@ export function CheckoutForm({
           <h2 className="font-display text-xl font-semibold">Tu pedido</h2>
           <ul className="flex flex-col divide-y">
             {lines.map((line) => (
-              <SummaryLine key={line.variantId} line={line} />
+              <SummaryLine key={line.variantId} line={line} pricing={onInstallments ? pricing : null} />
             ))}
           </ul>
+
+          {/* Forma de pago: solo con las cuotas prendidas en Configuración */}
+          {choices.length > 0 && (
+            <PaymentPlanPicker
+              choices={choices}
+              plan={onInstallments ? "installments" : "single"}
+              installments={installments}
+              onChange={(p, n) => {
+                setPlan(p);
+                setInstallments(n);
+                if (errors.installments) setErrors((e) => ({ ...e, installments: undefined }));
+              }}
+              singleTotal={singleTotal}
+              installmentsTotal={installmentsTotal}
+              couponCode={coupon?.code ?? null}
+              error={errors.installments}
+            />
+          )}
 
           <dl className="flex flex-col gap-2 border-t pt-4 text-[15px]">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
+              <dd className="tabular-nums">{formatPrice(onInstallments ? listTotals.lista : subtotal)}</dd>
             </div>
             {/* Descuento del cupón (productos). El de envío gratis se ve en la fila del envío. */}
             {coupon && coupon.kind !== "free_shipping" && discount > 0 && (
@@ -577,11 +619,16 @@ export function CheckoutForm({
               </p>
             )}
             <div className="flex items-baseline justify-between gap-4 border-t pt-3">
-              <dt className="text-base font-semibold">Total</dt>
+              <dt className="text-base font-semibold">
+                {onInstallments ? `Total en ${installments} cuotas` : "Total en 1 pago"}
+              </dt>
               <dd className="text-xl font-semibold tabular-nums">{formatPrice(total)}</dd>
             </div>
-            {installments && (
-              <PriceBlock variant="total" prices={totalPrices(installments)} pricing={pricing} className="-mt-1 text-right" />
+            {onInstallments && (
+              <p className="-mt-1 text-right text-xs text-muted-foreground tabular-nums">
+                {installments} cuotas sin interés de{" "}
+                <span className="whitespace-nowrap">{formatPrice(installmentValue(total, installments))}</span>
+              </p>
             )}
           </dl>
 
@@ -744,7 +791,18 @@ function DeliveryOption({
   );
 }
 
-function SummaryLine({ line }: { line: CartLine }) {
+/**
+ * Una línea del resumen. En 1 pago: contado (y el tachado si hay oferta).
+ * En cuotas (`pricing` no nulo): precio de lista, que no lleva oferta.
+ */
+function SummaryLine({ line, pricing }: { line: CartLine; pricing: PricingSettings | null }) {
+  const base = linePrices(line);
+  const prices = pricing
+    ? (() => {
+        const lista = getPrices({ price: base.contadoSinOferta, finalPrice: base.contadoSinOferta }, pricing).lista;
+        return { ...base, contado: lista, contadoSinOferta: lista, oferta: false };
+      })()
+    : base;
   return (
     <li className="flex gap-3 py-3 first:pt-0">
       <span className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -764,7 +822,7 @@ function SummaryLine({ line }: { line: CartLine }) {
         <span className="line-clamp-2 font-medium">{line.name}</span>
         {line.variantLabel && <span className="text-muted-foreground">{line.variantLabel}</span>}
       </span>
-      <PriceBlock variant="cart" prices={linePrices(line)} qty={line.qty} className="text-sm" />
+      <PriceBlock variant="cart" prices={prices} qty={line.qty} className="text-sm" />
     </li>
   );
 }

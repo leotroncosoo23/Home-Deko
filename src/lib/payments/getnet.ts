@@ -248,6 +248,30 @@ export function buildIntentBody(input: PaymentIntentInput) {
   };
 }
 
+/**
+ * CUOTAS (preparado, TODAVÍA NO SE USA).
+ *
+ * Desde checkout-cuotas el pedido guarda la forma de pago (orders.payment_plan
+ * e installments) y create_order ya calcula el total de cuotas (precio de
+ * lista). Hoy createPaymentIntent manda SOLO el total del pedido: el cliente
+ * elige las cuotas en la pantalla de Getnet.
+ *
+ * TODO(Getnet): cuando confirmemos con Getnet el formato para fijar la
+ * cantidad de cuotas del intent (nombre del campo, si va dentro de "payment",
+ * si exige plan sin interés acordado, qué pasa si el cliente elige otra
+ * cantidad), devolver acá el fragmento y sumarlo en buildIntentBody:
+ *   ...installmentsForIntent(plan)
+ * Hasta entonces, "Cuotas sin interés" queda APAGADO en Configuración.
+ */
+export function installmentsForIntent(plan: {
+  paymentPlan: "single" | "installments";
+  installments: number | null;
+}): Record<string, unknown> {
+  // TODO(Getnet): formato A CONFIRMAR. Por ahora no se manda nada.
+  void plan;
+  return {};
+}
+
 export async function createPaymentIntent(
   input: PaymentIntentInput,
   config: GetnetConfig | null = getnetConfig(),
