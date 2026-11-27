@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * Barra de beneficios, debajo del banner del inicio.
  * Celular: 2 × 2 (nada se corta). Desde tablet: 4 en una fila.
  * Sin marcas de medios de pago. Con las cuotas prendidas (Configuración →
- * Precios), "Pago seguro con tarjeta" pasa a "Hasta N cuotas sin interés".
+ * Precios), "Pago seguro con tarjeta" pasa a "N cuotas sin interés".
  */
 const BENEFITS = [
   { icon: Truck, text: "Envíos a todo el país" },
@@ -20,7 +20,7 @@ const BENEFITS = [
 export function StoreBenefits({ className, pricing }: { className?: string; pricing: PricingSettings }) {
   const benefits = BENEFITS.map((b) =>
     b.icon === CreditCard && pricing.installmentsEnabled
-      ? { ...b, text: `Hasta ${pricing.installmentsMax} cuotas sin interés` }
+      ? { ...b, text: `${pricing.installmentsMax} cuotas sin interés` }
       : b,
   );
   return (

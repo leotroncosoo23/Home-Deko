@@ -116,6 +116,14 @@ describe("monto de punta a punta (carrito = create_order = lo que se manda a pag
     expect(body.payment.amount).toBe(5400000);
   });
 
+  it("el envío se suma igual al 1 pago y a las cuotas (sin recargo)", () => {
+    const t = cartTotals(lines, S24, 20000);
+    expect(t.contado).toBe(74000);
+    // 71.920 + 20.000 = 91.920 → 6 cuotas de 15.320
+    expect(t.lista).toBe(91920);
+    expect(t.valorCuota).toBe(15320);
+  });
+
   it("con centavos el total no se redondea", () => {
     expect(cartTotals([{ price: 12345.67, finalPrice: 11111.1, qty: 1 }], S24).contado).toBe(11111.1);
   });

@@ -8,7 +8,7 @@ import { getPrices, type PricingSettings } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { useCart } from "../cart/cart-provider";
 import { useAddedFlash } from "../cart/use-added-flash";
-import { installmentsText, showCashTag, showListPrice } from "../price-lines";
+import { PriceBlock } from "../price-block";
 import { discountLabel, percentOffLabel, ProductBadges } from "../product-card";
 import { ProductGallery } from "./product-gallery";
 
@@ -107,11 +107,9 @@ export function ProductPurchase({
   }
 
   // --- Precio a mostrar: el de la variante elegida, o "Desde" ---
-  // Contado (1 pago) y lista (cuotas): src/lib/pricing.ts
+  // Contado (1 pago) y lista (cuotas): src/lib/pricing.ts → <PriceBlock variant="product">
   const prices = getPrices(variant ?? product, pricing);
-  const hasDiscount = prices.oferta;
   const percent = variant ? prices.ofertaPercent : null;
-  const cuotas = installmentsText(prices);
   // "¡Últimas unidades!": con una variante elegida, SU stock (1 o 2); si no, el total del producto.
   const fewLeft = variant ? variant.stock >= 1 && variant.stock <= 2 : product.inStock && product.fewLeft;
 
@@ -124,37 +122,17 @@ export function ProductPurchase({
           <h1 className="font-display text-[26px] leading-tight font-semibold tracking-tight md:text-3xl lg:text-[34px]">
             {product.name}
           </h1>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
-              {!variant && product.hasPriceRange && <span className="text-sm text-muted-foreground">Desde</span>}
-              <span className={cn("text-[28px] font-bold tracking-tight md:text-[32px]", hasDiscount && "text-brand")}>
-                {formatPrice(prices.contado)}
+          <PriceBlock
+            variant="product"
+            prices={prices}
+            pricing={pricing}
+            from={!variant && product.hasPriceRange}
+            badge={
+              <span className="self-center rounded-full bg-brand px-3 py-1 text-sm font-bold tracking-tight whitespace-nowrap text-white shadow-sm">
+                {percent !== null && percent > 0 ? percentOffLabel(percent) : discountLabel(product)}
               </span>
-              {showCashTag(pricing) && <span className="text-base font-semibold text-foreground">en 1 pago</span>}
-              {hasDiscount && (
-                <>
-                  <span className="text-base text-muted-foreground line-through">
-                    <span className="sr-only">Antes: </span>
-                    {formatPrice(prices.contadoSinOferta)}
-                  </span>
-                  <span className="self-center rounded-full bg-brand px-3 py-1 text-sm font-bold tracking-tight text-white shadow-sm">
-                    {percent !== null && percent > 0 ? percentOffLabel(percent) : discountLabel(product)}
-                  </span>
-                </>
-              )}
-            </div>
-            {(showListPrice(pricing) || cuotas) && (
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {showListPrice(pricing) && (
-                  <>
-                    {formatPrice(prices.lista)} precio de lista
-                    {cuotas && " · "}
-                  </>
-                )}
-                {cuotas}
-              </p>
-            )}
-          </div>
+            }
+          />
           {nationalTaxPercent !== null && (
             <p className="text-sm text-muted-foreground tabular-nums">
               Precio sin impuestos nacionales: {formatPrice(priceWithoutTaxes(prices.contado, nationalTaxPercent))}
