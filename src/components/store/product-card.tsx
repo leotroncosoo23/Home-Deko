@@ -28,7 +28,8 @@ export const HOME_IMAGE_SIZES = "(min-width: 1440px) 320px, (min-width: 768px) 2
  *
  *   - Precio: <PriceBlock variant="card"> (price-block.tsx): contado grande
  *     (rojo si hay oferta, con el precio sin oferta tachado al lado) y, chico
- *     y gris, la lista en cuotas o "Precio de lista" si corresponde.
+ *     y gris, "Precio de lista $ …" y (con cuotas) "Hasta N cuotas sin interés de $ …".
+ *   - Espaciado compacto: nombre → precio 4 px, precio → lista 2 px, lista → botón 8–10 px.
  *   - Con descuento vigente: etiqueta "-10% OFF" (o "Hasta -20% OFF") sobre la foto.
  *   - Quedan 1 o 2 unidades en total: "¡Últimas unidades!" (nunca junto a "Sin stock").
  *   - Con variantes de distinto precio: "Desde $ …".
@@ -110,14 +111,16 @@ export function ProductCard({
           </div>
         </div>
 
-        {/* Hasta 2 líneas con "…". min-h de 2 líneas: así los precios de una
-            misma fila quedan alineados aunque un nombre sea corto. */}
-        <h3 className="line-clamp-2 min-h-[2lh] px-0.5 text-sm leading-snug text-foreground md:text-[15px]">
+        {/* 1 o 2 renglones (con "…"), sin alto fijo: el precio va pegado al
+            nombre. La alineación de una fila la dan los botones (mt-auto). */}
+        <h3 className="line-clamp-2 px-0.5 text-sm leading-snug text-foreground md:text-[15px]">
           {p.name}
         </h3>
       </Link>
 
-      <div className="-mt-1.5 flex flex-1 flex-col gap-2.5 px-0.5 md:gap-3">
+      {/* -mt-2 sobre el gap-3 del article: 4 px entre el nombre y el precio.
+          gap-2 / md:gap-2.5: 8–10 px entre la línea de lista y el botón. */}
+      <div className="-mt-2 flex flex-1 flex-col gap-2 px-0.5 md:gap-2.5">
         <PriceBlock variant="card" prices={prices} pricing={pricing} from={p.hasPriceRange} />
         {/* mt-auto: en una misma fila, los botones quedan alineados abajo */}
         {quick && (

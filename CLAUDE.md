@@ -410,14 +410,16 @@ Se construye en pasos visibles. Cada paso: rama → probar en local → merge a 
   - **PENDIENTE (Getnet)**: el checkout tendrá que elegir **1 pago (precio contado) o cuotas (precio de lista)** antes
     de crear el pago, y `create_order` calcular ese monto en el servidor según la elección (lista = contado sin oferta
     + recargo, misma cuenta que `listPrice()`).
-  - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("$ lista en N cuotas
-    sin interés de $ lista/N", sin "hasta": el máximo es global); todavía no cambian el cobro.
+  - Cuotas: `installments_enabled` (apagado) + `installments_max` (3/6/9/12). Solo se muestran ("Hasta N cuotas sin
+    interés de $ lista/N": N es el máximo global); todavía no cambian el cobro.
   - **Bloque de precio único**: `<PriceBlock variant="card" | "product" | "cart" | "total">` en
     `src/components/store/price-block.tsx` (con `getPrices()`), en tarjeta, página de producto, carrito y checkout.
-    Línea 1: contado grande (rojo con oferta) + contado sin oferta tachado al lado (+ "-X% OFF" en la página). Línea 2,
-    chica y gris: con cuotas "$ {lista} en {N} cuotas sin interés de $ {cuota}"; sin cuotas y recargo > 0 "Precio de
-    lista $ {lista}"; si no, nada. Carrito y checkout: "Total" con el contado y, con cuotas, debajo "o $ {total lista}
-    en {N} cuotas…" (en el checkout incluye el envío sin recargo; se oculta con un cupón de productos). "Precio sin
+    Línea 1: contado grande (rojo con oferta) + contado sin oferta tachado al lado (+ "-X% OFF" en la página). Debajo,
+    chico y gris: con recargo > 0 "Precio de lista $ {lista}" y, con cuotas, otro renglón "Hasta {N} cuotas sin interés
+    de $ {cuota}"; sin recargo ni cuotas, nada. Carrito y checkout: "Total" con el contado y, con cuotas, debajo "o
+    hasta {N} cuotas sin interés de $ {cuota}" (en el checkout incluye el envío sin recargo; se oculta con un cupón de
+    productos). Tarjeta compacta (rama `tarjeta-compacta`): nombre de 1 o 2 renglones sin alto fijo (la fila se alinea
+    con el botón `mt-auto`), nombre → precio 4 px, precio → lista 2 px, lista → botón 8–10 px. "Precio sin
     impuestos nacionales" y JSON-LD usan el contado. El filtro de precio del catálogo es en contado, sin conversión.
   - Ver la tienda con otro recargo **en local sin tocar producción**: `PRICING_PREVIEW=24,6` en `.env.local` (24 % y 6
     cuotas; `pricingFrom()` en `store-settings.ts`, se ignora en producción). Solo cambia lo que se MUESTRA.
